@@ -1,0 +1,39 @@
+# NetBeans project files
+nbproject/private/
+nbproject/nb-configuration.xml
+!nbproject/project.properties
+!nbproject/project.xml
+
+# Maven build artifacts
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and caches
+*.log
+logs/
+
+# Compiled classes
+*.class
+*.jar
+*.war
+*.ear
+
+# JavaFX runtime (if generated)
+dist/
+libs/
