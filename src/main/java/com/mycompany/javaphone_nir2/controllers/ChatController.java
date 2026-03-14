@@ -1,4 +1,4 @@
-package com.mycompany.javaphone_nir2;
+package com.mycompany.javaphone_nir2.controllers;
 
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -20,14 +20,14 @@ import javafx.stage.Popup;
 import javafx.util.Duration;
 
 /**
- * Контроллер для главного окна чата.
+ * Controller for main chat window
  *
- * Отвечает за:
- * 1. Управление списком контактов
- * 2. Отображение истории сообщений
- * 3. Отправку новых сообщений
- * 4. Переход на окно видеозвонка
- * 5. Обработку кнопок навигации (Exit, Settings)
+ * Responcible for:
+ * 1. Managing the contact list
+ * 2. Displaying message history
+ * 3. Sending new messages
+ * 4. Switching to the video call window
+ * 5. Handling nav buttons (Exit, Settings)
  */
 public class ChatController {
 
@@ -55,28 +55,27 @@ public class ChatController {
     private ObservableList<Contact> contacts;
     private Contact selectedContact;
 
-    private Popup incomingCallPopup;  // Всплывающее окно (Popup)
-    private Contact incomingCallContact;     // От кого входящий звонок
+    private Popup incomingCallPopup;
+    private Contact incomingCallContact;
 
     @FXML
     public void initialize() {
         setupContactList();
         setupChatUI();
 
-        // Запускаем таймер для входящего звонка
+        //starting timer to demonstrate popup
         scheduleIncomingCallTimer();
     }
 
     /**
-     * ⏰ Запускает таймер для входящего звонка
-     * Через 10-15 секунд после загрузки появляется уведомление
+     * starting timer for uncoming call
+     *
      */
     private void scheduleIncomingCallTimer() {
-        // Выбираем контакт для входящего звонка (первый из списка или случайный)
         if (contacts != null && !contacts.isEmpty()) {
-            incomingCallContact = contacts.get(0);  // Берём первый контакт
+            incomingCallContact = contacts.get(0);  // first contact
 
-            // Случайная задержка от 10 до 15 секунд
+            // rand delay
             int delaySeconds = 2 + (int)(Math.random() * 6);
 
             PauseTransition pause = new PauseTransition(Duration.seconds(delaySeconds));
@@ -88,17 +87,17 @@ public class ChatController {
     }
 
     /**
-     * 🔔 Показывает уведомление о входящем звонке через Popup
-     * Popup - это отдельное немодальное окно, которое появляется поверх основного интерфейса
+     * shows notification via popup
+     *
      */
     private void showIncomingCallNotification() {
         if (incomingCallContact == null) return;
 
-        // Создаём контейнер для уведомления
+        // container for notification
         VBox notificationBox = new VBox(12);
         notificationBox.setStyle(
-            "-fx-background-color: #434e93; " +  // Тёмно-синий фон
-            "-fx-border-color: #3b82f6; " +       // Синяя граница
+            "-fx-background-color: #434e93; " +
+            "-fx-border-color: #3b82f6; " +
             "-fx-border-width: 0; " +
             "-fx-border-radius: 10; " +
             "-fx-padding: 15; " +
@@ -108,7 +107,6 @@ public class ChatController {
         notificationBox.setMaxWidth(200);
         notificationBox.setPrefWidth(200);
 
-        // Заголовок "Звонок от..."
         Label incomingLabel = new Label("🔔 Звонок от");
         incomingLabel.setStyle(
             "-fx-text-fill: white; " +
@@ -117,27 +115,25 @@ public class ChatController {
         );
         incomingLabel.setAlignment(Pos.CENTER);
 
-        // Имя контакта
         Label contactLabel = new Label(incomingCallContact.getName());
         contactLabel.setStyle(
-            "-fx-text-fill: #60a5fa; " +  // Светло-синий цвет
+            "-fx-text-fill: #60a5fa; " +
             "-fx-font-size: 18; " +
             "-fx-font-weight: bold;"
         );
         contactLabel.setAlignment(Pos.CENTER);
         contactLabel.setWrapText(true);
 
-        // Контейнер для кнопок
+        // container for buttons
         HBox buttonBox = new HBox(8);
         buttonBox.setAlignment(Pos.CENTER);
         buttonBox.setPadding(new Insets(5, 0, 0, 0));
 
-        // Кнопка "Принять"
         Button acceptButton = new Button("Принять");
         acceptButton.setPrefWidth(90);
         acceptButton.setPrefHeight(32);
         acceptButton.setStyle(
-            "-fx-background-color: #10b981; " +  // Зелёный
+            "-fx-background-color: #10b981; " +
             "-fx-text-fill: white; " +
             "-fx-font-size: 11; " +
             "-fx-font-weight: bold; " +
@@ -149,12 +145,11 @@ public class ChatController {
             incomingCallPopup.hide();
         });
 
-        // Кнопка "Отклонить"
         Button rejectButton = new Button("Отклонить");
         rejectButton.setPrefWidth(90);
         rejectButton.setPrefHeight(32);
         rejectButton.setStyle(
-            "-fx-background-color: #ef4444; " +  // Красный
+            "-fx-background-color: #ef4444; " +
             "-fx-text-fill: white; " +
             "-fx-font-size: 11; " +
             "-fx-font-weight: bold; " +
@@ -168,29 +163,26 @@ public class ChatController {
 
         buttonBox.getChildren().addAll(acceptButton, rejectButton);
 
-        // Собираем всё в контейнер
         notificationBox.getChildren().addAll(
             incomingLabel,
             contactLabel,
             buttonBox
         );
 
-        // ========== СОЗДАЁМ POPUP ==========
         incomingCallPopup = new Popup();
         incomingCallPopup.getContent().add(notificationBox);
-        incomingCallPopup.setAutoHide(false);  // Не закрывается при клике вне окна
-        incomingCallPopup.setHideOnEscape(false);  // Не закрывается на ESC
+        incomingCallPopup.setAutoHide(false);  // do not close when clicking behind the popup
+        incomingCallPopup.setHideOnEscape(false);  // do not close on pressing esc
 
-        // Показываем Popup в верхнем правом углу экрана
         if (callButton != null) {
-            // Получаем позицию кнопки "Позвонить"
+            // getting position of call button
             Bounds buttonBounds = callButton.localToScreen(callButton.getBoundsInLocal());
 
-            // Показываем Popup ниже и справа от кнопки
+            // showing popup right down of callbutton
             incomingCallPopup.show(
                 callButton.getScene().getWindow(),
-                buttonBounds.getCenterX() - 135,  // По центру кнопки (минус половина ширины попапа)
-                buttonBounds.getCenterY() + 30    // Ниже кнопки на 40px
+                buttonBounds.getCenterX() - 135,
+                buttonBounds.getCenterY() + 30
             );
         }
 
@@ -198,26 +190,26 @@ public class ChatController {
     }
 
     /**
-     * ✅ Обработчик: Пользователь принял звонок
-     * Переводит на видеозвонок с контактом
+     * handle call accept
+     *
      */
     private void handleCallAccepted() {
         appendToChat("System", "✅ Вы приняли звонок от " + incomingCallContact.getName());
 
-        // Переводим на видеозвонок
         startVideoCallWithContact(incomingCallContact);
     }
 
     /**
-     * ❌ Обработчик: Пользователь отклонил звонок
-     * Просто закрывает уведомление
+     * handle call rejected
+     *
      */
     private void handleCallRejected() {
         appendToChat("System", "❌ Вы отклонили звонок от " + incomingCallContact.getName());
     }
 
     /**
-     * 📞 Запускает видеозвонок с указанным контактом
+     * starting video call with contact
+     * @param contact contact to start call with
      */
     private void startVideoCallWithContact(Contact contact) {
         try {
@@ -253,7 +245,7 @@ public class ChatController {
     }
 
     /**
-     * Инициализирует список контактов
+     * init contact list
      */
     private void setupContactList() {
         contacts = javafx.collections.FXCollections.observableArrayList(
@@ -273,7 +265,7 @@ public class ChatController {
     }
 
     /**
-     * Инициализирует UI чата
+     * setuping chat ui
      */
     private void setupChatUI() {
         chatHistory.setEditable(false);
@@ -286,7 +278,7 @@ public class ChatController {
     }
 
     /**
-     * Обновляет панель чата при выборе контакта
+     * updating chat with selected contact
      */
     private void updateChatPanel() {
         if (selectedContact != null) {
@@ -297,7 +289,7 @@ public class ChatController {
     }
 
     /**
-     * Отправляет сообщение
+     * send message
      */
     private void sendMessage() {
         if (selectedContact == null) {
@@ -317,12 +309,11 @@ public class ChatController {
         appendToChat("Вы", message);
         messageInput.clear();
 
-        // Имитация ответа
         simulateResponse();
     }
 
     /**
-     * Имитирует ответ от собеседника
+     * response simulation
      */
     private void simulateResponse() {
         String[] responses = {
@@ -346,7 +337,7 @@ public class ChatController {
     }
 
     /**
-     * Запускает видеозвонок с выбранным контактом
+     * starting videocall
      */
     private void startVideoCall() {
         if (selectedContact == null) {
@@ -362,7 +353,7 @@ public class ChatController {
     }
 
     /**
-     * Добавляет сообщение в историю чата
+     * adding message to char history
      */
     private void appendToChat(String sender, String message) {
         String formattedMessage = String.format("%s: %s\n", sender, message);
@@ -370,7 +361,7 @@ public class ChatController {
     }
 
     /**
-     * Вспомогательный класс для отображения контактов
+     * class for showing contacts
      */
     private static class ContactListCell extends ListCell<Contact> {
         @Override
@@ -402,7 +393,7 @@ public class ChatController {
     }
 
     /**
-     * Класс для хранения данных контакта
+     * class for contact data
      */
     public static class Contact {
         private String name;
