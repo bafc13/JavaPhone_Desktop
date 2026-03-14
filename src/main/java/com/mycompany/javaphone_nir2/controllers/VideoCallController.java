@@ -1,4 +1,4 @@
-package com.mycompany.javaphone_nir2;
+package com.mycompany.javaphone_nir2.controllers;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -12,18 +12,15 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 
 /**
- * Контроллер для окна видеозвонка.
+ * controller for video call
  *
- * Отвечает за:
- * 1. Управление видеопотоками (имитация для прототипа)
- * 2. Управление кнопками (микрофон, камера, фильтр)
- * 3. Отображение сообщений в ходе звонка
- * 4. Завершение звонка и возврат в главное окно
+ * Responsible for:
+ * 1. Video stream management (simulation for prototype)
+ * 2. Button management (microphone, camera, filter)
+ * 3. Displaying messages during a call.
+ * 4. Ending the call and returning to the main window
  */
 public class VideoCallController {
-
-    // ==================== КОМПОНЕНТЫ FXML ====================
-
     @FXML
     private StackPane remoteVideoContainer;
 
@@ -57,8 +54,6 @@ public class VideoCallController {
     @FXML
     private VBox chatContainer;
 
-    // ==================== ПЕРЕМЕННЫЕ ====================
-
     private DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     private boolean isMicEnabled = true;
@@ -66,9 +61,7 @@ public class VideoCallController {
     private boolean isFilterEnabled = false;
     private String contactName = "Собеседник";
 
-    /**
-     * Инициализация контроллера видеозвонка.
-     */
+
     @FXML
     public void initialize() {
         setupButtonHandlers();
@@ -80,17 +73,17 @@ public class VideoCallController {
     }
 
     /**
-     * Инициализирует адаптивность размера окна.
-     * Вызывается из ChatController.startVideoCall() с готовым Stage!
+     * Initializes window resizing.
+     * Called from ChatController.startVideoCall() with a ready Stage!
      *
-     * @param stage сцена видеозвонка
+     * @param stage video call scene
      */
     public void initializeResponsiveLayout(Stage stage) {
         setupWindowResizeListener(stage);
     }
 
     /**
-     * Настраивает слушатель событий изменения размера окна.
+     * Configures a listener for window resize events.
      */
     private void setupWindowResizeListener(Stage stage) {
         if (stage == null) {
@@ -98,7 +91,7 @@ public class VideoCallController {
             return;
         }
 
-        // Слушаем изменение размера окна
+        // listening window resize
         stage.widthProperty().addListener((obs, oldVal, newVal) -> {
             updateVideoContainerSizes(stage);
         });
@@ -107,17 +100,12 @@ public class VideoCallController {
             updateVideoContainerSizes(stage);
         });
 
-        // Начальный расчёт размеров
+        // init calculating sizes
         updateVideoContainerSizes(stage);
     }
 
     /**
-     * ИСПРАВЛЕННАЯ версия - теперь окно ПРАВИЛЬНО растягивается!
-     *
-     * Ключевые изменения:
-     * 1. Основное видео: setMaxWidth/setMaxHeight = Double.MAX_VALUE (растягивается!)
-     * 2. Локальное видео: setMaxWidth/setMaxHeight = 200/150 (не растягивается, но уменьшается)
-     * 3. Используем MIN, PREF, MAX для правильного макета
+     * calculating and updating video cont sizes
      */
     private void updateVideoContainerSizes(Stage stage) {
         double windowWidth = stage.getWidth();
@@ -129,31 +117,29 @@ public class VideoCallController {
         if (availableWidth <= 0) availableWidth = 450;
         if (availableHeight <= 0) availableHeight = 300;
 
-        // ==================== ОСНОВНОЕ ВИДЕО ====================
+        // main video
         remoteVideoContainer.setMinWidth(200);
         remoteVideoContainer.setMinHeight(200);
         remoteVideoContainer.setPrefWidth(availableWidth);
         remoteVideoContainer.setPrefHeight(availableHeight);
-        remoteVideoContainer.setMaxWidth(Double.MAX_VALUE);    // 🔑 РАСТЯГИВАЕТСЯ!
-        remoteVideoContainer.setMaxHeight(Double.MAX_VALUE);   // 🔑 РАСТЯГИВАЕТСЯ!
+        remoteVideoContainer.setMaxWidth(Double.MAX_VALUE);
+        remoteVideoContainer.setMaxHeight(Double.MAX_VALUE);
 
-        // ==================== ЛОКАЛЬНОЕ ВИДЕО (камера 2) ====================
+        // local video (camera 2)
         localVideoContainer.setMinWidth(180);
         localVideoContainer.setMinHeight(120);
 
-        // 🔑 ПРОПОРЦИОНАЛЬНЫЙ РАЗМЕР!
-        // Камера 2 всегда = 20% ширины и 25% высоты основного видео
-        double localVideoWidth = availableWidth * 0.2;    // 20% от основного
-        double localVideoHeight = availableHeight * 0.25;  // 25% от основного
+        double localVideoWidth = availableWidth * 0.2;    // 20% of main camera
+        double localVideoHeight = availableHeight * 0.25;  // 25% or main camera
 
         localVideoContainer.setPrefWidth(localVideoWidth);
         localVideoContainer.setPrefHeight(localVideoHeight);
-        localVideoContainer.setMaxWidth(localVideoWidth);   // 🔑 РАСТЯГИВАЕТСЯ!
-        localVideoContainer.setMaxHeight(localVideoHeight);  // 🔑 РАСТЯГИВАЕТСЯ!
+        localVideoContainer.setMaxWidth(localVideoWidth);
+        localVideoContainer.setMaxHeight(localVideoHeight);
     }
 
     /**
-     * Устанавливает имя контакта для чата.
+     * sets contact name
      */
     public void setContactName(String name) {
         this.contactName = name;
@@ -163,10 +149,10 @@ public class VideoCallController {
     }
 
     /**
-     * Устанавливает обработчики для всех кнопок управления.
+     * sets listeners for all buttons
      */
     private void setupButtonHandlers() {
-        // КНОПКА МИКРОФОНА
+        // mic button
         micButton.setOnAction(e -> {
             isMicEnabled = !isMicEnabled;
             if (isMicEnabled) {
@@ -178,7 +164,7 @@ public class VideoCallController {
             }
         });
 
-        // КНОПКА ФИЛЬТРА
+        // filter button
         filterButton.setOnAction(e -> {
             isFilterEnabled = !isFilterEnabled;
             if (isFilterEnabled) {
@@ -190,7 +176,7 @@ public class VideoCallController {
             }
         });
 
-        // КНОПКА КАМЕРЫ
+        // camera button
         cameraButton.setOnAction(e -> {
             isCameraEnabled = !isCameraEnabled;
             if (isCameraEnabled) {
@@ -202,16 +188,16 @@ public class VideoCallController {
             }
         });
 
-        // КНОПКА ОТПРАВКИ СООБЩЕНИЯ
+        // send message button
         sendCallMessageButton.setOnAction(e -> sendCallMessage());
         callMessageInput.setOnAction(e -> sendCallMessage());
 
-        // КНОПКА ЗАВЕРШЕНИЯ ЗВОНКА
+        // exit button
         endCallButton.setOnAction(e -> endCall());
     }
 
     /**
-     * Отправляет сообщение в чат звонка.
+     * send message to call chat
      */
     private void sendCallMessage() {
         String message = callMessageInput.getText().trim();
@@ -225,9 +211,6 @@ public class VideoCallController {
         simulateRemoteResponse();
     }
 
-    /**
-     * Имитирует ответ от собеседника.
-     */
     private void simulateRemoteResponse() {
         String[] responses = {
             "Да, я слышу тебя!",
@@ -250,7 +233,7 @@ public class VideoCallController {
     }
 
     /**
-     * Завершает звонок и закрывает окно.
+     * ending call and closing window
      */
     private void endCall() {
         appendToCallChat("System", "📞 Звонок завершен");
@@ -265,16 +248,13 @@ public class VideoCallController {
         });
     }
 
-    /**
-     * Закрывает текущее окно видеозвонка.
-     */
     private void closeWindow() {
         Stage stage = (Stage) endCallButton.getScene().getWindow();
         stage.close();
     }
 
     /**
-     * Добавляет новое сообщение в историю звонка.
+     * adding new message to call chat
      */
     private void appendToCallChat(String sender, String message) {
         String time = LocalTime.now().format(timeFormatter);

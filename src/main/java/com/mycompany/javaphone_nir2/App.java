@@ -20,38 +20,27 @@ public class App extends Application {
     private static Scene scene;
 
     /**
-     * Метод start() вызывается JavaFX при запуске приложения.
-     * Здесь мы инициализируем главное окно и загружаем его содержимое.
+     * start() used by JavaFX while app is running.
      *
-     * @param primaryStage главное окно приложения
+     * @param primaryStage main window
      */
     @Override
     public void start(Stage primaryStage) {
         try {
-            // Загружаем FXML-макет главного окна
             FXMLLoader loader = new FXMLLoader(
                 getClass().getResource("chat_main.fxml")
             );
 
-            // Создаём сцену из загруженного FXML
             scene = new Scene(loader.load(), 1000, 600);
 
-            // Устанавливаем титул окна
             primaryStage.setTitle("WebCommunicator - Chat");
-
-            // Устанавливаем сцену на сцене
             primaryStage.setScene(scene);
-
-            // Устанавливаем минимальный размер окна
             primaryStage.setMinWidth(800);
             primaryStage.setMinHeight(500);
 
-            // Показываем окно
             primaryStage.show();
-
         } catch (IOException e) {
-            // Обработка исключения при загрузке FXML
-            System.err.println("Ошибка при загрузке FXML файла: " + e.getMessage());
+            System.err.println("Error while getting FXML file: " + e.getMessage());
             e.printStackTrace();
         }
     }
