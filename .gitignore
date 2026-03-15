@@ -54,3 +54,6 @@ logs/
 # JavaFX runtime (if generated)
 dist/
 libs/
+
+# SQLite databases
+*.sqlite
