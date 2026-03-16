@@ -1,20 +1,28 @@
 package com.mycompany.javaphone_nir2.models;
 
 /**
- * data model for contact
- * have all info to show contact in ListView.
+ * data model for contact have all info to show contact in ListView.
  */
 public class Contact {
+
     private String name;
     private String status;
 
-    /** HEX*/
+    /**
+     * HEX
+     */
     private String avatarColor;
 
     public Contact(String name, String status, String avatarColor) {
         this.name = name;
         this.status = status;
         this.avatarColor = avatarColor;
+    }
+
+    public Contact(String name, String status) {
+        this.name = name;
+        this.status = status;
+        this.avatarColor = "bafc13";
     }
 
     public String getName() {

@@ -1,5 +1,7 @@
 package com.mycompany.javaphone_nir2.controllers;
 
+import com.mycompany.javaphone_nir2.ContactListCell;
+import com.mycompany.javaphone_nir2.models.Contact;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -13,7 +15,6 @@ import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Circle;
 import javafx.stage.Popup;
@@ -22,12 +23,9 @@ import javafx.util.Duration;
 /**
  * Controller for main chat window
  *
- * Responcible for:
- * 1. Managing the contact list
- * 2. Displaying message history
- * 3. Sending new messages
- * 4. Switching to the video call window
- * 5. Handling nav buttons (Exit, Settings)
+ * Responcible for: 1. Managing the contact list 2. Displaying message history
+ * 3. Sending new messages 4. Switching to the video call window 5. Handling nav
+ * buttons (Exit, Settings)
  */
 public class ChatController {
 
@@ -47,10 +45,10 @@ public class ChatController {
     private Button callButton;
 
     @FXML
-    private Label chatTitleLabel;
+    private Button exitButton;
 
     @FXML
-    private VBox chatPanel;
+    private Label chatTitleLabel;
 
     private ObservableList<Contact> contacts;
     private Contact selectedContact;
@@ -76,7 +74,7 @@ public class ChatController {
             incomingCallContact = contacts.get(0);  // first contact
 
             // rand delay
-            int delaySeconds = 2 + (int)(Math.random() * 6);
+            int delaySeconds = 2 + (int) (Math.random() * 6);
 
             PauseTransition pause = new PauseTransition(Duration.seconds(delaySeconds));
             pause.setOnFinished(e -> {
@@ -91,17 +89,19 @@ public class ChatController {
      *
      */
     private void showIncomingCallNotification() {
-        if (incomingCallContact == null) return;
+        if (incomingCallContact == null) {
+            return;
+        }
 
         // container for notification
         VBox notificationBox = new VBox(12);
         notificationBox.setStyle(
-            "-fx-background-color: #434e93; " +
-            "-fx-border-color: #3b82f6; " +
-            "-fx-border-width: 0; " +
-            "-fx-border-radius: 10; " +
-            "-fx-padding: 15; " +
-            "-fx-spacing: 8;"
+                "-fx-background-color: #434e93; "
+                + "-fx-border-color: #3b82f6; "
+                + "-fx-border-width: 0; "
+                + "-fx-border-radius: 10; "
+                + "-fx-padding: 15; "
+                + "-fx-spacing: 8;"
         );
         notificationBox.setAlignment(Pos.CENTER);
         notificationBox.setMaxWidth(200);
@@ -109,17 +109,17 @@ public class ChatController {
 
         Label incomingLabel = new Label("🔔 Звонок от");
         incomingLabel.setStyle(
-            "-fx-text-fill: white; " +
-            "-fx-font-size: 12; " +
-            "-fx-font-weight: bold;"
+                "-fx-text-fill: white; "
+                + "-fx-font-size: 12; "
+                + "-fx-font-weight: bold;"
         );
         incomingLabel.setAlignment(Pos.CENTER);
 
         Label contactLabel = new Label(incomingCallContact.getName());
         contactLabel.setStyle(
-            "-fx-text-fill: #60a5fa; " +
-            "-fx-font-size: 18; " +
-            "-fx-font-weight: bold;"
+                "-fx-text-fill: #60a5fa; "
+                + "-fx-font-size: 18; "
+                + "-fx-font-weight: bold;"
         );
         contactLabel.setAlignment(Pos.CENTER);
         contactLabel.setWrapText(true);
@@ -133,12 +133,12 @@ public class ChatController {
         acceptButton.setPrefWidth(90);
         acceptButton.setPrefHeight(32);
         acceptButton.setStyle(
-            "-fx-background-color: #10b981; " +
-            "-fx-text-fill: white; " +
-            "-fx-font-size: 11; " +
-            "-fx-font-weight: bold; " +
-            "-fx-padding: 5; " +
-            "-fx-border-radius: 6;"
+                "-fx-background-color: #10b981; "
+                + "-fx-text-fill: white; "
+                + "-fx-font-size: 11; "
+                + "-fx-font-weight: bold; "
+                + "-fx-padding: 5; "
+                + "-fx-border-radius: 6;"
         );
         acceptButton.setOnAction(e -> {
             handleCallAccepted();
@@ -149,12 +149,12 @@ public class ChatController {
         rejectButton.setPrefWidth(90);
         rejectButton.setPrefHeight(32);
         rejectButton.setStyle(
-            "-fx-background-color: #ef4444; " +
-            "-fx-text-fill: white; " +
-            "-fx-font-size: 11; " +
-            "-fx-font-weight: bold; " +
-            "-fx-padding: 5; " +
-            "-fx-border-radius: 6;"
+                "-fx-background-color: #ef4444; "
+                + "-fx-text-fill: white; "
+                + "-fx-font-size: 11; "
+                + "-fx-font-weight: bold; "
+                + "-fx-padding: 5; "
+                + "-fx-border-radius: 6;"
         );
         rejectButton.setOnAction(e -> {
             handleCallRejected();
@@ -164,9 +164,9 @@ public class ChatController {
         buttonBox.getChildren().addAll(acceptButton, rejectButton);
 
         notificationBox.getChildren().addAll(
-            incomingLabel,
-            contactLabel,
-            buttonBox
+                incomingLabel,
+                contactLabel,
+                buttonBox
         );
 
         incomingCallPopup = new Popup();
@@ -180,9 +180,9 @@ public class ChatController {
 
             // showing popup right down of callbutton
             incomingCallPopup.show(
-                callButton.getScene().getWindow(),
-                buttonBounds.getCenterX() - 135,
-                buttonBounds.getCenterY() + 30
+                    callButton.getScene().getWindow(),
+                    buttonBounds.getCenterX() - 135,
+                    buttonBounds.getCenterY() + 30
             );
         }
 
@@ -209,12 +209,13 @@ public class ChatController {
 
     /**
      * starting video call with contact
+     *
      * @param contact contact to start call with
      */
     private void startVideoCallWithContact(Contact contact) {
         try {
             FXMLLoader loader = new FXMLLoader(
-                getClass().getResource("video_call.fxml")
+                    getClass().getResource("/com/mycompany/javaphone_nir2/fxml/video_call.fxml") //the path is searched from the classpath
             );
 
             Scene scene = new Scene(loader.load(), 1200, 700);
@@ -249,9 +250,9 @@ public class ChatController {
      */
     private void setupContactList() {
         contacts = javafx.collections.FXCollections.observableArrayList(
-            new Contact("AVKuzma", "Online"),
-            new Contact("BaFC13", "Online"),
-            new Contact("Кто-то", "Offline")
+                new Contact("AVKuzma", "Online"),
+                new Contact("BaFC13", "Online"),
+                new Contact("Кто-то", "Offline")
         );
 
         contactsList.setItems(contacts);
@@ -275,6 +276,8 @@ public class ChatController {
         messageInput.setOnAction(e -> sendMessage());
 
         callButton.setOnAction(e -> startVideoCall());
+
+        exitButton.setOnAction(e -> closeWindow());
     }
 
     /**
@@ -336,6 +339,20 @@ public class ChatController {
         });
     }
 
+    private void closeWindow() {
+        javafx.application.Platform.runLater(() -> {
+            try {
+                Thread.sleep(1000);
+                //do close call waiter and chat threads
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            Stage stage = (Stage) exitButton.getScene().getWindow();
+            stage.close();
+            Platform.exit();
+        });
+    }
+
     /**
      * starting videocall
      */
@@ -364,6 +381,7 @@ public class ChatController {
      * class for showing contacts
      */
     private static class ContactListCell extends ListCell<Contact> {
+
         @Override
         protected void updateItem(Contact contact, boolean empty) {
             super.updateItem(contact, empty);
@@ -376,7 +394,7 @@ public class ChatController {
 
                 Circle statusCircle = new Circle(5);
                 statusCircle.setFill(javafx.scene.paint.Color.web(
-                    contact.getStatus().equals("Online") ? "#10b981" : "#6b7280"
+                        contact.getStatus().equals("Online") ? "#10b981" : "#6b7280"
                 ));
 
                 Label nameLabel = new Label(contact.getName());
@@ -390,21 +408,5 @@ public class ChatController {
                 setGraphic(hbox);
             }
         }
-    }
-
-    /**
-     * class for contact data
-     */
-    public static class Contact {
-        private String name;
-        private String status;
-
-        public Contact(String name, String status) {
-            this.name = name;
-            this.status = status;
-        }
-
-        public String getName() { return name; }
-        public String getStatus() { return status; }
     }
 }

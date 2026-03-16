@@ -14,13 +14,12 @@ import javafx.scene.layout.VBox;
 /**
  * controller for video call
  *
- * Responsible for:
- * 1. Video stream management (simulation for prototype)
- * 2. Button management (microphone, camera, filter)
- * 3. Displaying messages during a call.
- * 4. Ending the call and returning to the main window
+ * Responsible for: 1. Video stream management (simulation for prototype) 2.
+ * Button management (microphone, camera, filter) 3. Displaying messages during
+ * a call. 4. Ending the call and returning to the main window
  */
 public class VideoCallController {
+
     @FXML
     private StackPane remoteVideoContainer;
 
@@ -61,7 +60,6 @@ public class VideoCallController {
     private boolean isFilterEnabled = false;
     private String contactName = "Собеседник";
 
-
     @FXML
     public void initialize() {
         setupButtonHandlers();
@@ -73,8 +71,8 @@ public class VideoCallController {
     }
 
     /**
-     * Initializes window resizing.
-     * Called from ChatController.startVideoCall() with a ready Stage!
+     * Initializes window resizing. Called from ChatController.startVideoCall()
+     * with a ready Stage!
      *
      * @param stage video call scene
      */
@@ -114,8 +112,12 @@ public class VideoCallController {
         double availableWidth = windowWidth - 320;
         double availableHeight = windowHeight - 140;
 
-        if (availableWidth <= 0) availableWidth = 450;
-        if (availableHeight <= 0) availableHeight = 300;
+        if (availableWidth <= 0) {
+            availableWidth = 450;
+        }
+        if (availableHeight <= 0) {
+            availableHeight = 300;
+        }
 
         // main video
         remoteVideoContainer.setMinWidth(200);
@@ -241,6 +243,7 @@ public class VideoCallController {
         javafx.application.Platform.runLater(() -> {
             try {
                 Thread.sleep(1000);
+                //do close video and audio threads job
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

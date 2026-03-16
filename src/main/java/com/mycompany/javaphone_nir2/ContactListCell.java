@@ -6,27 +6,31 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 
 /**
- * Custom cell for ListView, which show contacts with avatar,
- * name и status/last message.
+ * Custom cell for ListView, which show contacts with avatar, name и status/last
+ * message.
  *
  */
 public class ContactListCell extends ListCell<Contact> {
+
     private HBox root;
     private StackPane avatarContainer;
-    /** first letter in name */
+    /**
+     * first letter in name
+     */
     private Label avatarLabel;
     private VBox textContainer;
     private Label nameLabel;
     private Label statusLabel;
 
-    /** avatar size in px*/
+    /**
+     * avatar size in px
+     */
     private static final double AVATAR_SIZE = 50;
 
     public ContactListCell() {
@@ -42,10 +46,10 @@ public class ContactListCell extends ListCell<Contact> {
         root.setStyle("-fx-padding: 10; -fx-border-color: #ecf0f1; -fx-border-width: 0 0 1 0;");
         root.setPrefHeight(70);
         root.setStyle(
-            "-fx-padding: 10; " +
-            "-fx-border-color: #ecf0f1; " +
-            "-fx-border-width: 0 0 1 0; " +
-            "-fx-background-color: #dadef7;"
+                "-fx-padding: 10; "
+                + "-fx-border-color: #ecf0f1; "
+                + "-fx-border-width: 0 0 1 0; "
+                + "-fx-background-color: #dadef7;"
         );
 
         root.getChildren().addAll(avatarContainer, textContainer);
@@ -61,16 +65,16 @@ public class ContactListCell extends ListCell<Contact> {
         avatarContainer = new StackPane(avatarLabel);
         avatarContainer.setPrefSize(AVATAR_SIZE, AVATAR_SIZE);
         avatarContainer.setStyle(
-            "-fx-border-color: #2c3e50; " +
-            "-fx-border-width: 2; " +
-            "-fx-border-radius: 0;"
+                "-fx-border-color: #2c3e50; "
+                + "-fx-border-width: 2; "
+                + "-fx-border-radius: 0;"
         );
 
         avatarContainer.setStyle(
-            "-fx-background-radius: 0; " +
-            "-fx-border-radius: 0; " +
-            "-fx-border-color: #2c3e50; " +
-            "-fx-border-width: 2;"
+                "-fx-background-radius: 0; "
+                + "-fx-border-radius: 0; "
+                + "-fx-border-color: #2c3e50; "
+                + "-fx-border-width: 2;"
         );
     }
 
@@ -133,14 +137,14 @@ public class ContactListCell extends ListCell<Contact> {
     private void updateAvatar(Contact contact) {
         String firstName = contact.getName().substring(0, 1).toUpperCase();
         avatarLabel.setText(firstName);
-        
+
         String avatarColor = contact.getAvatarColor();
         avatarContainer.setStyle(
-            "-fx-background-color: " + avatarColor + "; " +
-            "-fx-background-radius: 0; " +
-            "-fx-border-radius: 0; " +
-            "-fx-border-color: #2c3e50; " +
-            "-fx-border-width: 2;"
+                "-fx-background-color: " + avatarColor + "; "
+                + "-fx-background-radius: 0; "
+                + "-fx-border-radius: 0; "
+                + "-fx-border-color: #2c3e50; "
+                + "-fx-border-width: 2;"
         );
     }
 }
