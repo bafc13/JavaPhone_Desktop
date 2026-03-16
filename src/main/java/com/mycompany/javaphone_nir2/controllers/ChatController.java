@@ -209,7 +209,6 @@ public class ChatController {
 
     /**
      * starting video call with contact
-     *
      * @param contact contact to start call with
      */
     private void startVideoCallWithContact(Contact contact) {
@@ -410,3 +409,4 @@ public class ChatController {
         }
     }
 }
+

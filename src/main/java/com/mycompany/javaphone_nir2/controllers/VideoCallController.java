@@ -266,3 +266,4 @@ public class VideoCallController {
         callChatHistory.setScrollTop(Double.MAX_VALUE);
     }
 }
+

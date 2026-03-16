@@ -1,6 +1,7 @@
 package com.mycompany.javaphone_nir2.models;
 
 /**
+<<<<<<< HEAD
  * data model for contact have all info to show contact in ListView.
  */
 public class Contact {
@@ -11,6 +12,7 @@ public class Contact {
     /**
      * HEX
      */
+
     private String avatarColor;
 
     public Contact(String name, String status, String avatarColor) {
