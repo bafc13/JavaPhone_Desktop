@@ -9,15 +9,18 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.scene.shape.Circle;
 import javafx.stage.Popup;
+import javafx.stage.Window;
 import javafx.util.Duration;
 
 /**
@@ -28,9 +31,17 @@ import javafx.util.Duration;
  * buttons (Exit, Settings)
  */
 public class ChatController {
-
     @FXML
     private ListView<Contact> contactsList;
+
+    @FXML
+    private HBox headerContainer;
+
+    @FXML
+    private VBox contactsContainer;
+
+    @FXML
+    private HBox messageContainer;
 
     @FXML
     private TextArea chatHistory;
@@ -45,20 +56,30 @@ public class ChatController {
     private Button callButton;
 
     @FXML
+    private Button settingsButton;
+
+    @FXML
     private Button exitButton;
 
     @FXML
     private Label chatTitleLabel;
 
     private ObservableList<Contact> contacts;
+    private List<ChangeListener<Number>> popupWindowListeners = new ArrayList<>();
+    private ChangeListener<Boolean> popupWindowShowingListener;
+    private ChangeListener<Boolean> popupWindowFocusListener;
     private Contact selectedContact;
+    private Contact incomingCallContact;
+    private boolean isCallPopupActive = false;
 
     private Popup incomingCallPopup;
-    private Contact incomingCallContact;
+    private VBox notificationBox;
 
     @FXML
     public void initialize() {
         setupContactList();
+        incomingCallContact = contacts.get(0);  // first contact
+
         setupChatUI();
 
         //starting timer to demonstrate popup
@@ -71,8 +92,6 @@ public class ChatController {
      */
     private void scheduleIncomingCallTimer() {
         if (contacts != null && !contacts.isEmpty()) {
-            incomingCallContact = contacts.get(0);  // first contact
-
             // rand delay
             int delaySeconds = 2 + (int) (Math.random() * 6);
 
@@ -93,100 +112,117 @@ public class ChatController {
             return;
         }
 
-        // container for notification
-        VBox notificationBox = new VBox(12);
-        notificationBox.setStyle(
-                "-fx-background-color: #434e93; "
-                + "-fx-border-color: #3b82f6; "
-                + "-fx-border-width: 0; "
-                + "-fx-border-radius: 10; "
-                + "-fx-padding: 15; "
-                + "-fx-spacing: 8;"
-        );
-        notificationBox.setAlignment(Pos.CENTER);
-        notificationBox.setMaxWidth(200);
-        notificationBox.setPrefWidth(200);
+        isCallPopupActive = true;
 
-        Label incomingLabel = new Label("🔔 Звонок от");
-        incomingLabel.setStyle(
-                "-fx-text-fill: white; "
-                + "-fx-font-size: 12; "
-                + "-fx-font-weight: bold;"
-        );
-        incomingLabel.setAlignment(Pos.CENTER);
+        if (callButton != null && callButton.getScene() != null) {
+            Window window = callButton.getScene().getWindow();
 
-        Label contactLabel = new Label(incomingCallContact.getName());
-        contactLabel.setStyle(
-                "-fx-text-fill: #60a5fa; "
-                + "-fx-font-size: 18; "
-                + "-fx-font-weight: bold;"
-        );
-        contactLabel.setAlignment(Pos.CENTER);
-        contactLabel.setWrapText(true);
+            //one listener for all coord changes
+            ChangeListener<Number> positionListener = (obs, oldVal, newVal) -> updateCallPopupPosition();
 
-        // container for buttons
-        HBox buttonBox = new HBox(8);
-        buttonBox.setAlignment(Pos.CENTER);
-        buttonBox.setPadding(new Insets(5, 0, 0, 0));
+            // adding into the list
+            popupWindowListeners.add(positionListener);
 
-        Button acceptButton = new Button("Принять");
-        acceptButton.setPrefWidth(90);
-        acceptButton.setPrefHeight(32);
-        acceptButton.setStyle(
-                "-fx-background-color: #10b981; "
-                + "-fx-text-fill: white; "
-                + "-fx-font-size: 11; "
-                + "-fx-font-weight: bold; "
-                + "-fx-padding: 5; "
-                + "-fx-border-radius: 6;"
-        );
-        acceptButton.setOnAction(e -> {
-            handleCallAccepted();
-            incomingCallPopup.hide();
-        });
+            window.xProperty().addListener(positionListener);
+            window.yProperty().addListener(positionListener);
+            window.widthProperty().addListener(positionListener);
+            window.heightProperty().addListener(positionListener);
 
-        Button rejectButton = new Button("Отклонить");
-        rejectButton.setPrefWidth(90);
-        rejectButton.setPrefHeight(32);
-        rejectButton.setStyle(
-                "-fx-background-color: #ef4444; "
-                + "-fx-text-fill: white; "
-                + "-fx-font-size: 11; "
-                + "-fx-font-weight: bold; "
-                + "-fx-padding: 5; "
-                + "-fx-border-radius: 6;"
-        );
-        rejectButton.setOnAction(e -> {
-            handleCallRejected();
-            incomingCallPopup.hide();
-        });
+            //close window listener
+            popupWindowShowingListener = (obs, wasShowing, isNowShowing) -> {
+                if (!isNowShowing && incomingCallPopup.isShowing()) {
+                    hideIncomingCallNotification();
+                }
+            };
+            window.showingProperty().addListener(popupWindowShowingListener);
 
-        buttonBox.getChildren().addAll(acceptButton, rejectButton);
+            //window focus listener
+            popupWindowFocusListener = (obs, wasFocused, isNowFocused) -> {
+                if (!isNowFocused) {
+                    if (incomingCallPopup != null && incomingCallPopup.isShowing()) {
+                        incomingCallPopup.hide();
+                    }
+                } else {
+                    if (isCallPopupActive) {
+                        updateCallPopupPosition();
+                    }
+                }
+            };
+            window.focusedProperty().addListener(popupWindowFocusListener);
 
-        notificationBox.getChildren().addAll(
-                incomingLabel,
-                contactLabel,
-                buttonBox
-        );
-
-        incomingCallPopup = new Popup();
-        incomingCallPopup.getContent().add(notificationBox);
-        incomingCallPopup.setAutoHide(false);  // do not close when clicking behind the popup
-        incomingCallPopup.setHideOnEscape(false);  // do not close on pressing esc
-
-        if (callButton != null) {
-            // getting position of call button
-            Bounds buttonBounds = callButton.localToScreen(callButton.getBoundsInLocal());
-
-            // showing popup right down of callbutton
-            incomingCallPopup.show(
-                    callButton.getScene().getWindow(),
-                    buttonBounds.getCenterX() - 135,
-                    buttonBounds.getCenterY() + 30
-            );
+            //first display
+            updateCallPopupPosition();
         }
 
         appendToChat("System", "🔔 Входящий звонок от " + incomingCallContact.getName());
+    }
+
+    /**
+    * notificaion pos update func
+    */
+    private void updateCallPopupPosition() {
+//        if (incomingCallPopup == null || !incomingCallPopup.isShowing()) {
+//            return;
+//        }
+        if (callButton == null || callButton.getScene() == null) {
+            return;
+        }
+
+        // runlater solves bad repainting
+        // after x resize or window maximizing/minimizing
+        Platform.runLater(() -> {
+            if (!isCallPopupActive || callButton == null || callButton.getScene() == null) {
+                return;
+            }
+
+            Bounds bounds = callButton.localToScreen(callButton.getBoundsInLocal());
+
+            if (bounds != null && incomingCallPopup != null) {
+                incomingCallPopup.show(
+                    callButton.getScene().getWindow(),
+                    bounds.getCenterX() - 140,
+                    bounds.getCenterY() + 26
+                );
+            }
+        });
+    }
+
+    /**
+     * func responsible for hiding incoming call notification
+     */
+    private void hideIncomingCallNotification() {
+        isCallPopupActive = false;
+
+        if (incomingCallPopup == null || !incomingCallPopup.isShowing()) {
+            return;
+        }
+
+        if (callButton != null && callButton.getScene() != null) {
+            Window window = callButton.getScene().getWindow();
+
+            //deleting coord listener
+            for (ChangeListener<Number> listener : popupWindowListeners) {
+                window.xProperty().removeListener(listener);
+                window.yProperty().removeListener(listener);
+                window.widthProperty().removeListener(listener);
+                window.heightProperty().removeListener(listener);
+            }
+            popupWindowListeners.clear();
+
+            //deleting visible listener
+            if (popupWindowShowingListener != null) {
+                window.showingProperty().removeListener(popupWindowShowingListener);
+                popupWindowShowingListener = null;
+            }
+
+            //deleting focus listener
+            if (popupWindowFocusListener != null) {
+                window.focusedProperty().removeListener(popupWindowFocusListener);
+                popupWindowFocusListener = null;
+            }
+        }
+
+        incomingCallPopup.hide();
     }
 
     /**
@@ -194,6 +230,7 @@ public class ChatController {
      *
      */
     private void handleCallAccepted() {
+        hideIncomingCallNotification();
         appendToChat("System", "✅ Вы приняли звонок от " + incomingCallContact.getName());
 
         startVideoCallWithContact(incomingCallContact);
@@ -204,6 +241,7 @@ public class ChatController {
      *
      */
     private void handleCallRejected() {
+        hideIncomingCallNotification();
         appendToChat("System", "❌ Вы отклонили звонок от " + incomingCallContact.getName());
     }
 
@@ -218,6 +256,9 @@ public class ChatController {
             );
 
             Scene scene = new Scene(loader.load(), 1200, 700);
+            scene.getStylesheets().add(getClass().getResource("/com/mycompany/javaphone_nir2/css/video_call.css").toExternalForm());
+
+
             Stage videoStage = new Stage();
             videoStage.setTitle("WebCommunicator - Video Call with " + contact.getName());
             videoStage.setScene(scene);
@@ -245,7 +286,7 @@ public class ChatController {
     }
 
     /**
-     * init contact list
+     * upload contacts list from db
      */
     private void setupContactList() {
         contacts = javafx.collections.FXCollections.observableArrayList(
@@ -262,6 +303,8 @@ public class ChatController {
                 updateChatPanel();
             }
         });
+
+        contactsList.getStyleClass().add("contacts-list");
     }
 
     /**
@@ -270,13 +313,87 @@ public class ChatController {
     private void setupChatUI() {
         chatHistory.setEditable(false);
         chatHistory.setWrapText(true);
+        chatHistory.getStyleClass().add("chat-history");
+
+        chatTitleLabel.getStyleClass().add("chat-title-label");
+
+        headerContainer.getStyleClass().add("header-container");
+
+        contactsContainer.getStyleClass().add("contacts-container");
+
+        settingsButton.setOnAction(e -> openSettings());
+        settingsButton.getStyleClass().add("header-button");
 
         sendButton.setOnAction(e -> sendMessage());
+        sendButton.getStyleClass().add("send-button");
+
+        messageContainer.getStyleClass().add("message-container");
+
         messageInput.setOnAction(e -> sendMessage());
+        messageInput.getStyleClass().add("message-input");
 
         callButton.setOnAction(e -> startVideoCall());
+        callButton.getStyleClass().add("header-button");
 
         exitButton.setOnAction(e -> closeWindow());
+        exitButton.getStyleClass().add("header-button");
+
+        initIncomingCallNotification();
+    }
+
+    /**
+     * func responsible for initialization of incoming call notification popup
+     */
+    private void initIncomingCallNotification() {
+        // container for notification
+        notificationBox = new VBox(12);
+        notificationBox.getStyleClass().add("notification-box");
+        notificationBox.setAlignment(Pos.CENTER);
+        notificationBox.setMaxWidth(200);
+        notificationBox.setPrefWidth(200);
+
+        Label incomingLabel = new Label("🔔 Звонок от");
+        incomingLabel.getStyleClass().add("incoming-call-label");
+        incomingLabel.setAlignment(Pos.CENTER);
+
+        Label contactLabel = new Label(incomingCallContact.getName());
+        contactLabel.getStyleClass().add("incoming-call-contact-label");
+        contactLabel.setAlignment(Pos.CENTER);
+        contactLabel.setWrapText(true);
+
+        // container for buttons
+        HBox buttonBox = new HBox(8);
+        buttonBox.setAlignment(Pos.CENTER);
+        buttonBox.setPadding(new Insets(5, 0, 0, 0));
+
+        Button acceptButton = new Button("Принять");
+        acceptButton.setPrefWidth(90);
+        acceptButton.setPrefHeight(32);
+        acceptButton.getStyleClass().add("accept-button");
+        acceptButton.setOnAction(e -> {
+            handleCallAccepted();
+        });
+
+        Button rejectButton = new Button("Отклонить");
+        rejectButton.setPrefWidth(90);
+        rejectButton.setPrefHeight(32);
+        rejectButton.getStyleClass().add("reject-button");
+        rejectButton.setOnAction(e -> {
+            handleCallRejected();
+        });
+
+        buttonBox.getChildren().addAll(acceptButton, rejectButton);
+
+        notificationBox.getChildren().addAll(
+                incomingLabel,
+                contactLabel,
+                buttonBox
+        );
+
+        incomingCallPopup = new Popup();
+        incomingCallPopup.getContent().add(notificationBox);
+        incomingCallPopup.setAutoHide(false);  // do not close when clicking behind the popup
+        incomingCallPopup.setHideOnEscape(false);  // do not close on pressing esc
     }
 
     /**
@@ -376,37 +493,41 @@ public class ChatController {
         chatHistory.appendText(formattedMessage);
     }
 
+    private void openSettings() {
+
+    }
+
     /**
      * class for showing contacts
      */
-    private static class ContactListCell extends ListCell<Contact> {
-
-        @Override
-        protected void updateItem(Contact contact, boolean empty) {
-            super.updateItem(contact, empty);
-            if (empty || contact == null) {
-                setText(null);
-                setGraphic(null);
-            } else {
-                HBox hbox = new HBox(10);
-                hbox.setAlignment(Pos.CENTER_LEFT);
-
-                Circle statusCircle = new Circle(5);
-                statusCircle.setFill(javafx.scene.paint.Color.web(
-                        contact.getStatus().equals("Online") ? "#10b981" : "#6b7280"
-                ));
-
-                Label nameLabel = new Label(contact.getName());
-                Label statusLabel = new Label(contact.getStatus());
-                statusLabel.setStyle("-fx-text-fill: #888888; -fx-font-size: 11;");
-
-                VBox vbox = new VBox(2);
-                vbox.getChildren().addAll(nameLabel, statusLabel);
-
-                hbox.getChildren().addAll(statusCircle, vbox);
-                setGraphic(hbox);
-            }
-        }
-    }
+//    private static class ContactListCell extends ListCell<Contact> {
+//
+//        @Override
+//        protected void updateItem(Contact contact, boolean empty) {
+//            super.updateItem(contact, empty);
+//            if (empty || contact == null) {
+//                setText(null);
+//                setGraphic(null);
+//            } else {
+//                HBox hbox = new HBox(10);
+//                hbox.setAlignment(Pos.CENTER_LEFT);
+//
+//                Circle statusCircle = new Circle(5);
+//                statusCircle.setFill(javafx.scene.paint.Color.web(
+//                        contact.getStatus().equals("Online") ? "#10b981" : "#6b7280"
+//                ));
+//
+//                Label nameLabel = new Label(contact.getName());
+//                Label statusLabel = new Label(contact.getStatus());
+//                statusLabel.getStyleClass().add("contact-list-cell-item");
+//
+//                VBox vbox = new VBox(2);
+//                vbox.getChildren().addAll(nameLabel, statusLabel);
+//
+//                hbox.getChildren().addAll(statusCircle, vbox);
+//                setGraphic(hbox);
+//            }
+//        }
+//    }
 }
 

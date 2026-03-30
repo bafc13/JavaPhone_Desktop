@@ -1,0 +1,89 @@
+.root {
+    /*-fx-font-family: "Segoe UI";   */
+}
+
+.call-status-label {
+    -fx-text-fill: white;
+    -fx-font-size: 16;
+    -fx-font-weight: bold;
+    -fx-border-width: 2;
+    -fx-border-color: white;
+}
+
+.header-container {
+    -fx-padding: 10;
+    -fx-background-color: #1a225d;
+}
+
+.header-button {
+    -fx-font-size: 16;
+    -fx-border-color: #ffffff;
+    -fx-border-width: 2;
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+}
+
+.header-button:hover, .header-button:focus {
+    -fx-background-color: #3541a1;
+}
+
+.header-button:pressed, .header-button:armed {
+    -fx-background-color: #050929;
+    -fx-translate-y: 1px; 
+}
+
+.message-input {
+    -fx-padding: 8;
+    -fx-font-size: 14;
+}
+
+.message-container {
+    -fx-padding: 10;
+    -fx-background-color: #dadef7;
+}
+
+.chat-history {
+    -fx-control-inner-background:  #dadef7;
+    -fx-font-size: 14;
+}
+
+.send-button {
+    -fx-padding: 8;
+    -fx-font-size: 14;
+}
+
+.send-button:hover, .send-button:focus {
+    -fx-background-color: #607ba6;
+}
+
+.send-button:pressed, .send-button:armed {
+    -fx-background-color: #06409c;
+    -fx-translate-y: 1px; 
+}
+
+.chat-title-label {
+    -fx-text-fill: white;
+    -fx-font-size: 16;
+    -fx-font-weight: bold;
+    -fx-border-width: 2;
+    -fx-border-color: white;
+}
+
+.call-control-container {
+    -fx-background-color: #454f97;
+}
+
+.footer-container {
+    -fx-background-color: #454f97;
+    -fx-padding: 10;
+}
+
+.call-control-button {
+    -fx-font-size: 14;
+    -fx-padding: 5;
+}
+
+.recognized-text-area {
+    -fx-control-inner-background: #dadef7;
+    -fx-font-size: 14;
+}

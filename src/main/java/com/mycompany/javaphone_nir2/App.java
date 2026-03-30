@@ -28,6 +28,9 @@ public class App extends Application {
 
             scene = new Scene(loader.load(), 1000, 600);
 
+            //connecting scene css style
+            scene.getStylesheets().add(getClass().getResource("css/chat_main.css").toExternalForm());
+
             primaryStage.setTitle("WebCommunicator - Chat");
             primaryStage.setScene(scene);
             primaryStage.setMinWidth(800);

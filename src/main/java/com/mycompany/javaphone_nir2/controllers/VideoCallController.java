@@ -9,6 +9,7 @@ import javafx.stage.Stage;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 /**
@@ -24,6 +25,9 @@ public class VideoCallController {
     private StackPane remoteVideoContainer;
 
     @FXML
+    private HBox headerContainer;
+
+    @FXML
     private StackPane localVideoContainer;
 
     @FXML
@@ -34,6 +38,12 @@ public class VideoCallController {
 
     @FXML
     private Button sendCallMessageButton;
+
+    @FXML
+    private Button settingsButton;
+
+    @FXML
+    private HBox callControlContainer;
 
     @FXML
     private Button micButton;
@@ -51,7 +61,16 @@ public class VideoCallController {
     private Label callStatusLabel;
 
     @FXML
+    private HBox messageContainer;
+
+    @FXML
+    private HBox footerContainer;
+
+    @FXML
     private VBox chatContainer;
+
+    @FXML
+    private TextArea recognizedTextArea;
 
     private DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
@@ -62,7 +81,7 @@ public class VideoCallController {
 
     @FXML
     public void initialize() {
-        setupButtonHandlers();
+        setupCallUI();
 
         appendToCallChat("System", "Соединение установлено");
         appendToCallChat("System", "Звонок активен");
@@ -151,9 +170,9 @@ public class VideoCallController {
     }
 
     /**
-     * sets listeners for all buttons
+     * sets styles and listeners for all buttons
      */
-    private void setupButtonHandlers() {
+    private void setupCallUI() {
         // mic button
         micButton.setOnAction(e -> {
             isMicEnabled = !isMicEnabled;
@@ -165,6 +184,7 @@ public class VideoCallController {
                 appendToCallChat("System", "🔇 Микрофон отключен");
             }
         });
+        micButton.getStyleClass().add("call-control-button");
 
         // filter button
         filterButton.setOnAction(e -> {
@@ -177,6 +197,7 @@ public class VideoCallController {
                 appendToCallChat("System", "✗ Фильтр отключен");
             }
         });
+        filterButton.getStyleClass().add("call-control-button");
 
         // camera button
         cameraButton.setOnAction(e -> {
@@ -189,14 +210,38 @@ public class VideoCallController {
                 appendToCallChat("System", "📷 Камера отключена");
             }
         });
+        cameraButton.getStyleClass().add("call-control-button");
+
+        headerContainer.getStyleClass().add("header-container");
+
+        callStatusLabel.getStyleClass().add("call-status-label");
 
         // send message button
         sendCallMessageButton.setOnAction(e -> sendCallMessage());
+        sendCallMessageButton.getStyleClass().add("send-button");
+
+        callChatHistory.getStyleClass().add("chat-history");
+
         callMessageInput.setOnAction(e -> sendCallMessage());
+        callMessageInput.getStyleClass().add("message-input");
+
+        settingsButton.getStyleClass().add("header-button");
 
         // exit button
         endCallButton.setOnAction(e -> endCall());
+        endCallButton.getStyleClass().add("header-button");
+
+        messageContainer.getStyleClass().add("mesage-container");
+
+        callControlContainer.getStyleClass().add("call-control-container");
+
+        footerContainer.getStyleClass().add("footer-container");
+
+        recognizedTextArea.getStyleClass().add("recognized-text-area");
+
+        chatContainer.getStyleClass().add("message-container");
     }
+
 
     /**
      * send message to call chat

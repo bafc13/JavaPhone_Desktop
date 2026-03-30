@@ -31,7 +31,7 @@ public class ContactListCell extends ListCell<Contact> {
     /**
      * avatar size in px
      */
-    private static final double AVATAR_SIZE = 50;
+    private static final double AVATAR_SIZE = 36;
 
     public ContactListCell() {
         initializeUI();
@@ -44,7 +44,7 @@ public class ContactListCell extends ListCell<Contact> {
 
         root = new HBox(15);
         root.setStyle("-fx-padding: 10; -fx-border-color: #ecf0f1; -fx-border-width: 0 0 1 0;");
-        root.setPrefHeight(70);
+//        root.setPrefHeight(70);
         root.setStyle(
                 "-fx-padding: 10; "
                 + "-fx-border-color: #ecf0f1; "
@@ -59,7 +59,7 @@ public class ContactListCell extends ListCell<Contact> {
     private void createAvatar() {
         avatarLabel = new Label();
         avatarLabel.setFont(Font.font("System", 20));
-        avatarLabel.setTextFill(Color.WHITE);
+        avatarLabel.setTextFill(Color.BLACK);
         avatarLabel.setStyle("-fx-alignment: CENTER;");
 
         avatarContainer = new StackPane(avatarLabel);
@@ -83,11 +83,15 @@ public class ContactListCell extends ListCell<Contact> {
         nameLabel.setFont(Font.font("System", 14));
         nameLabel.setStyle("-fx-text-fill: #2c3e50; -fx-font-weight: bold;");
 
+        HBox statusBox = new HBox();
+
         statusLabel = new Label();
         statusLabel.setFont(Font.font("System", 12));
         statusLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-wrap-text: true;");
         statusLabel.setWrapText(true);
         statusLabel.setMaxHeight(Double.MAX_VALUE);
+
+        
 
         textContainer = new VBox(5);
         textContainer.setPadding(new Insets(5, 0, 0, 0));

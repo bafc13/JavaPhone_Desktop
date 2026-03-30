@@ -1,0 +1,135 @@
+.root {
+    /*-fx-font-family: "Segoe UI";  */
+}
+
+.notification-box {
+    -fx-background-color: #434e93;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 6, 0.50, 0, 3);
+    -fx-padding: 15;
+    -fx-spacing: 8;
+}
+
+.notification-box:hover, .notification-box:focused {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 6, 0.85, 0, 6);
+}
+
+.incoming-call-label {
+    -fx-text-fill: white;
+    -fx-font-size: 12;
+    -fx-font-weight: bold;
+}
+
+.incoming-call-contact-label {
+    -fx-text-fill: #60a5fa;
+    -fx-font-size: 18; 
+    -fx-font-weight: bold;
+}
+
+.accept-button {
+    -fx-background-color: #10b981;
+    -fx-text-fill: white;
+    -fx-font-size: 12;
+    -fx-font-weight: bold; 
+    -fx-padding: 5;
+    -fx-border-radius: 6;
+}
+
+.accept-button:hover {
+    -fx-background-color: #0f9468;
+}
+
+.accept-button:armed, .accept-button:pressed {
+    -fx-background-color: #37b359;
+}
+
+.reject-button {
+    -fx-background-color: #ef4444;
+    -fx-text-fill: white;
+    -fx-font-size: 12;
+    -fx-font-weight: bold; 
+    -fx-padding: 5;
+    -fx-border-radius: 6;
+}
+
+.reject-button:hover{
+    -fx-background-color: #802222;
+}
+
+.reject-button:armed, .reject-button:pressed {
+    -fx-background-color: #c20404;
+}
+
+.contact-list-cell-item {
+    -fx-text-fill: #888888; 
+    -fx-font-size: 11;
+}
+
+.message-input {
+    -fx-padding: 8;
+    -fx-font-size: 14;
+}
+
+.chat-history {
+    -fx-control-inner-background:  #dadef7;
+    -fx-font-size: 14;
+}
+
+.send-button {
+    -fx-padding: 8;
+    -fx-font-size: 14;
+}
+
+.send-button:hover, .send-button:focus {
+    -fx-background-color: #607ba6;
+}
+
+.send-button:pressed, .send-button:armed {
+    -fx-background-color: #06409c;
+    -fx-translate-y: 1px; 
+}
+
+.header-button {
+    -fx-font-size: 16;
+    -fx-border-color: #ffffff;
+    -fx-border-width: 2;
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+}
+
+.header-button:hover, .header-button:focus {
+    -fx-background-color: #3541a1;
+}
+
+.header-button:pressed, .header-button:armed {
+    -fx-background-color: #050929;
+    -fx-translate-y: 1px; 
+}
+
+.chat-title-label {
+    -fx-text-fill: white;
+    -fx-font-size: 16;
+    -fx-font-weight: bold;
+    -fx-border-width: 2;
+    -fx-border-color: white;
+}
+
+.header-container {
+    -fx-padding: 10;
+    -fx-background-color: #1a225d;
+}
+
+.contacts-container {
+    -fx-background-color: #34495e;
+    -fx-border-color: #2c3e50;
+    -fx-border-width: 0 2 0 0;
+}
+
+.contacts-list {
+    -fx-control-inner-background: #454f97;
+    -fx-text-fill: white;
+}
+
+.message-container {
+    -fx-padding: 10;
+    -fx-background-color: #dadef7;
+}
