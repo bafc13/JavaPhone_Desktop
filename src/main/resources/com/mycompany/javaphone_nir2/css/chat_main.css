@@ -102,7 +102,7 @@
 
 .header-button:pressed, .header-button:armed {
     -fx-background-color: #050929;
-    -fx-translate-y: 1px; 
+    -fx-translate-y: 1px;
 }
 
 .chat-title-label {

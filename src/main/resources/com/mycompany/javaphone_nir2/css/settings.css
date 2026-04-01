@@ -1,0 +1,53 @@
+/*
+ * Empty Stylesheet file.
+ */
+
+.mainFxmlClass {
+
+}
+
+.switch-toggle {
+    -fx-background-color: #aca7b8;
+    -fx-background-insets: 0;
+    -fx-background-radius: 16;
+    -fx-border-color: transparent;
+    -fx-border-radius: 13;
+    -fx-padding: 4;
+    -fx-alignment: CENTER_LEFT;
+    -fx-content-display: GRAPHIC_ONLY;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.10), 2, 0.0, 0, 1);
+}
+
+.switch-toggle:hover {
+    -fx-background-color: #aca5b8;
+}
+
+.switch-toggle:selected {
+    -fx-background-color: #6fbf73;
+    -fx-alignment: CENTER_RIGHT;
+}
+
+.switch-toggle:selected:hover {
+    -fx-background-color: #67b36a;
+}
+
+.switch-toggle:armed {
+    -fx-opacity: 0.96;
+}
+
+.switch-toggle:focused {
+    -fx-background-insets: 0, 0;
+    -fx-background-color: #b7b1c2, #b7b1c2;
+}
+
+.switch-toggle:selected:focused {
+    -fx-background-color: #6fbf73, #6fbf73;
+}
+
+.switch-toggle .switch-thumb {
+    -fx-fill: white;
+    -fx-stroke: #ececec;
+    -fx-stroke-width: 0.7;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.18), 4, 0.0, 0, 1);
+}

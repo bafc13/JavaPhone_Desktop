@@ -22,7 +22,7 @@
 <BorderPane style="-fx-font-family: 'Segoe UI';" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.mycompany.javaphone_nir2.controllers.ChatController">
     <top>
         <HBox fx:id="headerContainer" spacing="10" HBox.hgrow="ALWAYS">
-            <children>
+            <children> 
                 <HBox prefHeight="40.0" spacing="10.0" HBox.hgrow="ALWAYS">
                     <children>
                         <Button fx:id="exitButton" prefHeight="40" prefWidth="110.0" text="Выход" HBox.hgrow="NEVER" />

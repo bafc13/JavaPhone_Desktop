@@ -26,7 +26,7 @@ import javafx.util.Duration;
 /**
  * Controller for main chat window
  *
- * Responcible for: 1. Managing the contact list 2. Displaying message history
+ * Responsible for: 1. Managing the contact list 2. Displaying message history
  * 3. Sending new messages 4. Switching to the video call window 5. Handling nav
  * buttons (Exit, Settings)
  */
@@ -494,40 +494,33 @@ public class ChatController {
     }
 
     private void openSettings() {
+         try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/com/mycompany/javaphone_nir2/fxml/settings.fxml") //the path is searched from the classpath
+            );
 
+            Scene scene = new Scene(loader.load(), 500, 465);
+            scene.getStylesheets().add(getClass().getResource("/com/mycompany/javaphone_nir2/css/settings.css").toExternalForm());
+
+
+            Stage settingsStage = new Stage();
+            settingsStage.setTitle("WebCommunicator - Settings");
+            settingsStage.setScene(scene);
+            settingsStage.setMinWidth(500);
+            settingsStage.setMinHeight(465);
+
+            settingsStage.show();
+
+        } catch (IOException e) {
+            System.err.println("Ошибка при загрузке окна настроек: " + e.getMessage());
+            e.printStackTrace();
+
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Ошибка");
+            alert.setHeaderText("Не удалось открыть окно настроек");
+            alert.setContentText(e.getMessage());
+            alert.showAndWait();
+        }
     }
-
-    /**
-     * class for showing contacts
-     */
-//    private static class ContactListCell extends ListCell<Contact> {
-//
-//        @Override
-//        protected void updateItem(Contact contact, boolean empty) {
-//            super.updateItem(contact, empty);
-//            if (empty || contact == null) {
-//                setText(null);
-//                setGraphic(null);
-//            } else {
-//                HBox hbox = new HBox(10);
-//                hbox.setAlignment(Pos.CENTER_LEFT);
-//
-//                Circle statusCircle = new Circle(5);
-//                statusCircle.setFill(javafx.scene.paint.Color.web(
-//                        contact.getStatus().equals("Online") ? "#10b981" : "#6b7280"
-//                ));
-//
-//                Label nameLabel = new Label(contact.getName());
-//                Label statusLabel = new Label(contact.getStatus());
-//                statusLabel.getStyleClass().add("contact-list-cell-item");
-//
-//                VBox vbox = new VBox(2);
-//                vbox.getChildren().addAll(nameLabel, statusLabel);
-//
-//                hbox.getChildren().addAll(statusCircle, vbox);
-//                setGraphic(hbox);
-//            }
-//        }
-//    }
 }
 
