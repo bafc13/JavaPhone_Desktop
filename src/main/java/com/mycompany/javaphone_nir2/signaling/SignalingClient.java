@@ -1,13 +1,19 @@
 package com.mycompany.javaphone_nir2.signaling;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.mycompany.javaphone_nir2.models.User;
+import com.mycompany.javaphone_nir2.models.UserStatus;
 
 import jakarta.websocket.*;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URI;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @ClientEndpoint
 public class SignalingClient {
@@ -40,6 +46,9 @@ public class SignalingClient {
             case "welcome":
                 handleWelcome(json);
                 break;
+            case "peer":
+                handlePeer(json);
+                break;
             case "offer":
                 handleOffer(json);
                 break;
@@ -66,6 +75,36 @@ public class SignalingClient {
     @OnError
     public void onError(Session session, Throwable throwable) {
         // logic on error
+    }
+    
+    public void sendPeer(User user, UserStatus status) throws IOException {
+        ObjectNode dataNode = mapper.valueToTree(user);
+        ObjectNode userNode = mapper.createObjectNode();
+        userNode.set("data", dataNode);
+        userNode.put("status", status.toString());
+        
+        ObjectNode message = mapper.createObjectNode();
+        message.set("user", userNode);
+        
+        message.put("target", "all");
+        message.put("sender", clientId);
+        
+        sendJson(message);
+        
+        // send to all 
+    }
+    
+    private void handlePeer(JsonNode json) {
+        try {
+            JsonNode userNode = json.get("user");
+            User user = mapper.treeToValue(userNode.get("data"), User.class);
+            UserStatus status = mapper.treeToValue(userNode.get("status"), UserStatus.class);
+            // call UI to hanlde peer
+        } catch (IllegalArgumentException ex) {
+            Logger.getLogger(SignalingClient.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (JsonProcessingException ex) {
+            Logger.getLogger(SignalingClient.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
     private void handleWelcome(JsonNode json) {
