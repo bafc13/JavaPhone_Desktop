@@ -43,6 +43,8 @@ public class WebRTCManager implements PeerConnectionObserver {
     private boolean microphoneEnabled = true;
     private String remoteClientId;
     
+    private Integer cameraId = 0;
+    
     private final ScheduledExecutorService statsExecutor = Executors.newSingleThreadScheduledExecutor();
     
     // STUN servers
@@ -68,8 +70,8 @@ public class WebRTCManager implements PeerConnectionObserver {
     
     public void initializeMedia() {
         cameras = MediaDevices.getVideoCaptureDevices();
-        System.out.println(cameras.size());
-        VideoDevice camera = cameras.get(0);
+        
+        VideoDevice camera = cameras.get(cameraId);
 
         capabilities = MediaDevices.getVideoCaptureCapabilities(camera);
         VideoCaptureCapability capability = capabilities.get(0);
@@ -320,5 +322,9 @@ public class WebRTCManager implements PeerConnectionObserver {
     @Override
     public void onIceCandidate(RTCIceCandidate rtcic) {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+    
+    public void setCameraId(Integer newCameraId) {
+        cameraId = newCameraId;
     }
 }
