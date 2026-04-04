@@ -1,4 +1,4 @@
-package com.mycompany.javaphone_nir2.webrtc_manager;
+package com.mycompany.javaphone_nir2.webrtc;
 
 import dev.onvoid.webrtc.*;
 import dev.onvoid.webrtc.media.*;
