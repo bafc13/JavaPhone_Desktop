@@ -37,13 +37,19 @@ public class WebRTCManager implements PeerConnectionObserver {
     public RTCDataChannel dataChannel;
     
     private List<VideoDevice> cameras;
-    private List<VideoCaptureCapability> capabilities;
+    private List<VideoCaptureCapability> cameraCapabilities;
+    
+    private List<AudioDevice> microphones;
+    private List<AudioDevice> speakers;
+    private AudioDeviceModule audioModule;
     
     private boolean cameraEnabled = true;
     private boolean microphoneEnabled = true;
     private String remoteClientId;
     
     private Integer cameraId = 0;
+    private Integer microphoneId = 0;
+    private Integer speakerId = 0;
     
     private final ScheduledExecutorService statsExecutor = Executors.newSingleThreadScheduledExecutor();
     
@@ -61,35 +67,54 @@ public class WebRTCManager implements PeerConnectionObserver {
 //            ICE_SERVERS.urls.add("stun:stun1.l.google.com:19302");
         }
         
-        factory = new PeerConnectionFactory();
         config = new RTCConfiguration();
         config.iceServers.add(ICE_SERVERS);
         
         // TODO: Update UI
     }
     
-    public void initializeMedia() {
-        cameras = MediaDevices.getVideoCaptureDevices();
+    public void initializeDevices() {
+        audioModule = new AudioDeviceModule();
+        factory = new PeerConnectionFactory(audioModule);
         
+        cameras = MediaDevices.getVideoCaptureDevices();
+        microphones = MediaDevices.getAudioCaptureDevices();
+        speakers = MediaDevices.getAudioRenderDevices();
+    }
+    
+    public void initializeMedia() {        
         VideoDevice camera = cameras.get(cameraId);
 
-        capabilities = MediaDevices.getVideoCaptureCapabilities(camera);
-        VideoCaptureCapability capability = capabilities.get(0);
+        cameraCapabilities = MediaDevices.getVideoCaptureCapabilities(camera);
+        VideoCaptureCapability capability = cameraCapabilities.get(0);
 
         videoSource = new VideoDeviceSource();
         videoSource.setVideoCaptureDevice(camera);
         videoSource.setVideoCaptureCapability(capability);
-        videoSource.start();    
-
-        localVideoTrack = factory.createVideoTrack("video0", videoSource);
-        // to display add sink
+        
+        AudioDevice microphone = microphones.get(microphoneId);
+        AudioDevice speaker = speakers.get(speakerId);
+        
+        audioModule.setRecordingDevice(microphone);
+        audioModule.setPlayoutDevice(speaker);
     }
     
-    public void startCall(String targetClientId) {
+    public void initializeCapture() {
+        videoSource.start();    
+        localVideoTrack = factory.createVideoTrack("video0", videoSource);
+            
+        audioModule.initRecording();
+        audioModule.initPlayout();
+        AudioOptions ao = new AudioOptions();
+        AudioTrackSource ats = factory.createAudioSource(ao);
+        localAudioTrack = factory.createAudioTrack("audio0", ats);
+    }
+    
+    public void startCall(String targetClientId) {      
         remoteClientId = targetClientId;
         
         peerConnection = factory.createPeerConnection(config, new PeerConnectionObserverImpl(this, remoteClientId));
-        
+
         List<String> streamIds = new ArrayList<>();
         streamIds.add("stream");
         // Add local tracks
@@ -326,5 +351,25 @@ public class WebRTCManager implements PeerConnectionObserver {
     
     public void setCameraId(Integer newCameraId) {
         cameraId = newCameraId;
+    }
+    
+    public Integer getCameraId() {
+        return cameraId;
+    }
+    
+    public void setMicrophoneId(Integer newMicrophoneId) {
+        microphoneId = newMicrophoneId;
+    }
+    
+    public Integer getMicrophoneId() {
+        return microphoneId;
+    }
+    
+    public void setSpeakerId(Integer newSpeakerId) {
+        speakerId = newSpeakerId;
+    }
+    
+    public Integer getSpeakerId() {
+        return speakerId;
     }
 }

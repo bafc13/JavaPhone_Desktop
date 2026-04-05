@@ -21,7 +21,7 @@ import dev.onvoid.webrtc.media.video.VideoTrack;
  * @author Andrey
  */
 public class PeerConnectionObserverImpl implements PeerConnectionObserver {
-    WebRTCManager webRTCManager;
+    WebRTCManager webRTCManager;    
     String remoteClientId;
     int candidates = 0;
     
