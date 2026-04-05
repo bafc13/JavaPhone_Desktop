@@ -56,6 +56,15 @@ public class WebRTCManager implements PeerConnectionObserver {
     // STUN servers
     private static RTCIceServer ICE_SERVERS = null;
     
+    private static WebRTCManager instance = null;
+    
+    public WebRTCManager getInstance() {
+        if (instance == null) {
+            instance = new WebRTCManager();
+        }
+        return instance;
+    }
+    
     public WebRTCManager() {
         initializeWebRTC();
     }
