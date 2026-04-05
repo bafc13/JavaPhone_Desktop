@@ -1,5 +1,6 @@
 package com.mycompany.javaphone_nir2;
 
+import com.mycompany.javaphone_nir2.models.SettingsManager;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -21,6 +22,8 @@ public class App extends Application {
      */
     @Override
     public void start(Stage primaryStage) {
+        SettingsManager settings = SettingsManager.getInstance();
+
         try {
             FXMLLoader loader = new FXMLLoader(
                     getClass().getResource("fxml/chat_main.fxml")
@@ -29,6 +32,12 @@ public class App extends Application {
             scene = new Scene(loader.load(), 1000, 600);
 
             //connecting scene css style
+            //if theme is dark - chose one css file, if light - choose other.
+            if("dark".equals(settings.getTheme())) {
+
+            } else {
+
+            }
             scene.getStylesheets().add(getClass().getResource("css/chat_main.css").toExternalForm());
 
             primaryStage.setTitle("WebCommunicator - Chat");

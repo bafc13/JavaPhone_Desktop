@@ -15,40 +15,40 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.shape.Circle?>
 
-<ScrollPane fx:id="mainContainer" fitToWidth="true" hbarPolicy="NEVER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" style="-fx-background-color: #454f97;" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.mycompany.javaphone_nir2.controllers.SettingsController">
+<ScrollPane fitToWidth="true" hbarPolicy="NEVER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="1100.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.mycompany.javaphone_nir2.controllers.SettingsController">
    <content>
-      <StackPane style="-fx-background-color: linear-gradient(to bottom, #764ba2, #454F97);">
+      <StackPane fx:id="gradientBackgroundContainer">
          <children>
-            <VBox alignment="CENTER" maxWidth="400.0" minWidth="400.0" prefWidth="400.0" spacing="15.0" style="-fx-background-color: #454f97;">
+            <VBox fx:id="mainContainer" alignment="CENTER" maxWidth="400.0" minWidth="400.0" prefWidth="400.0" spacing="15.0">
                <children>
                   <HBox alignment="TOP_CENTER" fillHeight="false" prefHeight="162.0" spacing="10.0">
                      <children>
                         <ImageView fx:id="avatarView" fitHeight="162.0" fitWidth="162.0" pickOnBounds="true" preserveRatio="true" />
                         <VBox prefHeight="162.0" prefWidth="89.0" spacing="15.0">
                            <children>
-                              <Label minHeight="44.0" minWidth="186.0" prefHeight="44.0" prefWidth="186.0" style="-fx-background-color: #DADEF7; -fx-text-fill: black;" text="Загрузите аватар в формате .pgn, .jpg, размер &lt; 2mb " wrapText="true">
+                              <Label fx:id="uploadInfoLabel" minHeight="44.0" minWidth="186.0" prefHeight="58.0" prefWidth="186.0" text="Загрузите аватар в формате .pgn, .jpg, .jpeg, .gif, .webp размер &lt; 2mb " wrapText="true">
                                  <padding>
                                     <Insets left="8.0" right="8.0" />
                                  </padding>
                               </Label>
-                              <Label fx:id="uploadedLabel" minHeight="44.0" minWidth="186.0" prefHeight="44.0" prefWidth="186.0" style="-fx-background-color: #DADEF7; -fx-text-fill: black;" text="Загруженное изображение: None" wrapText="true">
+                              <Label fx:id="uploadedLabel" minHeight="44.0" minWidth="186.0" prefHeight="44.0" prefWidth="186.0" text="Загруженное изображение: None" wrapText="true">
                                  <padding>
                                     <Insets left="8.0" right="8.0" />
                                  </padding>
                               </Label>
-                              <Button fx:id="uploadAvatarButton" mnemonicParsing="false" prefHeight="24.0" prefWidth="186.0" style="-fx-background-color: #DADEF7; -fx-border-width: 1; -fx-border-color: black; -fx-border-radius: 4;" text="Загрузить" />
+                              <Button fx:id="uploadAvatarButton" mnemonicParsing="false" prefHeight="24.0" prefWidth="186.0" text="Загрузить" />
                            </children>
                         </VBox>
                      </children>
                   </HBox>
                   <HBox alignment="TOP_CENTER" spacing="10.0">
                      <children>
-                        <Label prefHeight="29.0" prefWidth="94.0" style="-fx-background-color: #DADEF7; -fx-text-fill: black;" text="Ник:">
+                        <Label fx:id="nicknameLabel" prefHeight="29.0" prefWidth="94.0" text="Ник:">
                            <padding>
                               <Insets left="6.0" right="6.0" />
                            </padding>
                         </Label>
-                        <TextField fx:id="nicknameField" prefHeight="29.0" prefWidth="254.0" style="-fx-background-color: #DADEF7; -fx-border-radius: 0; -fx-background-insets: 0; -fx-background-radius: 0;">
+                        <TextField fx:id="nicknameField" prefHeight="29.0" prefWidth="254.0">
                            <padding>
                               <Insets left="7.0" />
                            </padding>
@@ -58,12 +58,12 @@
                   <Separator style="-fx-background-color: white;" />
                   <HBox alignment="TOP_CENTER" spacing="10.0">
                      <children>
-                        <Label prefHeight="29.0" prefWidth="94.0" style="-fx-background-color: #DADEF7; -fx-text-fill: black;" text="Url:">
+                        <Label fx:id="urlLabel" prefHeight="29.0" prefWidth="94.0" text="Url:">
                            <padding>
                               <Insets left="6.0" right="6.0" />
                            </padding>
                         </Label>
-                        <TextField fx:id="urlField" prefHeight="29.0" prefWidth="254.0" style="-fx-background-color: #DADEF7; -fx-border-radius: 0; -fx-background-insets: 0; -fx-background-radius: 0;">
+                        <TextField fx:id="urlField" prefHeight="29.0" prefWidth="254.0">
                            <padding>
                               <Insets left="7.0" />
                            </padding>
@@ -72,39 +72,39 @@
                   </HBox>
                   <HBox alignment="TOP_CENTER" spacing="10.0">
                      <children>
-                        <Label prefHeight="29.0" prefWidth="94.0" style="-fx-background-color: #DADEF7; -fx-text-fill: black;" text="Ключ:">
+                        <Label fx:id="keyLabel" prefHeight="29.0" prefWidth="94.0" text="Ключ:">
                            <padding>
                               <Insets left="6.0" right="6.0" />
                            </padding>
                         </Label>
-                        <TextField fx:id="keyField" prefHeight="29.0" prefWidth="254.0" style="-fx-background-color: #DADEF7; -fx-border-radius: 0; -fx-background-insets: 0; -fx-background-radius: 0;">
+                        <TextField fx:id="keyField" prefHeight="29.0" prefWidth="254.0">
                            <padding>
                               <Insets left="7.0" />
                            </padding>
                         </TextField>
                      </children>
                   </HBox>
-                  <Button fx:id="regenerateKeyButton" alignment="CENTER" mnemonicParsing="false" prefHeight="24.0" prefWidth="120.0" style="-fx-background-color: #DADEF7; -fx-border-width: 1; -fx-border-color: black; -fx-border-radius: 4;" text="Перегенерировать" textAlignment="CENTER">
+                  <Button fx:id="regenerateKeyButton" alignment="CENTER" mnemonicParsing="false" prefHeight="24.0" prefWidth="120.0" text="Перегенерировать" textAlignment="CENTER">
                      <padding>
                         <Insets left="4.0" right="4.0" />
                      </padding>
                   </Button>
                   <HBox alignment="TOP_CENTER" spacing="10.0">
                      <children>
-                        <Label prefHeight="29.0" prefWidth="94.0" style="-fx-background-color: #DADEF7; -fx-text-fill: black;" text="Тема:">
+                        <Label fx:id="themeLabel" prefHeight="29.0" prefWidth="94.0" text="Тема:">
                            <padding>
                               <Insets left="6.0" right="6.0" />
                            </padding>
                         </Label>
-                        <HBox alignment="CENTER" prefHeight="29.0" prefWidth="254.0" spacing="22.0" style="-fx-background-color: #DADEF7;">
+                        <HBox fx:id="themeSliderContainer" alignment="CENTER" prefHeight="29.0" prefWidth="254.0" spacing="22.0">
                            <children>
-                              <Label prefHeight="29.0" prefWidth="77.0" style="-fx-background-color: #DADEF7; -fx-text-fill: black;" text="Тёмная тема" />
-                              <ToggleButton fx:id="themeToggleButtonSelector" maxHeight="23.0" maxWidth="53.0" minHeight="23.0" minWidth="53.0" prefHeight="23.0" prefWidth="53.0" styleClass="switch-toggle" text="">
+                              <Label fx:id="darkThemeLabel" prefHeight="29.0" prefWidth="77.0" text="Тёмная тема" />
+                              <ToggleButton fx:id="themeToggleButtonSelector" maxHeight="23.0" maxWidth="53.0" minHeight="23.0" minWidth="53.0" prefHeight="23.0" prefWidth="53.0" text="">
                                   <graphic>
-                                      <Circle radius="11" styleClass="switch-thumb" />
+                                      <Circle fx:id="themeToggleButtonSelectorCircle" radius="11" />
                                   </graphic>  
                               </ToggleButton>
-                              <Label prefHeight="29.0" prefWidth="77.0" style="-fx-background-color: #DADEF7; -fx-text-fill: black;" text="Светлая тема" />
+                              <Label fx:id="lightThemeLabel" prefHeight="29.0" prefWidth="77.0" text="Светлая тема" />
                            </children>
                            <padding>
                               <Insets left="5.0" right="5.0" />
@@ -114,20 +114,20 @@
                   </HBox>
                   <HBox alignment="TOP_CENTER" spacing="10.0">
                      <children>
-                        <Label prefHeight="29.0" prefWidth="94.0" style="-fx-background-color: #DADEF7; -fx-text-fill: black;" text="Уведомления:">
+                        <Label fx:id="notificationsLabel" prefHeight="29.0" prefWidth="94.0" text="Уведомления:">
                            <padding>
                               <Insets left="6.0" right="6.0" />
                            </padding>
                         </Label>
-                        <HBox alignment="CENTER" prefHeight="29.0" prefWidth="254.0" spacing="22.0" style="-fx-background-color: #DADEF7;">
+                        <HBox fx:id="notificationsSliderContainer" alignment="CENTER" prefHeight="29.0" prefWidth="254.0" spacing="22.0">
                            <children>
-                              <Label prefHeight="29.0" prefWidth="77.0" style="-fx-background-color: #DADEF7; -fx-text-fill: black;" text="Выключить" />
-                              <ToggleButton fx:id="notificationsToggleButtonSelector" maxHeight="23.0" maxWidth="53.0" minHeight="23.0" minWidth="53.0" prefHeight="23.0" prefWidth="53.0" styleClass="switch-toggle" text="">
+                              <Label fx:id="offNotificationsLabel" prefHeight="29.0" prefWidth="77.0" text="Выключить" />
+                              <ToggleButton fx:id="notificationsToggleButtonSelector" maxHeight="23.0" maxWidth="53.0" minHeight="23.0" minWidth="53.0" prefHeight="23.0" prefWidth="53.0" text="">
                                  <graphic>
-                                    <Circle radius="11" styleClass="switch-thumb" />
+                                    <Circle fx:id="notificationsToggleButtonSelectorCircle" radius="11" />
                                  </graphic>
                               </ToggleButton>
-                              <Label prefHeight="29.0" prefWidth="77.0" style="-fx-background-color: #DADEF7; -fx-text-fill: black;" text="Включить" />
+                              <Label fx:id="onNotificationsLabel" prefHeight="29.0" prefWidth="77.0" text="Включить" />
                            </children>
                            <padding>
                               <Insets left="5.0" right="5.0" />
@@ -138,32 +138,32 @@
                   <Separator style="-fx-background-color: white;" />
                   <HBox alignment="TOP_CENTER" spacing="10.0">
                      <children>
-                        <Label prefHeight="29.0" prefWidth="94.0" style="-fx-background-color: #DADEF7; -fx-text-fill: black;" text="Микрофон:">
+                        <Label fx:id="microphoneLabel" prefHeight="29.0" prefWidth="94.0" text="Микрофон:">
                            <padding>
                               <Insets left="6.0" right="6.0" />
                            </padding>
                         </Label>
-                        <ComboBox fx:id="microphoneComboBox" prefHeight="29.0" prefWidth="254.0" style="-fx-background-insets: 0; -fx-border-radius: 0; -fx-background-color: #DADEF7; -fx-background-radius: 0;" />
+                        <ComboBox fx:id="microphoneComboBox" prefHeight="29.0" prefWidth="254.0" />
                      </children>
                   </HBox>
                   <HBox alignment="TOP_CENTER" spacing="10.0">
                      <children>
-                        <Label prefHeight="29.0" prefWidth="94.0" style="-fx-background-color: #DADEF7; -fx-text-fill: black;" text="Динамик:">
+                        <Label fx:id="speakerLabel" prefHeight="29.0" prefWidth="94.0" text="Динамик:">
                            <padding>
                               <Insets left="6.0" right="6.0" />
                            </padding>
                         </Label>
-                        <ComboBox fx:id="speakerComboBox" prefHeight="29.0" prefWidth="254.0" style="-fx-background-insets: 0; -fx-border-radius: 0; -fx-background-color: #DADEF7; -fx-background-radius: 0;" />
+                        <ComboBox fx:id="speakerComboBox" prefHeight="29.0" prefWidth="254.0" />
                      </children>
                   </HBox>
                   <HBox alignment="TOP_CENTER" spacing="10.0">
                      <children>
-                        <Label prefHeight="46.0" prefWidth="94.0" style="-fx-background-color: #DADEF7; -fx-text-fill: black;" text="Громкость микрофона:" wrapText="true">
+                        <Label fx:id="microphoneVolumeLabel" prefHeight="46.0" prefWidth="94.0" text="Громкость микрофона:" wrapText="true">
                            <padding>
                               <Insets left="6.0" right="6.0" />
                            </padding>
                         </Label>
-                        <Slider fx:id="microphoneVolumeSlider" prefHeight="46.0" prefWidth="254.0" showTickLabels="true" showTickMarks="true" style="-fx-background-color: #DADEF7;">
+                        <Slider fx:id="microphoneVolumeSlider" prefHeight="46.0" prefWidth="254.0" showTickLabels="true" showTickMarks="true">
                            <padding>
                               <Insets left="16.0" right="16.0" />
                            </padding>
@@ -172,12 +172,12 @@
                   </HBox>
                   <HBox alignment="TOP_CENTER" spacing="10.0">
                      <children>
-                        <Label prefHeight="46.0" prefWidth="94.0" style="-fx-background-color: #DADEF7; -fx-text-fill: black;" text="Громкость динамика:" wrapText="true">
+                        <Label fx:id="speakerVolumeLabel" prefHeight="46.0" prefWidth="94.0" text="Громкость динамика:" wrapText="true">
                            <padding>
                               <Insets left="6.0" right="6.0" />
                            </padding>
                         </Label>
-                        <Slider fx:id="speakerVolumeSlider" prefHeight="46.0" prefWidth="254.0" showTickLabels="true" showTickMarks="true" style="-fx-background-color: #DADEF7;">
+                        <Slider fx:id="speakerVolumeSlider" prefHeight="46.0" prefWidth="254.0" showTickLabels="true" showTickMarks="true">
                            <padding>
                               <Insets left="16.0" right="16.0" />
                            </padding>
@@ -186,12 +186,12 @@
                   </HBox>
                   <HBox alignment="TOP_CENTER" spacing="10.0">
                      <children>
-                        <Label prefHeight="46.0" prefWidth="94.0" style="-fx-background-color: #DADEF7; -fx-text-fill: black;" text="Битрейт аудио:" wrapText="true">
+                        <Label fx:id="audioBitrateLabel" prefHeight="46.0" prefWidth="94.0" text="Битрейт аудио:" wrapText="true">
                            <padding>
                               <Insets left="6.0" right="6.0" />
                            </padding>
                         </Label>
-                        <TextField fx:id="audioBitrateField" prefHeight="46.0" prefWidth="254.0" style="-fx-background-color: #DADEF7; -fx-border-radius: 0; -fx-background-insets: 0; -fx-background-radius: 0;">
+                        <TextField fx:id="audioBitrateField" prefHeight="46.0" prefWidth="254.0">
                            <padding>
                               <Insets left="7.0" />
                            </padding>
@@ -201,22 +201,22 @@
                   <Separator style="-fx-background-color: white;" />
                   <HBox alignment="TOP_CENTER" spacing="10.0">
                      <children>
-                        <Label prefHeight="29.0" prefWidth="94.0" style="-fx-background-color: #DADEF7; -fx-text-fill: black;" text="Камера:">
+                        <Label fx:id="cameraLabel" prefHeight="29.0" prefWidth="94.0" text="Камера:">
                            <padding>
                               <Insets left="6.0" right="6.0" />
                            </padding>
                         </Label>
-                        <ComboBox fx:id="cameraComboBox" prefHeight="29.0" prefWidth="254.0" style="-fx-background-insets: 0; -fx-border-radius: 0; -fx-background-color: #DADEF7; -fx-background-radius: 0;" />
+                        <ComboBox fx:id="cameraComboBox" prefHeight="29.0" prefWidth="254.0" />
                      </children>
                   </HBox>
                   <HBox alignment="TOP_CENTER" spacing="10.0">
                      <children>
-                        <Label prefHeight="46.0" prefWidth="94.0" style="-fx-background-color: #DADEF7; -fx-text-fill: black;" text="Битрейт видео:" wrapText="true">
+                        <Label fx:id="videoBitrateLabel" prefHeight="46.0" prefWidth="94.0" text="Битрейт видео:" wrapText="true">
                            <padding>
                               <Insets left="6.0" right="6.0" />
                            </padding>
                         </Label>
-                        <TextField fx:id="videoBitrateField" prefHeight="46.0" prefWidth="254.0" style="-fx-background-color: #DADEF7; -fx-border-radius: 0; -fx-background-insets: 0; -fx-background-radius: 0;">
+                        <TextField fx:id="videoBitrateField" prefHeight="46.0" prefWidth="254.0">
                            <padding>
                               <Insets left="7.0" />
                            </padding>
@@ -226,12 +226,12 @@
                   <Separator style="-fx-background-color: white;" />
                   <HBox alignment="TOP_CENTER" spacing="10.0">
                      <children>
-                        <Label prefHeight="46.0" prefWidth="94.0" style="-fx-background-color: #DADEF7; -fx-text-fill: black;" text="IP сигналинг сервера:" wrapText="true">
+                        <Label fx:id="signalingServerIPLabel" prefHeight="46.0" prefWidth="94.0" text="IP сигналинг сервера:" wrapText="true">
                            <padding>
                               <Insets left="6.0" right="6.0" />
                            </padding>
                         </Label>
-                        <TextField fx:id="signalingServerIPField" prefHeight="46.0" prefWidth="254.0" style="-fx-background-color: #DADEF7; -fx-border-radius: 0; -fx-background-insets: 0; -fx-background-radius: 0;">
+                        <TextField fx:id="signalingServerIPField" prefHeight="46.0" prefWidth="254.0">
                            <padding>
                               <Insets left="7.0" />
                            </padding>
@@ -241,12 +241,12 @@
                   <Separator style="-fx-background-color: white;" />
                   <HBox alignment="TOP_CENTER" spacing="10.0">
                      <children>
-                        <Button fx:id="saveButton" alignment="CENTER" mnemonicParsing="false" prefHeight="24.0" prefWidth="174.0" style="-fx-background-color: #DADEF7; -fx-border-width: 1; -fx-border-color: black; -fx-border-radius: 4;" text="Сохранить" textAlignment="CENTER">
+                        <Button fx:id="saveButton" alignment="CENTER" mnemonicParsing="false" prefHeight="24.0" prefWidth="174.0" text="Сохранить" textAlignment="CENTER">
                            <padding>
                               <Insets left="4.0" right="4.0" />
                            </padding>
                         </Button>
-                        <Button fx:id="discardButton" alignment="CENTER" mnemonicParsing="false" prefHeight="24.0" prefWidth="174.0" style="-fx-background-color: #DADEF7; -fx-border-width: 1; -fx-border-color: black; -fx-border-radius: 4;" text="Отмена" textAlignment="CENTER">
+                        <Button fx:id="discardButton" alignment="CENTER" mnemonicParsing="false" prefHeight="24.0" prefWidth="174.0" text="Отмена" textAlignment="CENTER">
                            <padding>
                               <Insets left="4.0" right="4.0" />
                            </padding>

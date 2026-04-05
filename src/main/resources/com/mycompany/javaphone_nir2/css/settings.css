@@ -1,9 +1,47 @@
-/*
- * Empty Stylesheet file.
- */
+.root {
+    /*-fx-font-family: "Segoe UI";   */
+}
 
-.mainFxmlClass {
+.gradient-background-container {
+    -fx-background-color: linear-gradient(to bottom, #764ba2, #454F97);
+}
 
+.main-container {
+    -fx-background-color: #454f97;
+}
+
+.text-label {
+    -fx-background-color: #DADEF7;
+    -fx-text-fill: black;
+    -fx-font-size: 12;
+}
+
+.settings-button {
+    -fx-background-color: #DADEF7;
+    -fx-border-width: 1;
+    -fx-border-color: black;
+    -fx-border-radius: 4;
+}
+
+.settings-button:hover, .settings-button:focus {
+    -fx-background-color: #5d648f;
+}
+
+.settings-button:armed, .settings-button:pressed {
+    /*-fx-background-color: #7d91f5;*/
+    -fx-background-color: #3b53e3;
+    -fx-translate-y: 1px;
+}
+
+.settings-text-field {
+    -fx-background-color: #DADEF7;
+    -fx-border-radius: 0;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+}
+
+.slider-container {
+    -fx-background-color: #DADEF7;
 }
 
 .switch-toggle {

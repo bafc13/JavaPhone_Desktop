@@ -21,56 +21,23 @@ import javafx.scene.layout.VBox;
  */
 public class VideoCallController {
 
-    @FXML
-    private StackPane remoteVideoContainer;
-
-    @FXML
-    private HBox headerContainer;
-
-    @FXML
-    private StackPane localVideoContainer;
-
-    @FXML
-    private TextArea callChatHistory;
-
-    @FXML
-    private TextField callMessageInput;
-
-    @FXML
-    private Button sendCallMessageButton;
-
-    @FXML
-    private Button settingsButton;
-
-    @FXML
-    private HBox callControlContainer;
-
-    @FXML
-    private Button micButton;
-
-    @FXML
-    private Button filterButton;
-
-    @FXML
-    private Button cameraButton;
-
-    @FXML
-    private Button endCallButton;
-
-    @FXML
-    private Label callStatusLabel;
-
-    @FXML
-    private HBox messageContainer;
-
-    @FXML
-    private HBox footerContainer;
-
-    @FXML
-    private VBox chatContainer;
-
-    @FXML
-    private TextArea recognizedTextArea;
+    @FXML private StackPane remoteVideoContainer;
+    @FXML private HBox headerContainer;
+    @FXML private StackPane localVideoContainer;
+    @FXML private TextArea callChatHistory;
+    @FXML private TextField callMessageInput;
+    @FXML private Button sendCallMessageButton;
+    @FXML private Button settingsButton;
+    @FXML private HBox callControlContainer;
+    @FXML private Button micButton;
+    @FXML private Button filterButton;
+    @FXML private Button cameraButton;
+    @FXML private Button endCallButton;
+    @FXML private Label callStatusLabel;
+    @FXML private HBox messageContainer;
+    @FXML private HBox footerContainer;
+    @FXML private VBox chatContainer;
+    @FXML private TextArea recognizedTextArea;
 
     private DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
@@ -178,10 +145,8 @@ public class VideoCallController {
             isMicEnabled = !isMicEnabled;
             if (isMicEnabled) {
                 micButton.setStyle("-fx-background-color: #27ae60;");
-                appendToCallChat("System", "🔊 Микрофон включен");
             } else {
                 micButton.setStyle("-fx-background-color: #e74c3c;");
-                appendToCallChat("System", "🔇 Микрофон отключен");
             }
         });
         micButton.getStyleClass().add("call-control-button");
@@ -190,11 +155,9 @@ public class VideoCallController {
         filterButton.setOnAction(e -> {
             isFilterEnabled = !isFilterEnabled;
             if (isFilterEnabled) {
-                filterButton.setStyle("-fx-background-color: #3498db;");
-                appendToCallChat("System", "✓ Фильтр применён");
+                filterButton.setStyle("-fx-background-color: #27ae60;");
             } else {
-                filterButton.setStyle("-fx-background-color: #95a5a6;");
-                appendToCallChat("System", "✗ Фильтр отключен");
+                filterButton.setStyle("-fx-background-color: #e74c3c;");
             }
         });
         filterButton.getStyleClass().add("call-control-button");
@@ -204,10 +167,8 @@ public class VideoCallController {
             isCameraEnabled = !isCameraEnabled;
             if (isCameraEnabled) {
                 cameraButton.setStyle("-fx-background-color: #27ae60;");
-                appendToCallChat("System", "📷 Камера включена");
             } else {
                 cameraButton.setStyle("-fx-background-color: #e74c3c;");
-                appendToCallChat("System", "📷 Камера отключена");
             }
         });
         cameraButton.getStyleClass().add("call-control-button");
@@ -270,11 +231,11 @@ public class VideoCallController {
         String response = responses[(int) (Math.random() * responses.length)];
 
         javafx.application.Platform.runLater(() -> {
-            try {
-                Thread.sleep(1500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+//            try {
+////                Thread.sleep(1500);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
             appendToCallChat(contactName, response);
         });
     }

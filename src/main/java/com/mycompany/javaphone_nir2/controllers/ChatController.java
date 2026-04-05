@@ -2,6 +2,7 @@ package com.mycompany.javaphone_nir2.controllers;
 
 import com.mycompany.javaphone_nir2.ContactListCell;
 import com.mycompany.javaphone_nir2.models.Contact;
+import com.mycompany.javaphone_nir2.models.SettingsManager;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -31,38 +32,17 @@ import javafx.util.Duration;
  * buttons (Exit, Settings)
  */
 public class ChatController {
-    @FXML
-    private ListView<Contact> contactsList;
-
-    @FXML
-    private HBox headerContainer;
-
-    @FXML
-    private VBox contactsContainer;
-
-    @FXML
-    private HBox messageContainer;
-
-    @FXML
-    private TextArea chatHistory;
-
-    @FXML
-    private TextField messageInput;
-
-    @FXML
-    private Button sendButton;
-
-    @FXML
-    private Button callButton;
-
-    @FXML
-    private Button settingsButton;
-
-    @FXML
-    private Button exitButton;
-
-    @FXML
-    private Label chatTitleLabel;
+    @FXML private ListView<Contact> contactsList;
+    @FXML private HBox headerContainer;
+    @FXML private VBox contactsContainer;
+    @FXML private HBox messageContainer;
+    @FXML private TextArea chatHistory;
+    @FXML private TextField messageInput;
+    @FXML private Button sendButton;
+    @FXML private Button callButton;
+    @FXML private Button settingsButton;
+    @FXML private Button exitButton;
+    @FXML private Label chatTitleLabel;
 
     private ObservableList<Contact> contacts;
     private List<ChangeListener<Number>> popupWindowListeners = new ArrayList<>();
@@ -75,6 +55,9 @@ public class ChatController {
     private Popup incomingCallPopup;
     private VBox notificationBox;
 
+    private final SettingsManager settings = SettingsManager.getInstance();
+
+
     @FXML
     public void initialize() {
         setupContactList();
@@ -82,8 +65,7 @@ public class ChatController {
 
         setupChatUI();
 
-        //starting timer to demonstrate popup
-        scheduleIncomingCallTimer();
+        checkRegistration();
     }
 
     /**
@@ -285,10 +267,24 @@ public class ChatController {
         }
     }
 
+    private void checkRegistration() {
+        if(settings.isRegistered()) {
+            //starting timer to demonstrate popup
+            scheduleIncomingCallTimer();
+        } else {
+            Platform.runLater(() -> {
+                openSettings();
+            });
+        }
+    }
+
     /**
-     * upload contacts list from db
+     * upload contacts list from db and set it on ui
      */
     private void setupContactList() {
+        //upload smthng here and then dispay it in contacts list.
+        //ask from db manager or smthng else about contacts, get list to display and then display
+
         contacts = javafx.collections.FXCollections.observableArrayList(
                 new Contact("AVKuzma", "Online"),
                 new Contact("BaFC13", "Online"),
@@ -457,16 +453,27 @@ public class ChatController {
 
     private void closeWindow() {
         javafx.application.Platform.runLater(() -> {
-            try {
-                Thread.sleep(1000);
-                //do close call waiter and chat threads
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+//            try {
+//                Thread.sleep(1000);
+//                //do close call waiter and chat threads
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
             Stage stage = (Stage) exitButton.getScene().getWindow();
             stage.close();
             Platform.exit();
         });
+
+        //if wanna wait for threads, but not stopping ui - use next lines
+//        Timeline delay = new Timeline(new KeyFrame(
+//            Duration.seconds(1),
+//            e -> {
+//                Stage stage = (Stage) discardButton.getScene().getWindow();
+//                stage.close();
+//            }
+//        ));
+//        delay.play();
+
     }
 
     /**
@@ -510,6 +517,8 @@ public class ChatController {
             settingsStage.setMinHeight(465);
 
             settingsStage.show();
+
+            settingsStage.requestFocus();
 
         } catch (IOException e) {
             System.err.println("Ошибка при загрузке окна настроек: " + e.getMessage());

@@ -79,6 +79,7 @@
 }
 
 .call-control-button {
+    -fx-background-color: #27ae60;
     -fx-font-size: 14;
     -fx-padding: 5;
 }
