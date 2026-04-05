@@ -63,6 +63,16 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>2.13.3</version>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.13.1</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>com.github.sarxos</groupId>
+            <artifactId>webcam-capture</artifactId>
+            <version>0.3.12</version>
         </dependency>
     </dependencies>
     <build>
@@ -80,9 +90,9 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.0</version>
+                <version>3.15.0</version>
                 <configuration>
-                    <release>11</release>
+                    <release>25</release>
                     <compilerArgs>
                         <arg>-Xlint</arg>
                     </compilerArgs>
