@@ -2,6 +2,7 @@ package com.mycompany.javaphone_nir2.controllers;
 
 import com.mycompany.javaphone_nir2.ContactListCell;
 import com.mycompany.javaphone_nir2.models.Contact;
+import com.mycompany.javaphone_nir2.models.Offer;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
 import com.mycompany.javaphone_nir2.signaling.SignalingClient;
 import com.mycompany.javaphone_nir2.webrtc.WebRTCManager;
@@ -65,9 +66,7 @@ public class ChatController {
     private SignalingClient signalingClient;
     private final WebRTCManager webRtcManager = WebRTCManager.getInstance();
 
-    private String sdp;
-    private String sender;
-
+    public Offer offer;
 
     @FXML
     public void initialize() {
@@ -86,16 +85,10 @@ public class ChatController {
 
         SwingUtilities.invokeLater(() -> connectToSignaling());
 
-        signalingClient.sdpProperty().addListener((obs, oldVal, newVal) -> {
+        signalingClient.offerProperty().addListener((obs, oldVal, newVal) -> {
             Platform.runLater(() -> {
-                sdp = newVal;
+                offer = new Offer(newVal.getSdp(), newVal.getSender());
                 showIncomingCallNotification();
-            });
-        });
-        signalingClient.senderProperty().addListener((obs, oldVal, newVal) -> {
-            Platform.runLater(() -> {
-                sender = newVal;
-//                showIncomingCallNotification();
             });
         });
     }
@@ -275,8 +268,7 @@ public class ChatController {
     private void handleCallRejected() {
         hideIncomingCallNotification();
 
-        sdp = "";
-        sender = "";
+        offer.clear();
     }
 
     /**
@@ -286,7 +278,7 @@ public class ChatController {
     private void startVideoCallWithContact(Contact contact) {
         try {
             //здесь уже вызываем sendAnswer с sdp и клиент id
-//            signalingClient.sendAnswer(sdp, sender);
+            signalingClient.sendAnswer(offer.getSdp(), offer.getSender());
 
             FXMLLoader loader = new FXMLLoader(
                     getClass().getResource("/com/mycompany/javaphone_nir2/fxml/video_call.fxml") //the path is searched from the classpath

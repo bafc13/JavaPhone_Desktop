@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.mycompany.javaphone_nir2.models.Offer;
 import com.mycompany.javaphone_nir2.models.User;
 import com.mycompany.javaphone_nir2.models.UserStatus;
 
@@ -14,6 +15,8 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 
@@ -24,14 +27,9 @@ public class SignalingClient {
     private String clientId;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    private final StringProperty sdp = new SimpleStringProperty();
-    public StringProperty sdpProperty() {
-        return sdp;
-    }
-
-    private final StringProperty sender = new SimpleStringProperty();
-    public StringProperty senderProperty() {
-        return sender;
+    private final ObjectProperty<Offer> offer = new SimpleObjectProperty<>();
+    public ObjectProperty<Offer> offerProperty() {
+        return offer;
     }
 
     public SignalingClient(String serverUrl) {
@@ -128,8 +126,7 @@ public class SignalingClient {
         String sender = json.get("sender").asText();
 //        tell webrtc manager to handle offer
 
-        this.sdp.set(sdp);
-        this.sender.set(sender);
+        this.offer.set(new Offer(sdp, sender));
     }
 
     private void handleAnswer(JsonNode json) {

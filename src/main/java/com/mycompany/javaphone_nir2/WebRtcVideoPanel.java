@@ -22,7 +22,6 @@ import java.nio.IntBuffer;
 public class WebRtcVideoPanel extends Region implements VideoTrackSink {
 
     private final Canvas canvas;
-//    private PixelBuffer<Byte> pixelBuffer;
     private PixelBuffer pixelBuffer;
     private WritableImage videoImage;
 
