@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -50,6 +51,9 @@ public class WebRTCManager implements PeerConnectionObserver {
     private Integer cameraId = 0;
     private Integer microphoneId = 0;
     private Integer speakerId = 0;
+    
+    private Integer microphoneVolume = 0;
+    private Integer speakerVolume = 0;
     
     private final ScheduledExecutorService statsExecutor = Executors.newSingleThreadScheduledExecutor();
     
@@ -106,6 +110,10 @@ public class WebRTCManager implements PeerConnectionObserver {
         
         audioModule.setRecordingDevice(microphone);
         audioModule.setPlayoutDevice(speaker);
+        
+        audioModule.setMicrophoneVolume(microphoneVolume);
+        audioModule.setSpeakerVolume(speakerVolume);
+        
     }
     
     public void initializeCapture() {
@@ -380,5 +388,27 @@ public class WebRTCManager implements PeerConnectionObserver {
     
     public Integer getSpeakerId() {
         return speakerId;
+    }
+    
+    public void setMicrophoneVolume(Integer newMicrophoneVolume) {
+        microphoneVolume = newMicrophoneVolume;
+        if (audioModule != null) {
+            audioModule.setMicrophoneVolume(microphoneVolume);
+        }
+    }
+    
+    public Integer getMicrophoneVolume() {
+        return microphoneVolume;
+    }
+    
+    public void setSpeakerVolume(Integer newSpeakerVolume) {
+        speakerVolume = newSpeakerVolume;
+        if (audioModule != null) {
+            audioModule.setSpeakerVolume(speakerVolume);
+        }
+    }
+    
+    public Integer getSpeakerVolume() {
+        return speakerVolume;
     }
 }
