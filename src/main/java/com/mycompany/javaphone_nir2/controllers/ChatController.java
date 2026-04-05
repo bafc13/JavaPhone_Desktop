@@ -3,6 +3,8 @@ package com.mycompany.javaphone_nir2.controllers;
 import com.mycompany.javaphone_nir2.ContactListCell;
 import com.mycompany.javaphone_nir2.models.Contact;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
+import com.mycompany.javaphone_nir2.signaling.SignalingClient;
+import com.mycompany.javaphone_nir2.webrtc.WebRTCManager;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -23,6 +25,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
 import javafx.stage.Window;
 import javafx.util.Duration;
+import javax.swing.SwingUtilities;
 
 /**
  * Controller for main chat window
@@ -55,7 +58,15 @@ public class ChatController {
     private Popup incomingCallPopup;
     private VBox notificationBox;
 
+
     private final SettingsManager settings = SettingsManager.getInstance();
+
+
+    private SignalingClient signalingClient;
+    private final WebRTCManager webRtcManager = WebRTCManager.getInstance();
+
+    private String sdp;
+    private String sender;
 
 
     @FXML
@@ -66,6 +77,43 @@ public class ChatController {
         setupChatUI();
 
         checkRegistration();
+
+        initSignalingClient();
+    }
+
+    private void initSignalingClient(){
+        signalingClient = new SignalingClient("ws://localhost:8080/javaphone/signaling");
+
+        SwingUtilities.invokeLater(() -> connectToSignaling());
+
+        signalingClient.sdpProperty().addListener((obs, oldVal, newVal) -> {
+            Platform.runLater(() -> {
+                sdp = newVal;
+                showIncomingCallNotification();
+            });
+        });
+        signalingClient.senderProperty().addListener((obs, oldVal, newVal) -> {
+            Platform.runLater(() -> {
+                sender = newVal;
+//                showIncomingCallNotification();
+            });
+        });
+    }
+
+    // Action methods
+    private void connectToSignaling() {
+        try {
+            signalingClient.connect();
+        } catch (Exception e) {
+            System.err.println("ERROR WHILE CONNECTING TO THE SIGNALING CLIENT: " + e.getMessage());
+            e.printStackTrace();
+
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("ERORRRRR");
+            alert.setHeaderText("ERROR WHILE CONNECTING TO THE SIGNALING CLIENT");
+            alert.setContentText(e.getMessage());
+            alert.showAndWait();
+        }
     }
 
     /**
@@ -195,7 +243,7 @@ public class ChatController {
             if (popupWindowShowingListener != null) {
                 window.showingProperty().removeListener(popupWindowShowingListener);
                 popupWindowShowingListener = null;
-            }
+
 
             //deleting focus listener
             if (popupWindowFocusListener != null) {
@@ -205,6 +253,8 @@ public class ChatController {
         }
 
         incomingCallPopup.hide();
+
+        }
     }
 
     /**
@@ -213,7 +263,7 @@ public class ChatController {
      */
     private void handleCallAccepted() {
         hideIncomingCallNotification();
-        appendToChat("System", "✅ Вы приняли звонок от " + incomingCallContact.getName());
+//        appendToChat("System", "✅ Вы приняли звонок от " + incomingCallContact.getName());
 
         startVideoCallWithContact(incomingCallContact);
     }
@@ -224,7 +274,9 @@ public class ChatController {
      */
     private void handleCallRejected() {
         hideIncomingCallNotification();
-        appendToChat("System", "❌ Вы отклонили звонок от " + incomingCallContact.getName());
+
+        sdp = "";
+        sender = "";
     }
 
     /**
@@ -233,6 +285,9 @@ public class ChatController {
      */
     private void startVideoCallWithContact(Contact contact) {
         try {
+            //здесь уже вызываем sendAnswer с sdp и клиент id
+//            signalingClient.sendAnswer(sdp, sender);
+
             FXMLLoader loader = new FXMLLoader(
                     getClass().getResource("/com/mycompany/javaphone_nir2/fxml/video_call.fxml") //the path is searched from the classpath
             );
@@ -270,7 +325,7 @@ public class ChatController {
     private void checkRegistration() {
         if(settings.isRegistered()) {
             //starting timer to demonstrate popup
-            scheduleIncomingCallTimer();
+//            scheduleIncomingCallTimer();
         } else {
             Platform.runLater(() -> {
                 openSettings();

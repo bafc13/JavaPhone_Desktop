@@ -6,7 +6,7 @@ module com.mycompany.javaphone_nir2 {
     requires com.fasterxml.jackson.databind;
     requires jakarta.websocket;
     requires webrtc.java;
-    
+
     requires com.google.gson;
     requires java.desktop;
     requires webcam.capture;

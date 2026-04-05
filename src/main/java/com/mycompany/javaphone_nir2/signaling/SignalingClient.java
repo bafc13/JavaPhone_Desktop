@@ -14,6 +14,8 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 
 @ClientEndpoint
 public class SignalingClient {
@@ -21,22 +23,32 @@ public class SignalingClient {
     private final String serverUrl;
     private String clientId;
     private final ObjectMapper mapper = new ObjectMapper();
-    
+
+    private final StringProperty sdp = new SimpleStringProperty();
+    public StringProperty sdpProperty() {
+        return sdp;
+    }
+
+    private final StringProperty sender = new SimpleStringProperty();
+    public StringProperty senderProperty() {
+        return sender;
+    }
+
     public SignalingClient(String serverUrl) {
         this.serverUrl = serverUrl;
     }
-    
+
     public void connect() throws Exception {
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         container.setDefaultMaxSessionIdleTimeout(2000000);
         container.connectToServer(this, new URI(serverUrl));
     }
-    
+
     @OnOpen
     public void onOpen(Session session) {
         this.session = session;
     }
-    
+
     @OnMessage
     public void onMessage(String message) throws IOException{
         JsonNode json = mapper.readTree(message);
@@ -66,34 +78,34 @@ public class SignalingClient {
                 break;
         }
     }
-    
+
     @OnClose
     public void onClose(Session session, CloseReason closeReason) {
         // logic on call end
     }
-    
+
     @OnError
     public void onError(Session session, Throwable throwable) {
         // logic on error
     }
-    
+
     public void sendPeer(User user, UserStatus status) throws IOException {
         ObjectNode dataNode = mapper.valueToTree(user);
         ObjectNode userNode = mapper.createObjectNode();
         userNode.set("data", dataNode);
         userNode.put("status", status.toString());
-        
+
         ObjectNode message = mapper.createObjectNode();
         message.set("user", userNode);
-        
+
         message.put("target", "all");
         message.put("sender", clientId);
-        
+
         sendJson(message);
-        
-        // send to all 
+
+        // send to all
     }
-    
+
     private void handlePeer(JsonNode json) {
         try {
             JsonNode userNode = json.get("user");
@@ -106,47 +118,49 @@ public class SignalingClient {
             Logger.getLogger(SignalingClient.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
     private void handleWelcome(JsonNode json) {
         // logic on connected
     }
-    
+
     private void handleOffer(JsonNode json) {
         String sdp = json.get("sdp").asText();
         String sender = json.get("sender").asText();
 //        tell webrtc manager to handle offer
-        
+
+        this.sdp.set(sdp);
+        this.sender.set(sender);
     }
-    
+
     private void handleAnswer(JsonNode json) {
         String sdp = json.get("sdp").asText();
 //        tell webrtc manager to handle answer
     }
-    
+
     private void handleCandidate(JsonNode json) {
         String candidate = json.get("candidate").asText();
         String sdpMid = json.get("sdpMid").asText();
         int sdpMLineIndex = json.get("sdpMLineIndex").asInt();
 //        tell webrtc manager to handle candidate
     }
-    
+
     private void handleClientDisconnected(JsonNode json) {
         String disconnectedClientId = json.get("clientId").asText();
 //        tell webrtc manager to handle disconnect
     }
-    
+
     private void handleError(JsonNode json) {
         String error = json.get("message").asText();
     }
-    
+
     public void sendOffer(String sdp, String targetClientId) throws IOException {
         sendMessage("offer", sdp, targetClientId);
     }
-    
+
     public void sendAnswer(String sdp, String targetClientId) throws IOException {
         sendMessage("answer", sdp, targetClientId);
     }
-    
+
     public void sendIceCandidate(String candidate, String sdpMid, int sdpMLineIndex, String targetClientId) throws IOException {
         ObjectNode message = mapper.createObjectNode();
         message.put("type", "candidate");
@@ -155,19 +169,19 @@ public class SignalingClient {
         message.put("sdpMLineIndex", sdpMLineIndex);
         message.put("target", targetClientId);
         message.put("sender", clientId);
-        
+
         sendJson(message);
     }
-    
+
     public void sendReady(String targetClientId) throws IOException {
         sendMessage("ready", "", targetClientId);
     }
-    
+
     public void sendBye(String targetClientId) throws IOException {
         sendMessage("bye", "", targetClientId);
 //      tell webrtc manager to handle call end
     }
-    
+
     private void sendMessage(String type, String sdp, String targetClientId) throws IOException {
         ObjectNode message = mapper.createObjectNode();
         message.put("type", type);
@@ -176,23 +190,23 @@ public class SignalingClient {
         }
         message.put("target", targetClientId);
         message.put("sender", clientId);
-        
+
         sendJson(message);
     }
-    
+
     private void sendJson(ObjectNode message) throws IOException {
         if (session != null && session.isOpen()) {
             String json = mapper.writeValueAsString(message);
             session.getBasicRemote().sendText(json);
         }
     }
-    
+
     public void disconnect() throws IOException {
         if (session != null && session.isOpen()) {
             session.close();
         }
     }
-    
+
     public String getClientId() {
         return clientId;
     }
