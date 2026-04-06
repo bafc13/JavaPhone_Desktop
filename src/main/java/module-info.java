@@ -19,4 +19,6 @@ module com.mycompany.javaphone_nir2 {
 
     opens com.mycompany.javaphone_nir2.models to com.google.gson;
     exports com.mycompany.javaphone_nir2.models;
+    
+    exports com.mycompany.javaphone_nir2.signaling;
 }
