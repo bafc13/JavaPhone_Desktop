@@ -83,7 +83,7 @@ public class ChatController {
     private void initSignalingClient(){
         signalingClient = new SignalingClient("ws://localhost:8080/javaphone/signaling");
 
-        SwingUtilities.invokeLater(() -> connectToSignaling());
+        Platform.runLater(() -> connectToSignaling());
 
         signalingClient.offerProperty().addListener((obs, oldVal, newVal) -> {
             Platform.runLater(() -> {
@@ -500,17 +500,10 @@ public class ChatController {
 
     private void closeWindow() {
         javafx.application.Platform.runLater(() -> {
-//            try {
-//                Thread.sleep(1000);
-//                //do close call waiter and chat threads
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
             Stage stage = (Stage) exitButton.getScene().getWindow();
             stage.close();
             Platform.exit();
         });
-
         //if wanna wait for threads, but not stopping ui - use next lines
 //        Timeline delay = new Timeline(new KeyFrame(
 //            Duration.seconds(1),
@@ -520,7 +513,6 @@ public class ChatController {
 //            }
 //        ));
 //        delay.play();
-
     }
 
     /**

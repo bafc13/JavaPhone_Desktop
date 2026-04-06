@@ -4,6 +4,7 @@ import com.mycompany.javaphone_nir2.models.SettingsManager;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.Property;
@@ -77,6 +78,7 @@ public class SettingsController {
 
         setupSettingsUI();      // CSS-классы и обработчики кнопок
         bindReactiveFields();   // 🔥 Реактивная привязка к настройкам
+        setupFieldValidation();
         loadNonReactiveValues(); // ComboBox, аватар (требуют ручной инициализации)
 
         setupCloseInterceptor();
@@ -170,12 +172,10 @@ public class SettingsController {
 
         keyField.textProperty().bindBidirectional(settings.userKeyProperty());
 //        audioBitrateField.textProperty().bindBidirectional((Property<String>) settings.audioBitrateProperty().asString());
-        bindIntegerField(audioBitrateField, settings.audioBitrateProperty(), 32, 320);   // кбит/с для аудио
-        bindIntegerField(videoBitrateField, settings.cameraBitrateProperty(), 100, 10000); // кбит/с для видео
-
+        bindIntegerField(audioBitrateField, settings.audioBitrateProperty(), 32, 320, "audioBitrate");
+        bindIntegerField(videoBitrateField, settings.cameraBitrateProperty(), 100, 10000, "cameraBitrate");
 
 //        videoBitrateField.textProperty().bindBidirectional((Property<String>) settings.cameraBitrateProperty().asString());
-
         signalingServerIPField.textProperty().bindBidirectional(settings.signalingServerIpProperty());
 
         // Slider ↔ IntegerProperty
@@ -185,10 +185,8 @@ public class SettingsController {
         // ToggleButton ↔ BooleanProperty
         notificationsToggleButtonSelector.selectedProperty().bindBidirectional(settings.notificationsEnabledProperty());
 
-
         bindThemeToggle(themeToggleButtonSelector, settings.themeProperty());
 //        themeToggleButtonSelector.selectedProperty().bindBidirectional(settings.themeProperty().isEqualTo("light"));
-
 
         // URL field: объединяем IP:Port (двусторонняя привязка сложнее, поэтому делаем одностороннюю + обработчик)
         updateUrlField(); // Инициализация
@@ -203,10 +201,9 @@ public class SettingsController {
         settings.userPortProperty().addListener((obs, old, newVal) -> updateUrlField());
     }
 
-        /**
+    /**
      * Ручная двусторонняя привязка ToggleButton к строковому свойству темы.
-     * selected = true  -> "light"
-     * selected = false -> "dark"
+     * selected = true -> "light" selected = false -> "dark"
      */
     private void bindThemeToggle(ToggleButton toggle, StringProperty themeProperty) {
         // 1. Инициализация состояния
@@ -229,40 +226,181 @@ public class SettingsController {
         });
     }
 
-     /**
-     * Создаёт двустороннюю привязку между TextField и IntegerProperty.
-     * Включает базовую валидацию целых чисел.
+    /**
+     * Создаёт двустороннюю привязку между TextField и IntegerProperty. Включает
+     * базовую валидацию целых чисел.
      *
      * @param textField поле ввода
      * @param intProperty свойство модели
      * @param min минимальное допустимое значение
      * @param max максимальное допустимое значение
      */
-    private void bindIntegerField(TextField textField, IntegerProperty intProperty, int min, int max) {
-        // 1. Инициализация: модель → UI
+    /**
+     * Создаёт двустороннюю привязку между TextField и IntegerProperty с
+     * валидацией диапазона и визуальной обратной связью
+     */
+    private void bindIntegerField(TextField textField, IntegerProperty intProperty, int min, int max, String fieldName) {
+        // 1. Инициализация
         textField.setText(String.valueOf(intProperty.get()));
 
-        // 2. Слушатель: модель изменилась → обновляем UI (только если поле не в фокусе)
+        // 2. TextFormatter: только цифры
+        textField.setTextFormatter(new TextFormatter<>(change -> {
+            String newText = change.getControlNewText();
+            if (newText.isEmpty() || newText.matches("\\d+")) {
+                return change;
+            }
+            return null;
+        }));
+
+        // 3. Модель → UI (если поле не в фокусе)
         intProperty.addListener((obs, oldVal, newVal) -> {
             if (!textField.isFocused()) {
                 textField.setText(String.valueOf(newVal));
             }
         });
 
-        // 3. Слушатель: UI изменился → обновляем модель (при потере фокуса)
+        // 4. UI → Модель (при потере фокуса + валидация)
         textField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
-            if (!isNowFocused) { // При потере фокуса парсим и сохраняем
+            if (!isNowFocused) {
                 try {
-                    int value = Integer.parseInt(textField.getText().trim());
+                    String text = textField.getText().trim();
+                    if (text.isEmpty()) {
+                        textField.setText(String.valueOf(intProperty.get()));
+                        return;
+                    }
+                    int value = Integer.parseInt(text);
+
                     // Валидация диапазона
-                    value = Math.max(min, Math.min(max, value));
+                    if (value < min || value > max) {
+                        showFieldError(textField, "Допустимый диапазон: " + min + "–" + max);
+                        textField.setText(String.valueOf(intProperty.get()));
+                        return;
+                    }
+
+                    // Дополнительно: бизнес-валидация из SettingsManager
+                    Optional<String> error = settings.getValidationError(fieldName, value);
+                    if (error.isPresent()) {
+                        showFieldError(textField, error.get());
+                        textField.setText(String.valueOf(intProperty.get()));
+                        return;
+                    }
+
+                    // Всё ок → сохраняем в модель
                     intProperty.set(value);
-                    // Обновляем отображение, если значение было обрезано
-                    textField.setText(String.valueOf(value));
+
                 } catch (NumberFormatException e) {
-                    // При ошибке парсинга восстанавливаем последнее валидное значение
+                    showFieldError(textField, "Введите целое число");
                     textField.setText(String.valueOf(intProperty.get()));
                 }
+            }
+        });
+    }
+
+    /**
+     * Настраивает базовую валидацию для текстовых полей
+     */
+    private void setupFieldValidation() {
+        // Никнейм: фильтр ввода + валидация при потере фокуса
+        nicknameField.setTextFormatter(new TextFormatter<>(change -> {
+            String newText = change.getControlNewText();
+            // Разрешаем пустое, буквы (лат/кир), цифры, пробелы, подчёркивания
+            if (newText.isEmpty() || newText.matches("^[a-zA-Z0-9_\\s\\u0400-\\u04FF]{0,20}$")) {
+                return change;
+            }
+            return null; // Отклоняем ввод
+        }));
+
+        nicknameField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
+            if (!isNowFocused) {
+                String value = nicknameField.getText();
+                Optional<String> error = settings.validateNickname(value);
+                if (error.isPresent()) {
+                    showFieldError(nicknameField, error.get());
+                    // Откат к последнему валидному значению из модели
+                    nicknameField.setText(settings.getNickname());
+                }
+            }
+        });
+
+        // IP-адрес: только цифры и точки
+        signalingServerIPField.setTextFormatter(new TextFormatter<>(change -> {
+            String newText = change.getControlNewText();
+            if (newText.isEmpty() || newText.matches("^[0-9.]{0,15}$")) {
+                return change;
+            }
+            return null;
+        }));
+
+        signalingServerIPField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
+            if (!isNowFocused) {
+                Optional<String> error = settings.validateIpAddress(signalingServerIPField.getText());
+                if (error.isPresent()) {
+                    showFieldError(signalingServerIPField, error.get());
+                    signalingServerIPField.setText(settings.getSignalingServerIp());
+                }
+            }
+        });
+
+        // Порт: только цифры
+        urlField.setTextFormatter(new TextFormatter<>(change -> {
+            String newText = change.getControlNewText();
+            // Разрешаем формат "123.456.789.012:443"
+            if (newText.isEmpty() || newText.matches("^[0-9.:]{0,21}$")) {
+                return change;
+            }
+            return null;
+        }));
+
+        urlField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
+            if (!isNowFocused) {
+                String[] parts = urlField.getText().split(":");
+                if (parts.length >= 2) {
+                    Optional<String> ipError = settings.validateIpAddress(parts[0].trim());
+                    Optional<String> portError = settings.validatePort(parts[1].trim());
+                    if (ipError.isPresent()) {
+                        showFieldError(urlField, "IP: " + ipError.get());
+                        updateUrlField(); // откат
+                    } else if (portError.isPresent()) {
+                        showFieldError(urlField, "Порт: " + portError.get());
+                        updateUrlField();
+                    }
+                }
+            }
+        });
+
+        // Ключ пользователя: макс. 128 символов
+        keyField.setTextFormatter(new TextFormatter<>(change -> {
+            if (change.getControlNewText().length() <= 128) {
+                return change;
+            }
+            return null;
+        }));
+
+        keyField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
+            if (!isNowFocused) {
+                Optional<String> error = settings.validateUserKey(keyField.getText());
+                if (error.isPresent()) {
+                    showFieldError(keyField, error.get());
+                    keyField.setText(settings.getUserKey());
+                }
+            }
+        });
+    }
+
+    /**
+     * Показывает ошибку валидации: красная рамка + tooltip
+     */
+    private void showFieldError(TextField field, String message) {
+        Tooltip tooltip = new Tooltip(message);
+        tooltip.setStyle("-fx-background-color: #ff6b6b; -fx-text-fill: white; -fx-font-size: 12px;");
+        Tooltip.install(field, tooltip);
+        field.setStyle("-fx-border-color: #ff6b6b; -fx-border-width: 2px; -fx-border-radius: 4px;");
+
+        // Убираем подсветку, когда пользователь начинает исправлять
+        field.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
+            if (isNowFocused) {
+                field.setStyle("");
+                Tooltip.uninstall(field, tooltip);
             }
         });
     }
@@ -293,13 +431,19 @@ public class SettingsController {
 
         // Синхронизация выбора устройства: UI → модель (односторонняя)
         microphoneComboBox.valueProperty().addListener((obs, old, newVal) -> {
-            if (newVal != null) settings.setMicrophone(newVal);
+            if (newVal != null) {
+                settings.setMicrophone(newVal);
+            }
         });
         speakerComboBox.valueProperty().addListener((obs, old, newVal) -> {
-            if (newVal != null) settings.setSpeaker(newVal);
+            if (newVal != null) {
+                settings.setSpeaker(newVal);
+            }
         });
         cameraComboBox.valueProperty().addListener((obs, old, newVal) -> {
-            if (newVal != null) settings.setCamera(newVal);
+            if (newVal != null) {
+                settings.setCamera(newVal);
+            }
         });
     }
 
@@ -359,30 +503,6 @@ public class SettingsController {
                 settings.setCamera(newVal);
             }
         });
-
-        // Камеры опрашиваются медленно, поэтому можно сделать асинхронно, чтобы не фризить UI,
-        // но для простоты оставим синхронно (если устройств немного).
-//        Task<String> loadTask = new Task<>() {
-//            @Override
-//            protected String call() throws Exception {
-//                List<String> devices = settings.getAvailableCameras();
-//                cameraComboBox.getItems().addAll(devices);
-//
-//                String saved = settings.getCamera();
-//                if (saved != null && devices.contains(saved)) {
-//                    cameraComboBox.setValue(saved);
-//                } else {
-//                    cameraComboBox.setValue("Default");
-//                }
-//
-//            return "aight";
-//            }
-//        };
-//        cameraComboBox.valueProperty().addListener((obs, oldVal, newVal) -> {
-//                    if (newVal != null) {
-//                        settings.setCamera(newVal);
-//                    }
-//                });
     }
 
     private void showAvatar() {
@@ -408,12 +528,12 @@ public class SettingsController {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Выберите изображение для аватара");
         fileChooser.getExtensionFilters().addAll(
-            new FileChooser.ExtensionFilter("Изображения", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.webp")
+                new FileChooser.ExtensionFilter("Изображения", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.webp")
         );
 
         Window ownerWindow = uploadAvatarButton.getScene() != null
-            ? uploadAvatarButton.getScene().getWindow()
-            : null;
+                ? uploadAvatarButton.getScene().getWindow()
+                : null;
 
         File selectedFile = fileChooser.showOpenDialog(ownerWindow);
         if (selectedFile != null && settings.uploadAvatar(selectedFile)) {
@@ -437,60 +557,60 @@ public class SettingsController {
         });
     }
 
-
     /**
-    * Неизменяемый снимок настроек для реализации паттерна Rollback.
-    * Используется при открытии окна настроек и при отмене изменений.
-    */
-       private static record SettingsSnapshot(
-               String nickname, String userIp, String userPort, String userKey, String theme, String pathToAvatar,
-               String microphone, String speaker, String camera, String signalingServerIp,
-               boolean notificationsEnabled,
-               int microphoneVolume, int speakerVolume, int audioBitrate, int cameraBitrate
-       ) {
-           /**
-            * Фабричный метод: создаёт снимок текущего состояния менеджера настроек
-            */
-           static SettingsSnapshot from(SettingsManager manager) {
-               return new SettingsSnapshot(
-                       manager.getNickname(),
-                       manager.getUserIp(),
-                       manager.getUserPort(),
-                       manager.getUserKey(),
-                       manager.getTheme(),
-                       manager.getPathToAvatar(),
-                       manager.getMicrophone(),
-                       manager.getSpeaker(),
-                       manager.getCamera(),
-                       manager.getSignalingServerIp(),
-                       manager.isNotificationsEnabled(),
-                       manager.getMicrophoneVolume(),
-                       manager.getSpeakerVolume(),
-                       manager.getAudioBitrate(),
-                       manager.getCameraBitrate()
-               );
-           }
+     * Неизменяемый снимок настроек для реализации паттерна Rollback.
+     * Используется при открытии окна настроек и при отмене изменений.
+     */
+    private static record SettingsSnapshot(
+            String nickname, String userIp, String userPort, String userKey, String theme, String pathToAvatar,
+            String microphone, String speaker, String camera, String signalingServerIp,
+            boolean notificationsEnabled,
+            int microphoneVolume, int speakerVolume, int audioBitrate, int cameraBitrate) {
 
-           /**
-            * Восстанавливает (откатывает) значения менеджера настроек до состояния этого снимка
-            */
-           void revert(SettingsManager manager) {
-               manager.setNickname(nickname);
-               manager.setUserIp(userIp);
-               manager.setUserPort(userPort);
-               manager.setUserKey(userKey);
-               manager.setTheme(theme);
-               manager.setPathToAvatar(pathToAvatar);
-               manager.setMicrophone(microphone);
-               manager.setSpeaker(speaker);
-               manager.setCamera(camera);
-               manager.setSignalingServerIp(signalingServerIp);
-               manager.setNotificationsEnabled(notificationsEnabled);
-               manager.setMicrophoneVolume(microphoneVolume);
-               manager.setSpeakerVolume(speakerVolume);
-               manager.setAudioBitrate(audioBitrate);
-               manager.setCameraBitrate(cameraBitrate);
-           }
-       }
+        /**
+         * Фабричный метод: создаёт снимок текущего состояния менеджера настроек
+         */
+        static SettingsSnapshot from(SettingsManager manager) {
+            return new SettingsSnapshot(
+                    manager.getNickname(),
+                    manager.getUserIp(),
+                    manager.getUserPort(),
+                    manager.getUserKey(),
+                    manager.getTheme(),
+                    manager.getPathToAvatar(),
+                    manager.getMicrophone(),
+                    manager.getSpeaker(),
+                    manager.getCamera(),
+                    manager.getSignalingServerIp(),
+                    manager.isNotificationsEnabled(),
+                    manager.getMicrophoneVolume(),
+                    manager.getSpeakerVolume(),
+                    manager.getAudioBitrate(),
+                    manager.getCameraBitrate()
+            );
+        }
+
+        /**
+         * Восстанавливает (откатывает) значения менеджера настроек до состояния
+         * этого снимка
+         */
+        void revert(SettingsManager manager) {
+            manager.setNickname(nickname);
+            manager.setUserIp(userIp);
+            manager.setUserPort(userPort);
+            manager.setUserKey(userKey);
+            manager.setTheme(theme);
+            manager.setPathToAvatar(pathToAvatar);
+            manager.setMicrophone(microphone);
+            manager.setSpeaker(speaker);
+            manager.setCamera(camera);
+            manager.setSignalingServerIp(signalingServerIp);
+            manager.setNotificationsEnabled(notificationsEnabled);
+            manager.setMicrophoneVolume(microphoneVolume);
+            manager.setSpeakerVolume(speakerVolume);
+            manager.setAudioBitrate(audioBitrate);
+            manager.setCameraBitrate(cameraBitrate);
+        }
+    }
 
 }

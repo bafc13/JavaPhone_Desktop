@@ -366,6 +366,18 @@ public class WebRTCManager implements PeerConnectionObserver {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
+    public List<AudioDevice> getMicrophones() {
+        return microphones;
+    }
+
+    public List<VideoDevice> getCameras() {
+        return cameras;
+    }
+
+    public List<AudioDevice> getSpeakers() {
+        return speakers;
+    }
+
     public void setCameraId(Integer newCameraId) {
         cameraId = newCameraId;
     }
