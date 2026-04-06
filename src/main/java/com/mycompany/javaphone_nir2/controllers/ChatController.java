@@ -4,6 +4,8 @@ import com.mycompany.javaphone_nir2.ContactListCell;
 import com.mycompany.javaphone_nir2.models.Contact;
 import com.mycompany.javaphone_nir2.models.Offer;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
+import com.mycompany.javaphone_nir2.models.User;
+import com.mycompany.javaphone_nir2.models.UserStatus;
 import com.mycompany.javaphone_nir2.signaling.SignalingClient;
 import com.mycompany.javaphone_nir2.webrtc.WebRTCManager;
 import javafx.collections.ObservableList;
@@ -15,6 +17,7 @@ import javafx.stage.Stage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
@@ -62,8 +65,6 @@ public class ChatController {
 
     private final SettingsManager settings = SettingsManager.getInstance();
 
-
-    private SignalingClient signalingClient;
     private final WebRTCManager webRtcManager = WebRTCManager.getInstance();
 
     public Offer offer;
@@ -81,11 +82,11 @@ public class ChatController {
     }
 
     private void initSignalingClient(){
-        signalingClient = new SignalingClient("ws://localhost:8080/javaphone/signaling");
+        SignalingClient.initialize("ws://localhost:8080/javaphone/signaling");
 
         SwingUtilities.invokeLater(() -> connectToSignaling());
 
-        signalingClient.offerProperty().addListener((obs, oldVal, newVal) -> {
+        SignalingClient.getInstance().offerProperty().addListener((obs, oldVal, newVal) -> {
             Platform.runLater(() -> {
                 offer = new Offer(newVal.getSdp(), newVal.getSender());
                 showIncomingCallNotification();
@@ -96,7 +97,7 @@ public class ChatController {
     // Action methods
     private void connectToSignaling() {
         try {
-            signalingClient.connect();
+            SignalingClient.getInstance().connect();
         } catch (Exception e) {
             System.err.println("ERROR WHILE CONNECTING TO THE SIGNALING CLIENT: " + e.getMessage());
             e.printStackTrace();
@@ -278,7 +279,7 @@ public class ChatController {
     private void startVideoCallWithContact(Contact contact) {
         try {
             //здесь уже вызываем sendAnswer с sdp и клиент id
-            signalingClient.sendAnswer(offer.getSdp(), offer.getSender());
+            SignalingClient.getInstance().sendAccept(offer.getSdp(), offer.getSender());
 
             FXMLLoader loader = new FXMLLoader(
                     getClass().getResource("/com/mycompany/javaphone_nir2/fxml/video_call.fxml") //the path is searched from the classpath
