@@ -1,11 +1,11 @@
 package com.mycompany.javaphone_nir2.controllers;
 
+import com.mycompany.javaphone_nir2.ChatHistoryCell;
 import com.mycompany.javaphone_nir2.ContactListCell;
 import com.mycompany.javaphone_nir2.models.Contact;
+import com.mycompany.javaphone_nir2.models.Message;
 import com.mycompany.javaphone_nir2.models.Offer;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
-import com.mycompany.javaphone_nir2.models.User;
-import com.mycompany.javaphone_nir2.models.UserStatus;
 import com.mycompany.javaphone_nir2.signaling.SignalingClient;
 import com.mycompany.javaphone_nir2.webrtc.WebRTCManager;
 import javafx.collections.ObservableList;
@@ -17,7 +17,6 @@ import javafx.stage.Stage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
@@ -29,7 +28,6 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
 import javafx.stage.Window;
 import javafx.util.Duration;
-import javax.swing.SwingUtilities;
 
 /**
  * Controller for main chat window
@@ -43,7 +41,7 @@ public class ChatController {
     @FXML private HBox headerContainer;
     @FXML private VBox contactsContainer;
     @FXML private HBox messageContainer;
-    @FXML private TextArea chatHistory;
+    @FXML private ListView<Message> chatHistory;
     @FXML private TextField messageInput;
     @FXML private Button sendButton;
     @FXML private Button callButton;
@@ -79,6 +77,12 @@ public class ChatController {
         checkRegistration();
 
         initSignalingClient();
+
+        Platform.runLater(() -> {
+            appendToChat("Alice", "Привет! Это тестовое сообщение.");
+            appendToChat("Bob", "Отлично, работает! 🎉");
+            appendToChat("You", "Да, интерфейс стал намного лучше.");
+        });
     }
 
     private void initSignalingClient(){
@@ -279,7 +283,8 @@ public class ChatController {
     private void startVideoCallWithContact(Contact contact) {
         try {
             //здесь уже вызываем sendAnswer с sdp и клиент id
-            SignalingClient.getInstance().sendAccept(offer.getSdp(), offer.getSender());
+            
+//            SignalingClient.getInstance().sendAccept(offer.getSdp(), offer.getSender());
 
             FXMLLoader loader = new FXMLLoader(
                     getClass().getResource("/com/mycompany/javaphone_nir2/fxml/video_call.fxml") //the path is searched from the classpath
@@ -336,7 +341,14 @@ public class ChatController {
         contacts = javafx.collections.FXCollections.observableArrayList(
                 new Contact("AVKuzma", "Online"),
                 new Contact("BaFC13", "Online"),
-                new Contact("Кто-то", "Offline")
+                new Contact("Кто-то", "Offline"),
+                new Contact("Марина", "Online"),
+                new Contact("BaFC13333", "Online"),
+                new Contact("Пу пу пууууу", "Offline"),
+                new Contact("Коля", "Online"),
+                new Contact("Некто", "Online"),
+                new Contact("кто", "Online"),
+                new Contact("Я", "Online")
         );
 
         contactsList.setItems(contacts);
@@ -355,9 +367,7 @@ public class ChatController {
      * setuping chat ui
      */
     private void setupChatUI() {
-        chatHistory.setEditable(false);
-        chatHistory.setWrapText(true);
-        chatHistory.getStyleClass().add("chat-history");
+        initChat();
 
         chatTitleLabel.getStyleClass().add("chat-title-label");
 
@@ -368,14 +378,6 @@ public class ChatController {
         settingsButton.setOnAction(e -> openSettings());
         settingsButton.getStyleClass().add("header-button");
 
-        sendButton.setOnAction(e -> sendMessage());
-        sendButton.getStyleClass().add("send-button");
-
-        messageContainer.getStyleClass().add("message-container");
-
-        messageInput.setOnAction(e -> sendMessage());
-        messageInput.getStyleClass().add("message-input");
-
         callButton.setOnAction(e -> startVideoCall());
         callButton.getStyleClass().add("header-button");
 
@@ -383,6 +385,29 @@ public class ChatController {
         exitButton.getStyleClass().add("header-button");
 
         initIncomingCallNotification();
+    }
+
+    private void initChat() {
+        chatHistory.setCellFactory(lv -> new ChatHistoryCell());
+//        chatHistory.setFixedCellSize(80);
+//        chatHistory.setFixedCellSize(100);
+        chatHistory.getStyleClass().add("chat-history");
+        chatHistory.setOnMousePressed(event -> {
+            // Передаём фокус полю ввода сообщений
+            if (messageInput != null) {
+                messageInput.requestFocus();
+            }
+            // Позволяем событию идти дальше (чтобы можно было скроллить чат)
+            // Если скролл не нужен, можно добавить event.consume();
+        });
+
+        messageInput.setOnAction(e -> sendMessage());
+        messageInput.getStyleClass().add("message-input");
+
+        sendButton.setOnAction(e -> sendMessage());
+        sendButton.getStyleClass().add("send-button");
+
+        messageContainer.getStyleClass().add("message-container");
     }
 
     /**
@@ -446,9 +471,13 @@ public class ChatController {
     private void updateChatPanel() {
         if (selectedContact != null) {
             chatTitleLabel.setText("Чат с " + selectedContact.getName());
-            chatHistory.clear();
-            appendToChat("System", "Чат с " + selectedContact.getName() + " начат");
         }
+    }
+
+    public void loadChatHistory(List<Message> messages) {
+        chatHistory.getItems().setAll(messages);
+        // Прокрутка в конец после загрузки
+        Platform.runLater(() -> chatHistory.scrollTo(chatHistory.getItems().size() - 1));
     }
 
     /**
@@ -533,12 +562,42 @@ public class ChatController {
     }
 
     /**
-     * adding message to char history
-     */
-    private void appendToChat(String sender, String message) {
-        String formattedMessage = String.format("%s: %s\n", sender, message);
-        chatHistory.appendText(formattedMessage);
-    }
+    * Добавляет сообщение в историю чата (обратная совместимость со старым кодом)
+    */
+   public void appendToChat(String sender, String content) {
+       Message msg = new Message();
+       msg.setId(generateMessageId()); // Простая генерация ID
+       msg.setChatId(1); // Или динамически
+       msg.setSenderPublicKey(sender);
+       msg.setContent(content);
+       msg.setTime(System.currentTimeMillis() / 1000); // Unix timestamp в секундах
+
+       appendToChat(msg);
+   }
+
+   /**
+    * Добавляет готовое сообщение в историю
+    */
+   public void appendToChat(Message message) {
+       // Добавляем в конец списка
+       chatHistory.getItems().add(message);
+
+       // 🔥 Прокрутка вниз к новому сообщению
+       Platform.runLater(() -> {
+           int lastIndex = chatHistory.getItems().size() - 1;
+           if (lastIndex >= 0) {
+               chatHistory.scrollTo(lastIndex);
+           }
+       });
+   }
+
+   /**
+    * Простая генерация уникального ID (заглушка)
+    * В реальном приложении — использовать базу данных или UUID
+    */
+   private int generateMessageId() {
+       return (int) (System.currentTimeMillis() % Integer.MAX_VALUE);
+   }
 
     private void openSettings() {
          try {

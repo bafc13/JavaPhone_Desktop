@@ -59,18 +59,8 @@
     -fx-background-color: #c20404;
 }
 
-.contact-list-cell-item {
-    -fx-text-fill: #888888; 
-    -fx-font-size: 11;
-}
-
 .message-input {
     -fx-padding: 8;
-    -fx-font-size: 14;
-}
-
-.chat-history {
-    -fx-control-inner-background:  #dadef7;
     -fx-font-size: 14;
 }
 
@@ -127,9 +117,141 @@
 .contacts-list {
     -fx-control-inner-background: #454f97;
     -fx-text-fill: white;
+    -fx-background-insets: 0;
+}
+
+.contacts-list:focused {
+    -fx-background-color: #454f97;
+    -fx-background-insets: 0;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.contacts-list .scroll-bar:vertical {
+    -fx-opacity: 0;
+    -fx-pref-width: 8px;
+    -fx-min-width: 8px;
+    -fx-max-width: 8px;
+    -fx-background-color: rgba(0, 0, 0, 0.2);
+    -fx-background-radius: 4px;
+    -fx-transition: opacity 0.2s ease; /* Работает в новых версиях JavaFX */
+}
+
+.contacts-list:hover .scroll-bar:vertical {
+    -fx-opacity: 1;
+}
+
+.contact-list-cell-item {
+    -fx-padding: 10;
+    -fx-border-color: #ecf0f1; 
+    -fx-border-width: 0 0 1 0;
+    -fx-background-color: #dadef7;
+}
+
+.contacts-list-avatar-container {
+    -fx-background-color: #dadef7;
+    -fx-border-radius: 0;
+    -fx-border-width: 2;
+    -fx-border-color: #2c3e50;
+    -fx-background-radius: 0;
+}
+
+.contacts-list-name-label {
+    -fx-text-fill: #2c3e50;
+    -fx-font-weight: bold;
+    -fx-font-size: 14;
+}
+
+.contacts-list-status-label {
+    -fx-font-size: 12;
+    -fx-text-fill: #7f8c8d;
+    -fx-wrap-text: true;
 }
 
 .message-container {
     -fx-padding: 10;
     -fx-background-color: #dadef7;
+}
+
+/* === Контейнер истории чата === */
+.chat-history {
+    -fx-background-color: #dadef7;  /* Светло-серый фон чата */
+    -fx-padding: 10px;
+    -fx-border-color: transparent;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.chat-history:focused {
+    -fx-background-color: #dadef7; /* Твой фоновый цвет, без добавления рамок */
+    -fx-background-insets: 0;
+}
+
+.chat-history .scroll-bar:vertical {
+    -fx-opacity: 0;
+    -fx-pref-width: 8px;
+    -fx-min-width: 8px;
+    -fx-max-width: 8px;
+    -fx-background-color: rgba(0, 0, 0, 0.2);
+    -fx-background-radius: 4px;
+    -fx-transition: opacity 0.2s ease; /* Работает в новых версиях JavaFX */
+}
+
+.chat-history:hover .scroll-bar:vertical {
+    -fx-opacity: 1;
+}
+
+/* === Базовый стиль "пузыря" сообщения === */
+.message-bubble {
+    -fx-background-color: #34495e;   /* Твой запрошенный цвет */
+    -fx-background-radius: 12px;
+    -fx-padding: 10px 14px;
+    -fx-max-width: infinity;
+    -fx-spacing: 4px;
+    -fx-fixed-cell-size: -1;
+}
+
+/* === Свои сообщения (справа) — можно выделить цветом === */
+.message-bubble-own {
+    -fx-background-color: #3498db;   /* Синий для своих */
+    -fx-alignment: center-right;
+}
+
+/* === Чужие сообщения (слева) — оставляем #34495e === */
+.message-bubble-other {
+    -fx-background-color: #34495e;
+    -fx-alignment: center-left;
+}
+
+/* === Текст сообщения === */
+.message-content {
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-wrap-text: true;
+    -fx-max-width: 600;
+    /*-fx-pref-width: 300;*/
+}
+
+/* === Время отправки === */
+.message-time {
+    -fx-text-fill: rgba(255, 255, 255, 0.7);
+    -fx-font-size: 11px;
+    -fx-alignment: center-right;
+}
+
+/* === Отправитель (если включён) === */
+.message-sender {
+    -fx-text-fill: rgba(255, 255, 255, 0.9);
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+/* === Убираем выделение ячеек при клике (опционально) === */
+.chat-history .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 2px 0;
+}
+
+.chat-history .list-cell:filled:selected {
+    -fx-background-color: transparent;
 }

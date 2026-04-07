@@ -43,14 +43,7 @@ public class ContactListCell extends ListCell<Contact> {
         createTextContainer();
 
         root = new HBox(15);
-        root.setStyle("-fx-padding: 10; -fx-border-color: #ecf0f1; -fx-border-width: 0 0 1 0;");
-//        root.setPrefHeight(70);
-        root.setStyle(
-                "-fx-padding: 10; "
-                + "-fx-border-color: #ecf0f1; "
-                + "-fx-border-width: 0 0 1 0; "
-                + "-fx-background-color: #dadef7;"
-        );
+        root.getStyleClass().add("contact-list-cell-item");
 
         root.getChildren().addAll(avatarContainer, textContainer);
         HBox.setHgrow(textContainer, Priority.ALWAYS);
@@ -64,34 +57,16 @@ public class ContactListCell extends ListCell<Contact> {
 
         avatarContainer = new StackPane(avatarLabel);
         avatarContainer.setPrefSize(AVATAR_SIZE, AVATAR_SIZE);
-        avatarContainer.setStyle(
-                "-fx-border-color: #2c3e50; "
-                + "-fx-border-width: 2; "
-                + "-fx-border-radius: 0;"
-        );
-
-        avatarContainer.setStyle(
-                "-fx-background-radius: 0; "
-                + "-fx-border-radius: 0; "
-                + "-fx-border-color: #2c3e50; "
-                + "-fx-border-width: 2;"
-        );
+        avatarContainer.getStyleClass().add("contacts-list-avatar-container");
     }
 
     private void createTextContainer() {
         nameLabel = new Label();
-        nameLabel.setFont(Font.font("System", 14));
-        nameLabel.setStyle("-fx-text-fill: #2c3e50; -fx-font-weight: bold;");
-
-        HBox statusBox = new HBox();
+        nameLabel.getStyleClass().add("contacts-list-name-label");
 
         statusLabel = new Label();
-        statusLabel.setFont(Font.font("System", 12));
-        statusLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-wrap-text: true;");
-        statusLabel.setWrapText(true);
+        statusLabel.getStyleClass().add("contacts-list-status-label");
         statusLabel.setMaxHeight(Double.MAX_VALUE);
-
-        
 
         textContainer = new VBox(5);
         textContainer.setPadding(new Insets(5, 0, 0, 0));
@@ -141,14 +116,5 @@ public class ContactListCell extends ListCell<Contact> {
     private void updateAvatar(Contact contact) {
         String firstName = contact.getName().substring(0, 1).toUpperCase();
         avatarLabel.setText(firstName);
-
-        String avatarColor = contact.getAvatarColor();
-        avatarContainer.setStyle(
-                "-fx-background-color: " + avatarColor + "; "
-                + "-fx-background-radius: 0; "
-                + "-fx-border-radius: 0; "
-                + "-fx-border-color: #2c3e50; "
-                + "-fx-border-width: 2;"
-        );
     }
 }

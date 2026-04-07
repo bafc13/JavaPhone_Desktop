@@ -17,6 +17,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javafx.application.Platform;
 
 public class WebRTCManager implements PeerConnectionObserver {
     private PeerConnectionFactory factory;
@@ -71,6 +72,7 @@ public class WebRTCManager implements PeerConnectionObserver {
 
     public WebRTCManager() {
         initializeWebRTC();
+        initializeDevices();
     }
 
     private void initializeWebRTC() {
@@ -87,12 +89,24 @@ public class WebRTCManager implements PeerConnectionObserver {
     }
 
     public void initializeDevices() {
-        audioModule = new AudioDeviceModule();
-        factory = new PeerConnectionFactory(audioModule);
+        Thread deviceThread = new Thread(() -> {
+                try {
+                    audioModule = new AudioDeviceModule();
+                    factory = new PeerConnectionFactory(audioModule);
 
-        cameras = MediaDevices.getVideoCaptureDevices();
-        microphones = MediaDevices.getAudioCaptureDevices();
-        speakers = MediaDevices.getAudioRenderDevices();
+                    cameras = MediaDevices.getVideoCaptureDevices();
+                    microphones = MediaDevices.getAudioCaptureDevices();
+                    speakers = MediaDevices.getAudioRenderDevices();
+                } catch (Exception e) {
+                    Platform.runLater(() -> {
+                        System.out.print("Ошибка инициализации устройств: " + e.getMessage());
+                    });
+                }
+            });
+
+            deviceThread.setName("webrtc-device-init");
+            deviceThread.setDaemon(true);
+            deviceThread.start();
     }
 
     public void initializeMedia() {

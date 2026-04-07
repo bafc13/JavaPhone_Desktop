@@ -1,5 +1,7 @@
 package com.mycompany.javaphone_nir2.controllers;
 
+import com.mycompany.javaphone_nir2.ChatHistoryCell;
+import com.mycompany.javaphone_nir2.models.Message;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -8,6 +10,9 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import javafx.application.Platform;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -24,7 +29,7 @@ public class VideoCallController {
     @FXML private StackPane remoteVideoContainer;
     @FXML private HBox headerContainer;
     @FXML private StackPane localVideoContainer;
-    @FXML private TextArea callChatHistory;
+    @FXML private ListView callChatHistory;
     @FXML private TextField callMessageInput;
     @FXML private Button sendCallMessageButton;
     @FXML private Button settingsButton;
@@ -177,14 +182,7 @@ public class VideoCallController {
 
         callStatusLabel.getStyleClass().add("call-status-label");
 
-        // send message button
-        sendCallMessageButton.setOnAction(e -> sendCallMessage());
-        sendCallMessageButton.getStyleClass().add("send-button");
-
-        callChatHistory.getStyleClass().add("chat-history");
-
-        callMessageInput.setOnAction(e -> sendCallMessage());
-        callMessageInput.getStyleClass().add("message-input");
+        initChat();
 
         settingsButton.getStyleClass().add("header-button");
 
@@ -192,13 +190,41 @@ public class VideoCallController {
         endCallButton.setOnAction(e -> endCall());
         endCallButton.getStyleClass().add("header-button");
 
-        messageContainer.getStyleClass().add("mesage-container");
-
         callControlContainer.getStyleClass().add("call-control-container");
 
         footerContainer.getStyleClass().add("footer-container");
 
         recognizedTextArea.getStyleClass().add("recognized-text-area");
+    }
+
+    public void loadCallChatHistory(List<Message> messages) {
+        callChatHistory.getItems().setAll(messages);
+        // Прокрутка в конец после загрузки
+        Platform.runLater(() -> callChatHistory.scrollTo(callChatHistory.getItems().size() - 1));
+    }
+
+    private void initChat() {
+        callChatHistory.setCellFactory(lv -> new ChatHistoryCell());
+//        chatHistory.setFixedCellSize(80);
+//        chatHistory.setFixedCellSize(100);
+        callChatHistory.getStyleClass().add("chat-history");
+        callChatHistory.setOnMousePressed(event -> {
+            // Передаём фокус полю ввода сообщений
+            if (callMessageInput != null) {
+                callMessageInput.requestFocus();
+            }
+            // Позволяем событию идти дальше (чтобы можно было скроллить чат)
+            // Если скролл не нужен, можно добавить event.consume();
+        });
+
+        // send message button
+        sendCallMessageButton.setOnAction(e -> sendCallMessage());
+        sendCallMessageButton.getStyleClass().add("send-button");
+
+        callMessageInput.setOnAction(e -> sendCallMessage());
+        callMessageInput.getStyleClass().add("message-input");
+
+        messageContainer.getStyleClass().add("mesage-container");
 
         chatContainer.getStyleClass().add("message-container");
     }
@@ -263,13 +289,41 @@ public class VideoCallController {
     }
 
     /**
-     * adding new message to call chat
+    * Добавляет сообщение в историю чата (обратная совместимость со старым кодом)
+    */
+    public void appendToCallChat(String sender, String content) {
+        Message msg = new Message();
+        msg.setId(generateMessageId()); // Простая генерация ID
+        msg.setChatId(1); // Или динамически
+        msg.setSenderPublicKey(sender);
+        msg.setContent(content);
+        msg.setTime(System.currentTimeMillis() / 1000); // Unix timestamp в секундах
+
+        appendToCallChat(msg);
+    }
+
+    /**
+     * Добавляет готовое сообщение в историю
      */
-    private void appendToCallChat(String sender, String message) {
-        String time = LocalTime.now().format(timeFormatter);
-        String formattedMessage = String.format("[%s] %s: %s\n", time, sender, message);
-        callChatHistory.appendText(formattedMessage);
-        callChatHistory.setScrollTop(Double.MAX_VALUE);
+    public void appendToCallChat(Message message) {
+        // Добавляем в конец списка
+        callChatHistory.getItems().add(message);
+
+        // 🔥 Прокрутка вниз к новому сообщению
+        Platform.runLater(() -> {
+            int lastIndex = callChatHistory.getItems().size() - 1;
+            if (lastIndex >= 0) {
+                callChatHistory.scrollTo(lastIndex);
+            }
+        });
+    }
+
+    /**
+     * Простая генерация уникального ID (заглушка)
+     * В реальном приложении — использовать базу данных или UUID
+     */
+    private int generateMessageId() {
+        return (int) (System.currentTimeMillis() % Integer.MAX_VALUE);
     }
 }
 

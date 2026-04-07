@@ -15,6 +15,7 @@
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.control.ListView?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
@@ -68,13 +69,16 @@
    <right>
          
          <VBox fx:id="chatContainer" prefHeight="450.0" prefWidth="286.0" BorderPane.alignment="CENTER">
-         <TextArea fx:id="callChatHistory" editable="false" prefHeight="406.0" prefWidth="286.0" wrapText="true" VBox.vgrow="ALWAYS" />
-         <HBox fx:id="messageContainer" prefHeight="0.0" prefWidth="478.0" spacing="5">
-            <children>
-               <TextField fx:id="callMessageInput" promptText="Введите сообщение..." HBox.hgrow="ALWAYS" />
-               <Button fx:id="sendCallMessageButton" prefWidth="100" text="Отправить" HBox.hgrow="ALWAYS" />
-            </children>
-         </HBox>
+             <children>
+                 <ListView fx:id="callChatHistory" editable="false" prefHeight="406.0" prefWidth="286.0" VBox.vgrow="ALWAYS" >
+                 </ListView>
+                <HBox fx:id="messageContainer" prefHeight="0.0" prefWidth="478.0" spacing="5">
+                   <children>
+                      <TextField fx:id="callMessageInput" promptText="Введите сообщение..." HBox.hgrow="ALWAYS" />
+                      <Button fx:id="sendCallMessageButton" prefWidth="100" text="Отправить" HBox.hgrow="ALWAYS" />
+                   </children>
+                </HBox>
+         </children>
          </VBox>
    </right>
 </BorderPane>
