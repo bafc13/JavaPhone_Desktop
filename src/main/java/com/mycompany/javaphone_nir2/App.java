@@ -1,5 +1,6 @@
 package com.mycompany.javaphone_nir2;
 
+import com.mycompany.javaphone_nir2.controllers.ChatController;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -44,6 +45,9 @@ public class App extends Application {
             primaryStage.setScene(scene);
             primaryStage.setMinWidth(800);
             primaryStage.setMinHeight(500);
+
+            ChatController chatController = loader.getController();
+            chatController.initializeResponsiveLayout(primaryStage);
 
             primaryStage.show();
         } catch (IOException e) {

@@ -12,11 +12,12 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.control.ListView?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
@@ -39,11 +40,9 @@
     </top>
 
     <center>
-        <HBox spacing="0">
-
-            <VBox spacing="0" HBox.hgrow="ALWAYS">
-
-                <StackPane fx:id="remoteVideoContainer" prefHeight="405.0" prefWidth="392.0" style="-fx-background-color: #1a1a1a;" VBox.vgrow="ALWAYS">
+        <SplitPane fx:id="videoSplitPane" orientation="HORIZONTAL" dividerPositions="0.75">
+            <VBox spacing="0" minWidth="550" HBox.hgrow="ALWAYS">
+                <StackPane fx:id="remoteVideoContainer" minWidth="350"  prefHeight="405.0" prefWidth="392.0" style="-fx-background-color: #1a1a1a;" VBox.vgrow="ALWAYS">
                     <com.mycompany.javaphone_nir2.WebRtcVideoPanel />
                     
                     <StackPane fx:id="localVideoContainer" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="120.0" prefWidth="180.0" style="-fx-background-color: #ecf0f1; -fx-border-color: #2c3e50; -fx-border-width: 2;" StackPane.alignment="BOTTOM_LEFT">
@@ -64,21 +63,19 @@
                     </HBox>
                 </HBox>
             </VBox>
-        </HBox>
-    </center>
-   <right>
-         
-         <VBox fx:id="chatContainer" prefHeight="450.0" prefWidth="286.0" BorderPane.alignment="CENTER">
-             <children>
-                 <ListView fx:id="callChatHistory" editable="false" prefHeight="406.0" prefWidth="286.0" VBox.vgrow="ALWAYS" >
+            
+                        <VBox fx:id="chatContainer" minWidth="255" prefHeight="450.0" prefWidth="286.0">
+                <children>
+                    <ListView fx:id="callChatHistory" editable="false" minWidth="100" prefHeight="406.0" prefWidth="286.0" VBox.vgrow="ALWAYS">
                  </ListView>
-                <HBox fx:id="messageContainer" prefHeight="0.0" prefWidth="478.0" spacing="5">
-                   <children>
-                      <TextField fx:id="callMessageInput" promptText="Введите сообщение..." HBox.hgrow="ALWAYS" />
-                      <Button fx:id="sendCallMessageButton" prefWidth="100" text="Отправить" HBox.hgrow="ALWAYS" />
-                   </children>
-                </HBox>
-         </children>
-         </VBox>
-   </right>
+                   <HBox fx:id="messageContainer" prefHeight="0.0" prefWidth="478.0" spacing="5">
+                      <children>
+                         <TextField fx:id="callMessageInput" promptText="Введите сообщение..." HBox.hgrow="ALWAYS" />
+                         <Button fx:id="sendCallMessageButton" prefWidth="100" text="Отправить" HBox.hgrow="ALWAYS" />
+                      </children>
+                   </HBox>
+            </children>
+            </VBox>
+        </SplitPane>
+    </center>
 </BorderPane>

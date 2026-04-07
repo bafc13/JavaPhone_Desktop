@@ -13,6 +13,7 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
@@ -42,14 +43,13 @@
         </HBox>
     </top>
     <center>
-        <HBox spacing="0">
-            <children>
-                <VBox fx:id="contactsContainer" prefWidth="250">
+        <SplitPane fx:id="mainSplitPane" orientation="HORIZONTAL" dividerPositions="0.25">
+                <VBox fx:id="contactsContainer" minWidth="190" prefWidth="250">
                     <children>
                         <ListView fx:id="contactsList" prefHeight="401.0" prefWidth="256.0" VBox.vgrow="ALWAYS" />
                     </children>
                 </VBox>
-                <VBox spacing="0" HBox.hgrow="ALWAYS">
+                <VBox spacing="0" HBox.hgrow="ALWAYS" minWidth="460">
                     <children>
                         <ListView fx:id="chatHistory" VBox.vgrow="ALWAYS">
                         </ListView>
@@ -61,7 +61,6 @@
                         </HBox>
                     </children>
                 </VBox>
-            </children>
-        </HBox>
+        </SplitPane>
     </center>
 </BorderPane>

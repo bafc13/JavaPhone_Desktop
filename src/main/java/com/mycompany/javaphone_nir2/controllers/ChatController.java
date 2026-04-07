@@ -48,6 +48,7 @@ public class ChatController {
     @FXML private Button settingsButton;
     @FXML private Button exitButton;
     @FXML private Label chatTitleLabel;
+    @FXML private SplitPane mainSplitPane;
 
     private ObservableList<Contact> contacts;
     private List<ChangeListener<Number>> popupWindowListeners = new ArrayList<>();
@@ -59,7 +60,6 @@ public class ChatController {
 
     private Popup incomingCallPopup;
     private VBox notificationBox;
-
 
     private final SettingsManager settings = SettingsManager.getInstance();
 
@@ -73,9 +73,7 @@ public class ChatController {
         incomingCallContact = contacts.get(0);  // first contact
 
         setupChatUI();
-
         checkRegistration();
-
         initSignalingClient();
 
         Platform.runLater(() -> {
@@ -97,6 +95,18 @@ public class ChatController {
             });
         });
     }
+
+    private void setupCloseInterceptor(Stage stage) {
+        stage.setOnCloseRequest(event -> {
+                        closeWindow();
+                        event.consume();
+                    });
+    }
+
+//    private void onCloseRequested() {
+//
+//        closeWindow();
+//    }
 
     // Action methods
     private void connectToSignaling() {
@@ -283,7 +293,7 @@ public class ChatController {
     private void startVideoCallWithContact(Contact contact) {
         try {
             //здесь уже вызываем sendAnswer с sdp и клиент id
-            
+
 //            SignalingClient.getInstance().sendAccept(offer.getSdp(), offer.getSender());
 
             FXMLLoader loader = new FXMLLoader(
@@ -367,6 +377,7 @@ public class ChatController {
      * setuping chat ui
      */
     private void setupChatUI() {
+        initSplitPane();
         initChat();
 
         chatTitleLabel.getStyleClass().add("chat-title-label");
@@ -385,6 +396,18 @@ public class ChatController {
         exitButton.getStyleClass().add("header-button");
 
         initIncomingCallNotification();
+    }
+
+    private void initSplitPane() {
+        mainSplitPane.setDividerPositions(settings.getMainSplitRatio());
+
+        // 2. Слушаем изменение разделителя
+        for (SplitPane.Divider divider : mainSplitPane.getDividers()) {
+            divider.positionProperty().addListener((obs, oldPos, newPos) -> {
+                // Сохраняем в модель (реактивно вызовет update data)
+                settings.setMainSplitRatio(newPos.doubleValue());
+            });
+        }
     }
 
     private void initChat() {
@@ -528,8 +551,14 @@ public class ChatController {
         });
     }
 
+    public void initializeResponsiveLayout(Stage stage) {
+        setupCloseInterceptor(stage);
+    }
+
     private void closeWindow() {
-        javafx.application.Platform.runLater(() -> {
+        settings.save();
+
+        Platform.runLater(() -> {
             Stage stage = (Stage) exitButton.getScene().getWindow();
             stage.close();
             Platform.exit();
@@ -614,6 +643,9 @@ public class ChatController {
             settingsStage.setScene(scene);
             settingsStage.setMinWidth(500);
             settingsStage.setMinHeight(465);
+
+            SettingsController controller = loader.getController();
+            controller.initializeResponsiveLayout(settingsStage);
 
             settingsStage.show();
 

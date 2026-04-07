@@ -2,20 +2,22 @@ package com.mycompany.javaphone_nir2.controllers;
 
 import com.mycompany.javaphone_nir2.ChatHistoryCell;
 import com.mycompany.javaphone_nir2.models.Message;
+import com.mycompany.javaphone_nir2.models.SettingsManager;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import javafx.application.Platform;
 import javafx.scene.control.ListView;
+import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.stage.Window;
 
 /**
  * controller for video call
@@ -29,7 +31,8 @@ public class VideoCallController {
     @FXML private StackPane remoteVideoContainer;
     @FXML private HBox headerContainer;
     @FXML private StackPane localVideoContainer;
-    @FXML private ListView callChatHistory;
+    @FXML private SplitPane videoSplitPane;
+    @FXML private ListView<Message> callChatHistory;
     @FXML private TextField callMessageInput;
     @FXML private Button sendCallMessageButton;
     @FXML private Button settingsButton;
@@ -51,6 +54,8 @@ public class VideoCallController {
     private boolean isFilterEnabled = false;
     private String contactName = "Собеседник";
 
+    private final SettingsManager settings = SettingsManager.getInstance();
+
     @FXML
     public void initialize() {
         setupCallUI();
@@ -69,6 +74,7 @@ public class VideoCallController {
      */
     public void initializeResponsiveLayout(Stage stage) {
         setupWindowResizeListener(stage);
+        setupCloseInterceptor(stage);
     }
 
     /**
@@ -145,6 +151,8 @@ public class VideoCallController {
      * sets styles and listeners for all buttons
      */
     private void setupCallUI() {
+        initSplitPane();
+
         // mic button
         micButton.setOnAction(e -> {
             isMicEnabled = !isMicEnabled;
@@ -195,6 +203,18 @@ public class VideoCallController {
         footerContainer.getStyleClass().add("footer-container");
 
         recognizedTextArea.getStyleClass().add("recognized-text-area");
+    }
+
+    private void initSplitPane() {
+        videoSplitPane.setDividerPositions(settings.getVideoSplitRatio());
+
+        // 2. Слушаем изменение разделителя
+        for (SplitPane.Divider divider : videoSplitPane.getDividers()) {
+            divider.positionProperty().addListener((obs, oldPos, newPos) -> {
+                // Сохраняем в модель (реактивно вызовет update data)
+                settings.setVideoSplitRatio(newPos.doubleValue());
+            });
+        }
     }
 
     public void loadCallChatHistory(List<Message> messages) {
@@ -283,9 +303,20 @@ public class VideoCallController {
         });
     }
 
+    private void setupCloseInterceptor(Stage stage) {
+        stage.setOnCloseRequest(event -> {
+                        closeWindow();
+                        event.consume();
+                    });
+    }
+
     private void closeWindow() {
-        Stage stage = (Stage) endCallButton.getScene().getWindow();
-        stage.close();
+        settings.save();
+
+        Platform.runLater(() -> {
+            Stage stage = (Stage) endCallButton.getScene().getWindow();
+            stage.close();
+        });
     }
 
     /**

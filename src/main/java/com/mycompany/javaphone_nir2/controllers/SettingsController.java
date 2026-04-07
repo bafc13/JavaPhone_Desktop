@@ -80,8 +80,6 @@ public class SettingsController {
         bindReactiveFields();   // 🔥 Реактивная привязка к настройкам
         setupFieldValidation();
         loadNonReactiveValues(); // ComboBox, аватар (требуют ручной инициализации)
-
-        setupCloseInterceptor();
     }
 
     // === 1. CSS и обработчики кнопок (без изменений) ===
@@ -149,20 +147,15 @@ public class SettingsController {
         closeWindow();
     }
 
-    private void setupCloseInterceptor() {
-        saveButton.sceneProperty().addListener((obs, oldScene, newScene) -> {
-            if (newScene != null) {
-                Window window = newScene.getWindow();
-                if (window != null) {
-                    window.setOnCloseRequest(event -> {
-                        // 1. Твоя логика отмены
+    public void initializeResponsiveLayout(Stage stage) {
+        setupCloseInterceptor(stage);
+    }
+
+    private void setupCloseInterceptor(Stage stage) {
+        stage.setOnCloseRequest(event -> {
                         onDiscardButtonClicked();
-                        // 2. Отменяем стандартное закрытие
                         event.consume();
                     });
-                }
-            }
-        });
     }
 
     // === 2. 🔥 РЕАКТИВНАЯ ПРИВЯЗКА (заменяет setSettingsValues) ===

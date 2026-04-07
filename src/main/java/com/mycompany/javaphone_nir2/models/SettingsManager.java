@@ -53,6 +53,8 @@ public class SettingsManager {
     private transient final StringProperty cameraProperty = new SimpleStringProperty(this, "camera");
     private transient final IntegerProperty cameraBitrateProperty = new SimpleIntegerProperty(this, "cameraBitrate");
     private transient final StringProperty signalingServerIpProperty = new SimpleStringProperty(this, "signalingServerIp");
+    private transient final DoubleProperty mainSplitRatioProperty = new SimpleDoubleProperty(this, "mainSplitRatio", 0.25);
+    private transient final DoubleProperty videoSplitRatioProperty = new SimpleDoubleProperty(this, "videoSplitRatio", 0.5);
 
     private SettingsManager() {
         // 🔥 Инициализация Jackson ObjectMapper
@@ -71,6 +73,12 @@ public class SettingsManager {
         notificationsEnabledProperty.addListener((obs, old, newVal) -> { data.notificationsEnabled = newVal; });
         microphoneProperty.addListener((obs, old, newVal) -> { data.microphone = newVal; });
         speakerProperty.addListener((obs, old, newVal) -> { data.speaker = newVal; });
+        mainSplitRatioProperty.addListener((obs, old, newVal) -> {
+            data.mainSplitRatio = Math.max(0.15, Math.min(0.85, newVal.doubleValue())); // Валидация
+        });
+        videoSplitRatioProperty.addListener((obs, old, newVal) -> {
+            data.videoSplitRatio = Math.max(0.2, Math.min(0.8, newVal.doubleValue()));
+        });
 
         speakerVolumeProperty.addListener((obs, oldVal, newVal) -> {
             data.speakerVolume = (int) newVal;
@@ -178,7 +186,15 @@ public class SettingsManager {
     public void setSignalingServerIp(String ip) { signalingServerIpProperty.set(ip); }
     public StringProperty signalingServerIpProperty() { return signalingServerIpProperty; }
 
-    
+    public double getMainSplitRatio() { return data.mainSplitRatio; }
+    public void setMainSplitRatio(double ratio) { mainSplitRatioProperty.set(ratio); }
+    public DoubleProperty mainSplitRatioProperty() { return mainSplitRatioProperty; }
+
+    public double getVideoSplitRatio() { return data.videoSplitRatio; }
+    public void setVideoSplitRatio(double ratio) { videoSplitRatioProperty.set(ratio); }
+    public DoubleProperty videoSplitRatioProperty() { return videoSplitRatioProperty; }
+
+
     public void save() {
         try {
             Files.createDirectories(settingsPath.getParent());
@@ -239,6 +255,8 @@ public class SettingsManager {
         defaults.camera = "";
         defaults.cameraBitrate = 3800;
         defaults.signalingServerIp = "127.0.0.1";
+        defaults.videoSplitRatio = 0.75;
+        defaults.mainSplitRatio = 0.25;
         this.data = defaults;
         syncPropertiesWithData();
     }
@@ -397,8 +415,6 @@ public class SettingsManager {
         };
     }
 
-    // === Вложенный класс данных (JsonProperty вместо SerializedName) ===
-
     private static class SettingsData {
         @JsonProperty("path_to_avatar") private String pathToAvatar;
         @JsonProperty("nickname") private String nickname;
@@ -415,5 +431,7 @@ public class SettingsManager {
         @JsonProperty("camera") private String camera;
         @JsonProperty("camera_bitrate") private int cameraBitrate;
         @JsonProperty("signaling_server_ip") private String signalingServerIp;
+        @JsonProperty("main_split_ratio") private double mainSplitRatio = 0.25;
+        @JsonProperty("video_split_ratio") private double videoSplitRatio = 0.75;
     }
 }
