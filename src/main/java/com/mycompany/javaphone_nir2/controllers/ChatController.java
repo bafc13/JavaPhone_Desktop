@@ -309,11 +309,17 @@ public class ChatController {
      * handle call accept
      *
      */
-    private void handleCallAccepted() {
+    private void acceptCall() {
         hideIncomingCallNotification();
 //        appendToChat("System", "✅ Вы приняли звонок от " + incomingCallContact.getName());
-
+        webRtcManager.handleOffer(offer.getSdp(), offer.getSender());
         startVideoCallWithContact(incomingCallContact);
+    }
+    
+    public void handleCallAccepted() {
+        Platform.runLater(() -> {
+            startVideoCallWithContact(selectedContact);
+        });
     }
 
     /**
@@ -522,7 +528,7 @@ public class ChatController {
         acceptButton.setPrefHeight(32);
         acceptButton.getStyleClass().add("accept-button");
         acceptButton.setOnAction(e -> {
-            handleCallAccepted();
+            acceptCall();
         });
 
         Button rejectButton = new Button("Отклонить");
