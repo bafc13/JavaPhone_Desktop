@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.mycompany.javaphone_nir2.controllers.ChatController;
+import com.mycompany.javaphone_nir2.models.Contact;
 import com.mycompany.javaphone_nir2.models.Offer;
 import com.mycompany.javaphone_nir2.models.User;
 import com.mycompany.javaphone_nir2.models.UserStatus;
@@ -25,7 +27,7 @@ import javafx.beans.property.StringProperty;
 public class SignalingClient {
     private Session session;
     private final String serverUrl;
-    private String clientId;
+    private String clientId = "321";
     private final ObjectMapper mapper = new ObjectMapper();
 
     private final ObjectProperty<Offer> offer = new SimpleObjectProperty<>();
@@ -130,9 +132,13 @@ public class SignalingClient {
             UserStatus status = mapper.treeToValue(userNode.get("status"), UserStatus.class);
             
             String toPrint = userNode.asText();
-            System.out.println("GOT PEER");
+            
+            Contact contact = new Contact(user.getName(), status.toString(), user.getPublicKey());
+            ChatController cc = ChatController.getInstance();
+            cc.addContact(contact);
+            
+            System.out.println("GOT CONTACT");
             System.out.println(toPrint);
-            // call UI to hanlde peer
         } catch (IllegalArgumentException ex) {
             Logger.getLogger(SignalingClient.class.getName()).log(Level.SEVERE, null, ex);
         } catch (JsonProcessingException ex) {
@@ -148,7 +154,7 @@ public class SignalingClient {
         me.setName("me");
         me.setEmail("me@me.me");
         me.setIp("localhost");
-        me.setPublicKey("123");
+        me.setPublicKey(clientId);
         me.setAvatarId(Integer.MAX_VALUE);
 
         try {
@@ -164,7 +170,9 @@ public class SignalingClient {
         String sender = json.get("sender").asText();
 //        tell webrtc manager to handle offer
 
-        this.offer.set(new Offer(sdp, sender));
+        // this.offer.set(new Offer(sdp, sender));
+        ChatController cc = ChatController.getInstance();
+        cc.initIncomingCall(new Offer(sdp, sender));
     }
 
     private void handleAccept(JsonNode json) {
