@@ -1,5 +1,6 @@
 package com.mycompany.javaphone_nir2.webrtc;
 
+import com.mycompany.javaphone_nir2.signaling.SignalingClient;
 import dev.onvoid.webrtc.*;
 import dev.onvoid.webrtc.media.*;
 import dev.onvoid.webrtc.media.video.*;
@@ -172,7 +173,13 @@ public class WebRTCManager implements PeerConnectionObserver {
             public void onSuccess(RTCSessionDescription sdp) {
                 peerConnection.setLocalDescription(sdp, new SetSessionDescriptionObserver() {
                     @Override
-                    public void onSuccess() { }
+                    public void onSuccess() {
+                        try {
+                            SignalingClient.getInstance().sendOffer(sdp.sdp, remoteClientId);
+                        } catch (IOException ex) {
+                            System.getLogger(WebRTCManager.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+                        }
+                    }
 
                     @Override
                     public void onFailure(String error) { }
@@ -219,7 +226,13 @@ public class WebRTCManager implements PeerConnectionObserver {
                     public void onSuccess(RTCSessionDescription sdp) {
                         peerConnection.setLocalDescription(sdp, new SetSessionDescriptionObserver() {
                             @Override
-                            public void onSuccess() { }
+                            public void onSuccess() {
+                                try {
+                                    SignalingClient.getInstance().sendAccept(sdp.sdp, remoteClientId);
+                                } catch (IOException ex) {
+                                    System.getLogger(WebRTCManager.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+                                }
+                            }
 
                             @Override
                             public void onFailure(String error) { }
@@ -239,7 +252,7 @@ public class WebRTCManager implements PeerConnectionObserver {
         startStatisticsCollection();
     }
 
-    public void handleAnswer(String sdp) {
+    public void handleAccept(String sdp) {
         RTCSessionDescription remoteSdp = new RTCSessionDescription(
             RTCSdpType.ANSWER, sdp
         );
