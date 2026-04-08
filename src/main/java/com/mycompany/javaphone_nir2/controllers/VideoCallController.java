@@ -1,8 +1,10 @@
 package com.mycompany.javaphone_nir2.controllers;
 
 import com.mycompany.javaphone_nir2.ChatHistoryCell;
+import com.mycompany.javaphone_nir2.WebRtcVideoPanel;
 import com.mycompany.javaphone_nir2.models.Message;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
+import com.mycompany.javaphone_nir2.models.VideoLayoutMode;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -11,13 +13,23 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import javafx.animation.FadeTransition;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.DoubleBinding;
+import javafx.geometry.Pos;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextField;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Window;
+import javafx.util.Duration;
 
 /**
  * controller for video call
@@ -35,7 +47,7 @@ public class VideoCallController {
     @FXML private ListView<Message> callChatHistory;
     @FXML private TextField callMessageInput;
     @FXML private Button sendCallMessageButton;
-    @FXML private Button settingsButton;
+    @FXML private Button gameButton;
     @FXML private HBox callControlContainer;
     @FXML private Button micButton;
     @FXML private Button filterButton;
@@ -45,7 +57,15 @@ public class VideoCallController {
     @FXML private HBox messageContainer;
     @FXML private HBox footerContainer;
     @FXML private VBox chatContainer;
-    @FXML private TextArea recognizedTextArea;
+    @FXML private StackPane videoContainer;
+    @FXML private WebRtcVideoPanel remoteVideo;
+    @FXML private WebRtcVideoPanel localVideo;
+    @FXML private Label remoteVideoLabel;
+    @FXML private Label localVideoLabel;
+
+    @FXML private BorderPane rootContainer;
+
+    private HBox splitModeContainer;
 
     private DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
@@ -55,6 +75,7 @@ public class VideoCallController {
     private String contactName = "Собеседник";
 
     private final SettingsManager settings = SettingsManager.getInstance();
+    private VideoLayoutMode currentMode = VideoLayoutMode.PIP_PRIMARY_FIRST;
 
     @FXML
     public void initialize() {
@@ -73,69 +94,46 @@ public class VideoCallController {
      * @param stage video call scene
      */
     public void initializeResponsiveLayout(Stage stage) {
-        setupWindowResizeListener(stage);
         setupCloseInterceptor(stage);
     }
 
-    /**
-     * Configures a listener for window resize events.
-     */
-    private void setupWindowResizeListener(Stage stage) {
-        if (stage == null) {
-            System.err.println("ОШИБКА: Stage равен null в setupWindowResizeListener");
-            return;
-        }
+   /**
+    * Привязывает панель как "главную" в режиме PiP
+    */
+   private void bindPaneAsMain(StackPane pane, DoubleBinding width, DoubleBinding height) {
+       pane.prefWidthProperty().bind(width);
+       pane.prefHeightProperty().bind(height);
+       pane.minWidthProperty().bind(width.multiply(0.8)); // Не сжиматься меньше 80%
+       pane.minHeightProperty().bind(height.multiply(0.8));
+       pane.setMaxWidth(Double.POSITIVE_INFINITY);
+       pane.setMaxHeight(Double.POSITIVE_INFINITY);
+//       pane.maxWidthProperty().bind(Double.POSITIVE_INFINITY);
+//       pane.maxHeightProperty().bind(DoubleBinding.value(Double.MAX_VALUE));
+   }
 
-        // listening window resize
-        stage.widthProperty().addListener((obs, oldVal, newVal) -> {
-            updateVideoContainerSizes(stage);
-        });
+   /**
+    * Привязывает панель как "маленькую" в режиме PiP
+    */
+   private void bindPaneAsSmall(StackPane pane, DoubleBinding width, DoubleBinding height) {
+       pane.prefWidthProperty().bind(width);
+       pane.prefHeightProperty().bind(height);
+       pane.minWidthProperty().bind(width); // Фиксированный размер
+       pane.minHeightProperty().bind(height);
+       pane.maxWidthProperty().bind(width);
+       pane.maxHeightProperty().bind(height);
+   }
 
-        stage.heightProperty().addListener((obs, oldVal, newVal) -> {
-            updateVideoContainerSizes(stage);
-        });
-
-        // init calculating sizes
-        updateVideoContainerSizes(stage);
-    }
-
-    /**
-     * calculating and updating video cont sizes
-     */
-    private void updateVideoContainerSizes(Stage stage) {
-        double windowWidth = stage.getWidth();
-        double windowHeight = stage.getHeight();
-
-        double availableWidth = windowWidth - 320;
-        double availableHeight = windowHeight - 140;
-
-        if (availableWidth <= 0) {
-            availableWidth = 450;
-        }
-        if (availableHeight <= 0) {
-            availableHeight = 300;
-        }
-
-        // main video
-        remoteVideoContainer.setMinWidth(200);
-        remoteVideoContainer.setMinHeight(200);
-        remoteVideoContainer.setPrefWidth(availableWidth);
-        remoteVideoContainer.setPrefHeight(availableHeight);
-        remoteVideoContainer.setMaxWidth(Double.MAX_VALUE);
-        remoteVideoContainer.setMaxHeight(Double.MAX_VALUE);
-
-        // local video (camera 2)
-        localVideoContainer.setMinWidth(180);
-        localVideoContainer.setMinHeight(120);
-
-        double localVideoWidth = availableWidth * 0.2;    // 20% of main camera
-        double localVideoHeight = availableHeight * 0.25;  // 25% or main camera
-
-        localVideoContainer.setPrefWidth(localVideoWidth);
-        localVideoContainer.setPrefHeight(localVideoHeight);
-        localVideoContainer.setMaxWidth(localVideoWidth);
-        localVideoContainer.setMaxHeight(localVideoHeight);
-    }
+   /**
+    * Привязывает панель для режима Split
+    */
+   private void bindPaneAsSplit(StackPane pane, DoubleBinding width, DoubleBinding height) {
+       pane.prefWidthProperty().bind(width);
+       pane.prefHeightProperty().bind(height);
+       pane.minWidthProperty().bind(width.multiply(0.9));
+       pane.minHeightProperty().bind(height.multiply(0.9));
+       pane.setMaxWidth(Double.POSITIVE_INFINITY);
+       pane.setMaxHeight(Double.POSITIVE_INFINITY);
+   }
 
     /**
      * sets contact name
@@ -152,6 +150,14 @@ public class VideoCallController {
      */
     private void setupCallUI() {
         initSplitPane();
+
+        remoteVideoContainer.getStyleClass().add("video-pane");
+        localVideoContainer.getStyleClass().add("video-pane");
+        remoteVideoLabel.getStyleClass().add("video-label");
+        localVideoLabel.getStyleClass().add("video-label");
+
+        applyLayoutMode(currentMode);
+        setupClickHandlers();
 
         // mic button
         micButton.setOnAction(e -> {
@@ -192,7 +198,10 @@ public class VideoCallController {
 
         initChat();
 
-        settingsButton.getStyleClass().add("header-button");
+        gameButton.getStyleClass().add("header-button");
+        gameButton.setOnAction(e -> {
+            openGameChooser();
+        });
 
         // exit button
         endCallButton.setOnAction(e -> endCall());
@@ -202,7 +211,9 @@ public class VideoCallController {
 
         footerContainer.getStyleClass().add("footer-container");
 
-        recognizedTextArea.getStyleClass().add("recognized-text-area");
+        // 🔥 Важно: layout после инициализации
+        videoContainer.applyCss();
+        videoContainer.layout();
     }
 
     private void initSplitPane() {
@@ -217,6 +228,230 @@ public class VideoCallController {
         }
     }
 
+    /**
+     * Применяет выбранный режим отображения
+     */
+    private void applyLayoutMode(VideoLayoutMode mode) {
+        // 🔥 1. ПОЛНАЯ ОЧИСТКА: удаляем ВСЕХ прямых детей из корневого контейнера
+        // Это гарантирует, что камеры не "зависнут" с двумя родителями
+        videoContainer.getChildren().clear();
+
+        // 2. Сброс стилей и позиционирования (визуальная часть)
+        remoteVideoContainer.getStyleClass().removeAll("pip-main", "pip-small", "split");
+        localVideoContainer.getStyleClass().removeAll("pip-main", "pip-small", "split");
+        StackPane.setAlignment(remoteVideoContainer, null);
+        StackPane.setAlignment(localVideoContainer, null);
+
+        // 🔥 3. Сбрасываем старые привязки размеров (важно!)
+        unbindAllSizeProperties(remoteVideoContainer);
+        unbindAllSizeProperties(localVideoContainer);
+
+        switch (mode) {
+            case PIP_PRIMARY_FIRST:
+                // === PiP: Камера 1 главная, Камера 2 в углу ===
+                remoteVideoContainer.getStyleClass().add("pip-main");
+                localVideoContainer.getStyleClass().add("pip-small");
+
+                // Добавляем КАМЕРЫ напрямую в StackPane
+                videoContainer.getChildren().addAll(remoteVideoContainer, localVideoContainer);
+                StackPane.setAlignment(localVideoContainer, Pos.BOTTOM_LEFT);
+                localVideoContainer.toFront(); // Маленькая поверх большой
+                break;
+
+            case PIP_PRIMARY_SECOND:
+                // === PiP: Камера 2 главная, Камера 1 в углу ===
+                localVideoContainer.getStyleClass().add("pip-main");
+                remoteVideoContainer.getStyleClass().add("pip-small");
+
+                videoContainer.getChildren().addAll(localVideoContainer, remoteVideoContainer);
+                StackPane.setAlignment(remoteVideoContainer, Pos.BOTTOM_LEFT);
+                remoteVideoContainer.toFront();
+                break;
+
+            case SPLIT:
+                // === SPLIT: Обе камеры рядом в HBox ===
+                remoteVideoContainer.getStyleClass().add("split");
+                localVideoContainer.getStyleClass().add("split");
+
+                // Создаём/настраиваем HBox
+                if (splitModeContainer == null) {
+                    splitModeContainer = new HBox(10); // 10px зазор
+                    splitModeContainer.setAlignment(Pos.CENTER);
+                    splitModeContainer.setFillHeight(true);
+                } else {
+                    splitModeContainer.getChildren().clear(); // На всякий случай
+                }
+
+                // Настраиваем приоритеты роста для HBox
+                HBox.setHgrow(remoteVideoContainer, Priority.ALWAYS);
+                HBox.setHgrow(localVideoContainer, Priority.ALWAYS);
+
+                // 🔥 КЛЮЧЕВОЙ МОМЕНТ:
+                // 1. Кладём камеры в HBox
+                splitModeContainer.getChildren().addAll(remoteVideoContainer, localVideoContainer);
+                // 2. Кладём ТОЛЬКО HBox в корневой StackPane
+                videoContainer.getChildren().add(splitModeContainer);
+                break;
+        }
+
+        // 🔥 4. Применяем новые привязки размеров
+        setupVideoSizeBindings(mode);
+
+        // 6. Принудительный пересчёт макета
+        videoContainer.requestLayout();
+    }
+
+    /**
+    * Настраивает привязки размеров в зависимости от режима
+    */
+    private void setupVideoSizeBindings(VideoLayoutMode mode) {
+       // Получаем корневой контейнер
+       StackPane rootContainer = videoContainer;
+
+       // === Базовые привязки для доступного пространства ===
+       DoubleBinding availableWidth = Bindings.createDoubleBinding(() ->
+           Math.max(400, rootContainer.getWidth() - 40), // -40px отступы
+           rootContainer.widthProperty()
+       );
+       DoubleBinding availableHeight = Bindings.createDoubleBinding(() ->
+           Math.max(300, rootContainer.getHeight() - 40),
+           rootContainer.heightProperty()
+       );
+
+       // === Привязки для PiP режима ===
+       DoubleBinding pipMainWidth = availableWidth;
+       DoubleBinding pipMainHeight = availableHeight;
+
+       DoubleBinding pipSmallWidth = Bindings.createDoubleBinding(() ->
+           pipMainWidth.get() * 0.25, // 25% от главной
+           pipMainWidth
+       );
+       DoubleBinding pipSmallHeight = Bindings.createDoubleBinding(() ->
+           pipSmallWidth.get() * 0.75, // 4:3 пропорция
+           pipSmallWidth
+       );
+
+       // === Привязки для Split режима (каждая ~48% ширины) ===
+       DoubleBinding splitWidth = Bindings.createDoubleBinding(() ->
+           (availableWidth.get() - 10) * 0.48, // -10px зазор, 48% каждая
+           availableWidth
+       );
+       DoubleBinding splitHeight = availableHeight;
+
+       // === Применяем привязки ===
+       unbindAllSizeProperties(remoteVideoContainer);
+       unbindAllSizeProperties(localVideoContainer);
+
+       switch (mode) {
+           case PIP_PRIMARY_FIRST:
+               bindPane(remoteVideoContainer, pipMainWidth, pipMainHeight, true);
+               bindPane(localVideoContainer, pipSmallWidth, pipSmallHeight, false);
+               break;
+           case PIP_PRIMARY_SECOND:
+               bindPane(localVideoContainer, pipMainWidth, pipMainHeight, true);
+               bindPane(remoteVideoContainer, pipSmallWidth, pipSmallHeight, false);
+               break;
+           case SPLIT:
+               // В Split режиме HBox сам управляет шириной через Hgrow,
+               // но задаём min/max для корректного сжатия
+               bindPane(remoteVideoContainer, splitWidth, splitHeight, true);
+               bindPane(localVideoContainer, splitWidth, splitHeight, true);
+               break;
+       }
+   }
+
+   /**
+    * Убирает все привязки размеров с панели
+    */
+   private void unbindAllSizeProperties(StackPane pane) {
+       pane.prefWidthProperty().unbind();
+       pane.prefHeightProperty().unbind();
+       pane.minWidthProperty().unbind();
+       pane.minHeightProperty().unbind();
+       pane.maxWidthProperty().unbind();
+       pane.maxHeightProperty().unbind();
+       // Сбрасываем к дефолтным значениям
+       pane.setPrefWidth(Region.USE_COMPUTED_SIZE);
+       pane.setPrefHeight(Region.USE_COMPUTED_SIZE);
+   }
+
+   /**
+    * Привязывает размеры панели с опцией "гибкости" (для Split режима)
+    */
+   private void bindPane(StackPane pane, DoubleBinding width, DoubleBinding height, boolean flexible) {
+       pane.prefWidthProperty().bind(width);
+       pane.prefHeightProperty().bind(height);
+
+       if (flexible) {
+           // В Split режиме позволяем сжиматься/растягиваться
+           pane.minWidthProperty().bind(width.multiply(0.5));
+           pane.minHeightProperty().bind(height.multiply(0.8));
+           pane.setMaxWidth(Double.MAX_VALUE);
+           pane.setMaxHeight(Double.MAX_VALUE);
+       } else {
+           // В PiP маленькая камера — фиксированный размер
+           pane.minWidthProperty().bind(width);
+           pane.minHeightProperty().bind(height);
+           pane.maxWidthProperty().bind(width);
+           pane.maxHeightProperty().bind(height);
+       }
+   }
+
+    /**
+     * Настраивает переключение режима по клику
+     */
+    private void setupClickHandlers() {
+        // Клики на камеры переключают режим
+        remoteVideoContainer.setOnMouseClicked(this::handleCameraClick);
+        localVideoContainer.setOnMouseClicked(this::handleCameraClick);
+    }
+
+    /**
+     * Обработчик клика: переключает режим
+     */
+    private void handleCameraClick(MouseEvent event) {
+        StackPane clickedPane = (StackPane) event.getSource();
+
+        switch (currentMode) {
+            case PIP_PRIMARY_FIRST:
+                // Если кликнули на маленькую (камера 2) → она становится главной
+                if (clickedPane == localVideoContainer) {
+                    currentMode = VideoLayoutMode.PIP_PRIMARY_SECOND;
+                    System.out.println("PRIMARY SECOND");
+                } else {
+                    // Клик на главную → переход в split
+                    currentMode = VideoLayoutMode.SPLIT;
+                    System.out.println("SPLIT");
+                }
+                break;
+
+            case PIP_PRIMARY_SECOND:
+                if (clickedPane == remoteVideoContainer) {
+                    currentMode = VideoLayoutMode.PIP_PRIMARY_FIRST;
+                    System.out.println("PRIMARY FIRST");
+                } else {
+                    currentMode = VideoLayoutMode.SPLIT;
+                    System.out.println("SPLIT");
+                }
+                break;
+
+            case SPLIT:
+                // В режиме split: клик на камеру делает её главной (возврат к PiP)
+                if (clickedPane == remoteVideoContainer) {
+                    currentMode = VideoLayoutMode.PIP_PRIMARY_FIRST;
+                    System.out.println("PRIMARY FIRST");
+                } else {
+                    currentMode = VideoLayoutMode.PIP_PRIMARY_SECOND;
+                    System.out.println("PRIMARY SECOND");
+                }
+                break;
+        }
+
+        applyLayoutMode(currentMode);
+        event.consume();
+    }
+
+
     public void loadCallChatHistory(List<Message> messages) {
         callChatHistory.getItems().setAll(messages);
         // Прокрутка в конец после загрузки
@@ -225,8 +460,6 @@ public class VideoCallController {
 
     private void initChat() {
         callChatHistory.setCellFactory(lv -> new ChatHistoryCell());
-//        chatHistory.setFixedCellSize(80);
-//        chatHistory.setFixedCellSize(100);
         callChatHistory.getStyleClass().add("chat-history");
         callChatHistory.setOnMousePressed(event -> {
             // Передаём фокус полю ввода сообщений
@@ -276,12 +509,7 @@ public class VideoCallController {
 
         String response = responses[(int) (Math.random() * responses.length)];
 
-        javafx.application.Platform.runLater(() -> {
-//            try {
-////                Thread.sleep(1500);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
+        Platform.runLater(() -> {
             appendToCallChat(contactName, response);
         });
     }
@@ -301,6 +529,10 @@ public class VideoCallController {
             }
             closeWindow();
         });
+    }
+
+    private void openGameChooser() {
+
     }
 
     private void setupCloseInterceptor(Stage stage) {

@@ -163,7 +163,42 @@
     -fx-padding: 5;
 }
 
-.recognized-text-area {
-    -fx-control-inner-background: #dadef7;
-    -fx-font-size: 14;
+/* === Контейнер видео-звонка === */
+.video-call-container {
+    -fx-background-color: #1a1a2e;
+    -fx-padding: 10px;
+}
+
+/* === Базовый стиль видео-панели === */
+.video-pane {
+    -fx-background-color: #000;
+    -fx-background-radius: 8px;
+    -fx-border-color: #333;
+    -fx-border-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 10, 0, 0, 2);
+    -fx-cursor: hand;
+}
+
+/* === Режим PiP: главная камера === */
+.video-pane.pip-main {
+    -fx-alignment: center;
+    /* Размеры теперь в привязках, не в CSS */
+}
+
+/* === Режим PiP: маленькая камера === */
+.video-pane.pip-small {
+    -fx-border-color: #3498db;
+    -fx-border-width: 2px;
+    /* Позиционирование остаётся в StackPane.setAlignment() */
+}
+
+/* === Режим Split: обе камеры === */
+.video-pane.split {
+    -fx-alignment: center;
+}
+
+/* === Ховер-эффект для интерактивности === */
+.video-pane:hover {
+    -fx-border-color: #3498db;
+    -fx-effect: dropshadow(gaussian, rgba(52, 152, 219, 0.6), 15, 0, 0, 2);
 }

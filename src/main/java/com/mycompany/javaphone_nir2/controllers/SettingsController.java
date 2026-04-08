@@ -15,7 +15,9 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.scene.text.Font;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.Window;
@@ -24,7 +26,8 @@ public class SettingsController {
 
     @FXML private Label audioBitrateLabel;
     @FXML private TextField audioBitrateField;
-    @FXML private ImageView avatarView;
+//    @FXML private ImageView avatarView;
+    @FXML private Label avatarView;
     @FXML private Label cameraLabel;
     @FXML private ComboBox<String> cameraComboBox;
     @FXML private Button discardButton;
@@ -415,7 +418,6 @@ public class SettingsController {
         }
     }
 
-    // === 3. НЕРЕАКТИВНЫЕ ЗНАЧЕНИЯ (ComboBox, аватар) ===
     private void loadNonReactiveValues() {
         showAvatar();
         setMicrophoneComboBox();
@@ -499,20 +501,33 @@ public class SettingsController {
     }
 
     private void showAvatar() {
-        if (settings.isRegistered()) {
-            String path = settings.getPathToAvatar();
-            if (path != null && !path.isEmpty()) {
-                Path p = Path.of(path);
-                if (p.toFile().exists()) {
-                    Image avatarImage = new Image(p.toUri().toString(), 162, 162, true, true);
-                    if (!avatarImage.isError()) {
-                        avatarView.setImage(avatarImage);
-                        uploadedLabel.setText("Выбранный файл: " + p.getFileName());
-                        return;
-                    }
-                }
-            }
-        }
+//        if (settings.isRegistered()) {
+//            String path = settings.getPathToAvatar();
+//            if (path != null && !path.isEmpty()) {
+//                Path p = Path.of(path);
+//                if (p.toFile().exists()) {
+//                    Image avatarImage = new Image(p.toUri().toString(), 162, 162, true, true);
+//                    if (!avatarImage.isError()) {
+//                        avatarView.setImage(avatarImage);
+//                        uploadedLabel.setText("Выбранный файл: " + p.getFileName());
+//                        return;
+//                    }
+//                }
+//            }
+//        }
+
+        //можно переделать imageview на label для удобства
+        avatarView.setFont(Font.font("System", 89));
+        avatarView.setTextFill(Color.BLACK);
+        avatarView.setStyle("-fx-alignment: CENTER; "
+                + "-fx-background-color: #dadef7;"
+                + "-fx-border-color: #2c3e50;"
+                + "-fx-border-radius: 0;"
+                + "-fx-border-width: 5");
+
+        String firstName = settings.getNickname().substring(0, 1).toUpperCase();
+        avatarView.setText(firstName);
+
         uploadedLabel.setText("Аватар не установлен");
     }
 

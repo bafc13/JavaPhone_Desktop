@@ -46,10 +46,12 @@ public class App extends Application {
             primaryStage.setMinWidth(800);
             primaryStage.setMinHeight(500);
 
+            primaryStage.show();
+
             ChatController chatController = loader.getController();
             chatController.initializeResponsiveLayout(primaryStage);
 
-            primaryStage.show();
+
         } catch (IOException e) {
             System.err.println("Error while getting FXML file: " + e.getMessage());
             e.printStackTrace();

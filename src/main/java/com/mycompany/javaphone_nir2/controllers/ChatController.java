@@ -8,6 +8,7 @@ import com.mycompany.javaphone_nir2.models.Offer;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
 import com.mycompany.javaphone_nir2.signaling.SignalingClient;
 import com.mycompany.javaphone_nir2.webrtc.WebRTCManager;
+import java.awt.event.InputEvent;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -23,6 +24,9 @@ import javafx.beans.value.ChangeListener;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Parent;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
@@ -103,10 +107,38 @@ public class ChatController {
                     });
     }
 
-//    private void onCloseRequested() {
-//
-//        closeWindow();
-//    }
+    private void setupGlobalKeyboardNavigation(Stage stage) {
+        if (stage.getScene() != null && stage.isShowing()) {
+            Parent root = stage.getScene().getRoot();
+            root.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+                if (event.isAltDown() && (event.getCode() == KeyCode.UP || event.getCode() == KeyCode.DOWN)) {
+                    switchChat(event.getCode() == KeyCode.UP ? -1 : 1);
+                    event.consume();
+                }
+            });
+        }
+    }
+
+    /**
+    * Переключает выделение в списке чатов с циклической прокруткой
+    */
+    private void switchChat(int direction) {
+        int currentIndex = contactsList.getSelectionModel().getSelectedIndex();
+        int size = contactsList.getItems().size();
+        if (size == 0) return;
+
+        // Циклическая навигация: внизу → наверх, вверху → вниз
+        int nextIndex = currentIndex + direction;
+        if (nextIndex < 0) nextIndex = size - 1;
+        else if (nextIndex >= size) nextIndex = 0;
+
+        // Выделяем новый чат → сработает твой существующий слушатель выделения
+        contactsList.getSelectionModel().select(nextIndex);
+        contactsList.scrollTo(nextIndex);
+
+        // Опционально: возвращаем фокус в поле ввода для мгновенного набора
+        messageInput.requestFocus();
+    }
 
     // Action methods
     private void connectToSignaling() {
@@ -553,6 +585,7 @@ public class ChatController {
 
     public void initializeResponsiveLayout(Stage stage) {
         setupCloseInterceptor(stage);
+        setupGlobalKeyboardNavigation(stage);
     }
 
     private void closeWindow() {

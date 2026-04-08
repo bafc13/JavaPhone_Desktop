@@ -206,7 +206,7 @@
     -fx-background-color: #34495e;   /* Твой запрошенный цвет */
     -fx-background-radius: 12px;
     -fx-padding: 10px 14px;
-    -fx-max-width: infinity;
+    -fx-max-width: 350;
     -fx-spacing: 4px;
     -fx-fixed-cell-size: -1;
 }

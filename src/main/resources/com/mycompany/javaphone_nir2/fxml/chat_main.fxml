@@ -51,7 +51,7 @@
                 </VBox>
                 <VBox spacing="0" HBox.hgrow="ALWAYS" minWidth="460">
                     <children>
-                        <ListView fx:id="chatHistory" VBox.vgrow="ALWAYS">
+                        <ListView fx:id="chatHistory" minWidth="460" VBox.vgrow="ALWAYS">
                         </ListView>
                         <HBox fx:id="messageContainer" spacing="5">
                             <children>
