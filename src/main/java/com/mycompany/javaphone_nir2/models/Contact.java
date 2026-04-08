@@ -7,6 +7,7 @@ public class Contact {
 
     private String name;
     private String status;
+    private String key;
 
     /**
      * HEX
@@ -14,15 +15,17 @@ public class Contact {
 
     private String avatarColor;
 
-    public Contact(String name, String status, String avatarColor) {
+    public Contact(String name, String status, String avatarColor, String key) {
         this.name = name;
         this.status = status;
         this.avatarColor = avatarColor;
+        this.key = key;
     }
 
-    public Contact(String name, String status) {
+    public Contact(String name, String status, String key) {
         this.name = name;
         this.status = status;
+        this.key = key;
         this.avatarColor = "#dadef7";
     }
 
@@ -37,6 +40,10 @@ public class Contact {
     public String getAvatarColor() {
         return avatarColor;
     }
+    
+    public String getKey() {
+        return key;
+    }
 
     public void setName(String name) {
         this.name = name;
@@ -48,6 +55,10 @@ public class Contact {
 
     public void setAvatarColor(String avatarColor) {
         this.avatarColor = avatarColor;
+    }
+    
+    public void setKey(String key) {
+        this.key = key;
     }
 
     @Override
