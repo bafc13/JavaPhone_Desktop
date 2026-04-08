@@ -5,6 +5,8 @@ import com.mycompany.javaphone_nir2.WebRtcVideoPanel;
 import com.mycompany.javaphone_nir2.models.Message;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
 import com.mycompany.javaphone_nir2.models.VideoLayoutMode;
+import com.mycompany.javaphone_nir2.webrtc.WebRTCManager;
+import dev.onvoid.webrtc.media.video.VideoTrack;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -76,7 +78,13 @@ public class VideoCallController {
 
     private final SettingsManager settings = SettingsManager.getInstance();
     private VideoLayoutMode currentMode = VideoLayoutMode.PIP_PRIMARY_FIRST;
-
+    
+    private static VideoCallController instance = null;
+    
+    public static VideoCallController getInstance() {
+        return instance;
+    } 
+    
     @FXML
     public void initialize() {
         setupCallUI();
@@ -85,8 +93,17 @@ public class VideoCallController {
         appendToCallChat("System", "Звонок активен");
 
         callChatHistory.setEditable(false);
+        instance = this;
     }
-
+    
+    public void addLocalTrack(VideoTrack localTrack) {
+        localTrack.addSink(localVideo);
+    }
+    
+    public void addRemoteTrack(VideoTrack remoteTrack) {
+        remoteTrack.addSink(remoteVideo);
+    }
+    
     /**
      * Initializes window resizing. Called from ChatController.startVideoCall()
      * with a ready Stage!
@@ -214,6 +231,16 @@ public class VideoCallController {
         // 🔥 Важно: layout после инициализации
         videoContainer.applyCss();
         videoContainer.layout();
+        
+        WebRTCManager rtcm = WebRTCManager.getInstance();
+        VideoTrack localTrack = rtcm.getLocalVideoTrack();
+        if (localTrack != null) {
+            localTrack.addSink(localVideo);
+        }
+        VideoTrack remoteTrack = rtcm.getRemoteVideoTrack();
+        if (remoteTrack != null) {
+            remoteTrack.addSink(remoteVideo);
+        }
     }
 
     private void initSplitPane() {

@@ -1,5 +1,7 @@
 package com.mycompany.javaphone_nir2.webrtc;
 
+import com.mycompany.javaphone_nir2.controllers.ChatController;
+import com.mycompany.javaphone_nir2.controllers.VideoCallController;
 import com.mycompany.javaphone_nir2.signaling.SignalingClient;
 import dev.onvoid.webrtc.*;
 import dev.onvoid.webrtc.media.*;
@@ -88,7 +90,19 @@ public class WebRTCManager implements PeerConnectionObserver {
 
         // TODO: Update UI
     }
-
+    
+    public void setRemoteTrack(VideoTrack remoteVideoTrack) {
+        this.remoteVideoTrack = remoteVideoTrack;
+    }
+    
+    public VideoTrack getRemoteVideoTrack() {
+        return this.remoteVideoTrack;
+    }
+    
+    public VideoTrack getLocalVideoTrack() {
+        return this.localVideoTrack;
+    }
+    
     public void initializeDevices() {
         Thread deviceThread = new Thread(() -> {
                 try {
@@ -134,7 +148,12 @@ public class WebRTCManager implements PeerConnectionObserver {
     public void initializeCapture() {
         videoSource.start();
         localVideoTrack = factory.createVideoTrack("video0", videoSource);
-
+        
+        VideoCallController vcc = VideoCallController.getInstance();
+        if (vcc != null) {
+            vcc.addLocalTrack(localVideoTrack);
+        }
+        
         audioModule.initRecording();
         audioModule.initPlayout();
         AudioOptions ao = new AudioOptions();
@@ -143,6 +162,9 @@ public class WebRTCManager implements PeerConnectionObserver {
     }
 
     public void startCall(String targetClientId) {
+        initializeMedia();
+        initializeCapture();
+        
         remoteClientId = targetClientId;
 
         peerConnection = factory.createPeerConnection(config, new PeerConnectionObserverImpl(this, remoteClientId));
@@ -196,6 +218,9 @@ public class WebRTCManager implements PeerConnectionObserver {
     }
 
     public void handleOffer(String sdp, String sender) {
+//        initializeMedia();
+//        initializeCapture();
+        
         this.remoteClientId = sender;
 
         peerConnection = factory.createPeerConnection(config, new PeerConnectionObserverImpl(this, remoteClientId));
@@ -259,7 +284,10 @@ public class WebRTCManager implements PeerConnectionObserver {
 
         peerConnection.setRemoteDescription(remoteSdp, new SetSessionDescriptionObserver() {
             @Override
-            public void onSuccess() { }
+            public void onSuccess() { 
+                ChatController cc = ChatController.getInstance();
+                cc.handleCallAccepted();
+            }
 
             @Override
             public void onFailure(String error) { }
