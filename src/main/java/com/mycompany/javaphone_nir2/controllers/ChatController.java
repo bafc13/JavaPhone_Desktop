@@ -20,6 +20,8 @@ import java.util.List;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableMap;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -50,7 +52,7 @@ public class ChatController {
     @FXML private Label chatTitleLabel;
     @FXML private SplitPane mainSplitPane;
 
-    private ObservableList<Contact> contacts;
+    private ObservableMap<String, Contact> contacts;
     private List<ChangeListener<Number>> popupWindowListeners = new ArrayList<>();
     private ChangeListener<Boolean> popupWindowShowingListener;
     private ChangeListener<Boolean> popupWindowFocusListener;
@@ -66,11 +68,17 @@ public class ChatController {
     private final WebRTCManager webRtcManager = WebRTCManager.getInstance();
 
     public Offer offer;
-
+    
+    private static ChatController instance;
+    
+    public static ChatController getInstance() {
+        return instance;
+    }
+    
     @FXML
     public void initialize() {
         setupContactList();
-        incomingCallContact = contacts.get(0);  // first contact
+        //incomingCallContact = contacts.get(0);  // first contact
 
         setupChatUI();
         checkRegistration();
@@ -81,6 +89,8 @@ public class ChatController {
             appendToChat("Bob", "Отлично, работает! 🎉");
             appendToChat("You", "Да, интерфейс стал намного лучше.");
         });
+        
+        instance = this;
     }
 
     private void initSignalingClient(){
@@ -89,10 +99,8 @@ public class ChatController {
         Platform.runLater(() -> connectToSignaling());
 
         SignalingClient.getInstance().offerProperty().addListener((obs, oldVal, newVal) -> {
-            Platform.runLater(() -> {
-                offer = new Offer(newVal.getSdp(), newVal.getSender());
-                showIncomingCallNotification();
-            });
+            offer = new Offer(newVal.getSdp(), newVal.getSender());
+            initIncomingCall(offer.getSender());
         });
     }
 
@@ -348,20 +356,9 @@ public class ChatController {
         //upload smthng here and then dispay it in contacts list.
         //ask from db manager or smthng else about contacts, get list to display and then display
 
-        contacts = javafx.collections.FXCollections.observableArrayList(
-                new Contact("AVKuzma", "Online"),
-                new Contact("BaFC13", "Online"),
-                new Contact("Кто-то", "Offline"),
-                new Contact("Марина", "Online"),
-                new Contact("BaFC13333", "Online"),
-                new Contact("Пу пу пууууу", "Offline"),
-                new Contact("Коля", "Online"),
-                new Contact("Некто", "Online"),
-                new Contact("кто", "Online"),
-                new Contact("Я", "Online")
-        );
+        contacts = FXCollections.observableHashMap();
 
-        contactsList.setItems(contacts);
+        contactsList.setItems(FXCollections.observableArrayList(contacts.values()));
         contactsList.setCellFactory(param -> new ContactListCell());
         contactsList.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
@@ -373,6 +370,15 @@ public class ChatController {
         contactsList.getStyleClass().add("contacts-list");
     }
 
+    public void addContact(Contact contact) {
+        System.out.println("GOT CONTACT TO UI");
+        System.out.println(contact.getKey());
+        
+        contacts.put(contact.getKey(), contact);
+        contactsList.setItems(FXCollections.observableArrayList(contacts.values()));
+        contactsList.refresh();
+    }
+    
     /**
      * setuping chat ui
      */
@@ -394,8 +400,6 @@ public class ChatController {
 
         exitButton.setOnAction(e -> closeWindow());
         exitButton.getStyleClass().add("header-button");
-
-        initIncomingCallNotification();
     }
 
     private void initSplitPane() {
@@ -432,7 +436,30 @@ public class ChatController {
 
         messageContainer.getStyleClass().add("message-container");
     }
-
+    
+    public void initIncomingCall(Offer offer) {
+        this.offer = offer;
+        String callerKey = offer.getSender();
+        
+        incomingCallContact = contacts.getOrDefault(callerKey, null);
+        if (incomingCallContact != null) {
+            Platform.runLater( () -> {
+                initIncomingCallNotification();
+                showIncomingCallNotification();
+            });
+        }
+    }
+    
+    public void initIncomingCall(String callerKey) {
+        incomingCallContact = contacts.getOrDefault(callerKey, null);
+        if (incomingCallContact != null) {
+            Platform.runLater( () -> {
+                initIncomingCallNotification();
+                showIncomingCallNotification();
+            });
+        }
+    }
+    
     /**
      * func responsible for initialization of incoming call notification popup
      */
@@ -586,8 +613,9 @@ public class ChatController {
             alert.showAndWait();
             return;
         }
-
-        startVideoCallWithContact(selectedContact);
+        System.out.println(selectedContact.getKey());
+        webRtcManager.startCall(selectedContact.getKey());
+//        startVideoCallWithContact(selectedContact);
     }
 
     /**
