@@ -9,6 +9,7 @@ import com.mycompany.javaphone_nir2.models.Contact;
 import com.mycompany.javaphone_nir2.models.Offer;
 import com.mycompany.javaphone_nir2.models.User;
 import com.mycompany.javaphone_nir2.models.UserStatus;
+import com.mycompany.javaphone_nir2.webrtc.WebRTCManager;
 
 import jakarta.websocket.*;
 
@@ -121,7 +122,6 @@ public class SignalingClient {
         message.put("sender", clientId);
 
         sendJson(message);
-        System.out.println("SENT PEER WITH TYPE");
         // send to all
     }
 
@@ -177,7 +177,8 @@ public class SignalingClient {
 
     private void handleAccept(JsonNode json) {
         String sdp = json.get("sdp").asText();
-//        tell webrtc manager to handle accept
+        WebRTCManager rtcm = WebRTCManager.getInstance();
+        rtcm.handleAccept(sdp);
     }
     
     private void handleReject(JsonNode json) {
@@ -189,7 +190,9 @@ public class SignalingClient {
         String candidate = json.get("candidate").asText();
         String sdpMid = json.get("sdpMid").asText();
         int sdpMLineIndex = json.get("sdpMLineIndex").asInt();
-//        tell webrtc manager to handle candidate
+        
+        WebRTCManager rtcm = WebRTCManager.getInstance();
+        rtcm.addIceCandidate(candidate, sdpMid, sdpMLineIndex);
     }
 
     private void handleClientDisconnected(JsonNode json) {

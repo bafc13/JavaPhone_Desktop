@@ -4,6 +4,8 @@
  */
 package com.mycompany.javaphone_nir2.webrtc;
 
+import com.mycompany.javaphone_nir2.controllers.VideoCallController;
+import com.mycompany.javaphone_nir2.signaling.SignalingClient;
 import dev.onvoid.webrtc.PeerConnectionObserver;
 import dev.onvoid.webrtc.RTCDataChannel;
 import dev.onvoid.webrtc.RTCIceCandidate;
@@ -15,6 +17,7 @@ import dev.onvoid.webrtc.RTCSignalingState;
 import dev.onvoid.webrtc.media.MediaStream;
 import dev.onvoid.webrtc.media.MediaStreamTrack;
 import dev.onvoid.webrtc.media.video.VideoTrack;
+import java.io.IOException;
 
 /**
  *
@@ -34,13 +37,17 @@ public class PeerConnectionObserverImpl implements PeerConnectionObserver {
     public void onIceCandidate(RTCIceCandidate iceCandidate) {
         System.out.println("Got candidate #" + String.valueOf(candidates++));
         
-//        TODO: send ice candidate through signaling client
-//        signalingClient.sendIceCandidate(
-//                iceCandidate.sdp,
-//                iceCandidate.sdpMid,
-//                iceCandidate.sdpMLineIndex,
-//                remoteClientId
-//        );
+        SignalingClient signalingClient = SignalingClient.getInstance();
+        try {
+            signalingClient.sendIceCandidate(
+                    iceCandidate.sdp,
+                    iceCandidate.sdpMid,
+                    iceCandidate.sdpMLineIndex,
+                    remoteClientId
+            );
+        } catch (IOException ex) {
+            System.getLogger(PeerConnectionObserverImpl.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+        }
     }
 
     @Override
@@ -102,8 +109,16 @@ public class PeerConnectionObserverImpl implements PeerConnectionObserver {
         String kind = track.getKind();
 
         if (kind.equals(MediaStreamTrack.VIDEO_TRACK_KIND)) {
+            System.out.println("GOT VIDEO TRACK");
             VideoTrack videoTrack = (VideoTrack) track;
-            // TODO: add sink
+            webRTCManager.setRemoteTrack(videoTrack);
+            
+            VideoCallController vcc = VideoCallController.getInstance();
+            if (vcc != null) {
+                vcc.addRemoteTrack(videoTrack);
+            }
+        } else if (kind.equals(MediaStreamTrack.AUDIO_TRACK_KIND)) {
+            System.out.println("GOT AUDIO TRACK");
         }
     } 
 }
