@@ -28,7 +28,7 @@ import javafx.beans.property.StringProperty;
 public class SignalingClient {
     private Session session;
     private final String serverUrl;
-    private String clientId = "321";
+    private String clientId = "123";
     private final ObjectMapper mapper = new ObjectMapper();
 
     private final ObjectProperty<Offer> offer = new SimpleObjectProperty<>();
