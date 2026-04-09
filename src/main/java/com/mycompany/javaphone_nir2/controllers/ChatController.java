@@ -586,12 +586,23 @@ public class ChatController {
             return;
         }
 
-        appendToChat("Вы", message);
-        messageInput.clear();
-
-        simulateResponse();
+        SignalingClient sc = SignalingClient.getInstance();
+        try {
+            sc.sendDM(selectedContact.getKey(), message);
+            appendToChat("Вы", message);
+            messageInput.clear();
+        } catch (IOException ex) {
+            System.getLogger(ChatController.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+        }
+ 
+        // simulateResponse();
     }
-
+    
+    public void handleMessage(String sender, String content) {
+        Platform.runLater(() -> {
+            appendToChat(sender, content);
+        });
+    }
     /**
      * response simulation
      */

@@ -92,6 +92,9 @@ public class SignalingClient {
             case "clientDisconnected":
                 handleClientDisconnected(json);
                 break;
+            case "message":
+                handleDM(json);
+                break;
             case "error":
                 handleError(json);
                 break;
@@ -106,6 +109,7 @@ public class SignalingClient {
     @OnError
     public void onError(Session session, Throwable throwable) {
         System.out.println("ERROR IN SIGNALING");
+        System.out.println(throwable.toString());
     }
 
     public void sendPeer(User user, UserStatus status) throws IOException {
@@ -199,6 +203,15 @@ public class SignalingClient {
         String disconnectedClientId = json.get("clientId").asText();
 //        tell webrtc manager to handle disconnect
     }
+    
+    private void handleDM(JsonNode json) {
+        System.out.println("GOT MESSAGE");
+        String sender = json.get("sender").asText();
+        String content = json.get("content").asText();
+        System.out.println(content);
+        ChatController cc = ChatController.getInstance();
+        cc.handleMessage(sender, content);
+    }
 
     private void handleError(JsonNode json) {
         String error = json.get("message").asText();
@@ -235,6 +248,16 @@ public class SignalingClient {
     public void sendBye(String targetClientId) throws IOException {
         sendMessage("bye", "", targetClientId);
 //      tell webrtc manager to handle call end
+    }
+    
+    public void sendDM(String targetClientId, String content) throws IOException {
+        ObjectNode message = mapper.createObjectNode();
+        message.put("type", "message");
+        message.put("sender", clientId);
+        message.put("target", targetClientId);
+        message.put("content", content);
+        
+        sendJson(message);
     }
 
     private void sendMessage(String type, String sdp, String targetClientId) throws IOException {

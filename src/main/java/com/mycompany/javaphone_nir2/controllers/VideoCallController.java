@@ -520,9 +520,13 @@ public class VideoCallController {
             return;
         }
 
-        appendToCallChat("Вы", message);
+        WebRTCManager rtcm = WebRTCManager.getInstance();
+        
+        System.out.println("MESSAGE TEXT");
+        System.out.println(message);
+        rtcm.sendChatMessage(message);
         callMessageInput.clear();
-        simulateRemoteResponse();
+        // simulateRemoteResponse();
     }
 
     private void simulateRemoteResponse() {
@@ -589,8 +593,10 @@ public class VideoCallController {
         msg.setSenderPublicKey(sender);
         msg.setContent(content);
         msg.setTime(System.currentTimeMillis() / 1000); // Unix timestamp в секундах
-
-        appendToCallChat(msg);
+        
+        Platform.runLater(() -> {
+            appendToCallChat(msg);
+        });
     }
 
     /**
