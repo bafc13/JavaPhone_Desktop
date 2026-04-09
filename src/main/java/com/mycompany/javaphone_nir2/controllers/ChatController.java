@@ -72,13 +72,13 @@ public class ChatController {
     private final WebRTCManager webRtcManager = WebRTCManager.getInstance();
 
     public Offer offer;
-    
+
     private static ChatController instance;
-    
+
     public static ChatController getInstance() {
         return instance;
     }
-    
+
     @FXML
     public void initialize() {
         setupContactList();
@@ -93,12 +93,13 @@ public class ChatController {
             appendToChat("Bob", "Отлично, работает! 🎉");
             appendToChat("You", "Да, интерфейс стал намного лучше.");
         });
-        
+
         instance = this;
     }
 
     private void initSignalingClient(){
-        SignalingClient.initialize("ws://localhost:8080/javaphone/signaling");
+        SignalingClient.initialize("ws://26.115.164.175:8080/javaphone/signaling");
+//        SignalingClient.initialize("ws://localhost:8080/javaphone/signaling");
 
         Platform.runLater(() -> connectToSignaling());
 
@@ -110,6 +111,10 @@ public class ChatController {
 
     private void setupCloseInterceptor(Stage stage) {
         stage.setOnCloseRequest(event -> {
+                        if(webRtcManager != null) {
+                            webRtcManager.cleanup();
+                        }
+
                         closeWindow();
                         event.consume();
                     });
@@ -315,7 +320,7 @@ public class ChatController {
         webRtcManager.handleOffer(offer.getSdp(), offer.getSender());
         startVideoCallWithContact(incomingCallContact);
     }
-    
+
     public void handleCallAccepted() {
         Platform.runLater(() -> {
             startVideoCallWithContact(selectedContact);
@@ -411,12 +416,12 @@ public class ChatController {
     public void addContact(Contact contact) {
         System.out.println("GOT CONTACT TO UI");
         System.out.println(contact.getKey());
-        
+
         contacts.put(contact.getKey(), contact);
         contactsList.setItems(FXCollections.observableArrayList(contacts.values()));
         contactsList.refresh();
     }
-    
+
     /**
      * setuping chat ui
      */
@@ -436,7 +441,12 @@ public class ChatController {
         callButton.setOnAction(e -> startVideoCall());
         callButton.getStyleClass().add("header-button");
 
-        exitButton.setOnAction(e -> closeWindow());
+        exitButton.setOnAction(e -> {
+            if(webRtcManager != null) {
+                            webRtcManager.cleanup();
+                        }
+            closeWindow();
+                });
         exitButton.getStyleClass().add("header-button");
     }
 
@@ -474,11 +484,11 @@ public class ChatController {
 
         messageContainer.getStyleClass().add("message-container");
     }
-    
+
     public void initIncomingCall(Offer offer) {
         this.offer = offer;
         String callerKey = offer.getSender();
-        
+
         incomingCallContact = contacts.getOrDefault(callerKey, null);
         if (incomingCallContact != null) {
             Platform.runLater( () -> {
@@ -487,7 +497,7 @@ public class ChatController {
             });
         }
     }
-    
+
     public void initIncomingCall(String callerKey) {
         incomingCallContact = contacts.getOrDefault(callerKey, null);
         if (incomingCallContact != null) {
@@ -497,7 +507,7 @@ public class ChatController {
             });
         }
     }
-    
+
     /**
      * func responsible for initialization of incoming call notification popup
      */
@@ -594,10 +604,10 @@ public class ChatController {
         } catch (IOException ex) {
             System.getLogger(ChatController.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
         }
- 
+
         // simulateResponse();
     }
-    
+
     public void handleMessage(String sender, String content) {
         Platform.runLater(() -> {
             appendToChat(sender, content);

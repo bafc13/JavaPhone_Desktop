@@ -65,8 +65,6 @@ public class VideoCallController {
     @FXML private Label remoteVideoLabel;
     @FXML private Label localVideoLabel;
 
-    @FXML private BorderPane rootContainer;
-
     private HBox splitModeContainer;
 
     private DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
@@ -113,44 +111,6 @@ public class VideoCallController {
     public void initializeResponsiveLayout(Stage stage) {
         setupCloseInterceptor(stage);
     }
-
-   /**
-    * Привязывает панель как "главную" в режиме PiP
-    */
-   private void bindPaneAsMain(StackPane pane, DoubleBinding width, DoubleBinding height) {
-       pane.prefWidthProperty().bind(width);
-       pane.prefHeightProperty().bind(height);
-       pane.minWidthProperty().bind(width.multiply(0.8)); // Не сжиматься меньше 80%
-       pane.minHeightProperty().bind(height.multiply(0.8));
-       pane.setMaxWidth(Double.POSITIVE_INFINITY);
-       pane.setMaxHeight(Double.POSITIVE_INFINITY);
-//       pane.maxWidthProperty().bind(Double.POSITIVE_INFINITY);
-//       pane.maxHeightProperty().bind(DoubleBinding.value(Double.MAX_VALUE));
-   }
-
-   /**
-    * Привязывает панель как "маленькую" в режиме PiP
-    */
-   private void bindPaneAsSmall(StackPane pane, DoubleBinding width, DoubleBinding height) {
-       pane.prefWidthProperty().bind(width);
-       pane.prefHeightProperty().bind(height);
-       pane.minWidthProperty().bind(width); // Фиксированный размер
-       pane.minHeightProperty().bind(height);
-       pane.maxWidthProperty().bind(width);
-       pane.maxHeightProperty().bind(height);
-   }
-
-   /**
-    * Привязывает панель для режима Split
-    */
-   private void bindPaneAsSplit(StackPane pane, DoubleBinding width, DoubleBinding height) {
-       pane.prefWidthProperty().bind(width);
-       pane.prefHeightProperty().bind(height);
-       pane.minWidthProperty().bind(width.multiply(0.9));
-       pane.minHeightProperty().bind(height.multiply(0.9));
-       pane.setMaxWidth(Double.POSITIVE_INFINITY);
-       pane.setMaxHeight(Double.POSITIVE_INFINITY);
-   }
 
     /**
      * sets contact name
@@ -521,7 +481,7 @@ public class VideoCallController {
         }
 
         WebRTCManager rtcm = WebRTCManager.getInstance();
-        
+
         System.out.println("MESSAGE TEXT");
         System.out.println(message);
         rtcm.sendChatMessage(message);
@@ -569,6 +529,7 @@ public class VideoCallController {
 
     private void setupCloseInterceptor(Stage stage) {
         stage.setOnCloseRequest(event -> {
+                        WebRTCManager.getInstance().cleanup();
                         closeWindow();
                         event.consume();
                     });
@@ -593,7 +554,7 @@ public class VideoCallController {
         msg.setSenderPublicKey(sender);
         msg.setContent(content);
         msg.setTime(System.currentTimeMillis() / 1000); // Unix timestamp в секундах
-        
+
         Platform.runLater(() -> {
             appendToCallChat(msg);
         });

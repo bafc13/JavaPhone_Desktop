@@ -28,7 +28,7 @@ import javafx.beans.property.StringProperty;
 public class SignalingClient {
     private Session session;
     private final String serverUrl;
-    private String clientId = "123";
+    private String clientId = "321";
     private final ObjectMapper mapper = new ObjectMapper();
 
     private final ObjectProperty<Offer> offer = new SimpleObjectProperty<>();
@@ -203,7 +203,7 @@ public class SignalingClient {
         String disconnectedClientId = json.get("clientId").asText();
 //        tell webrtc manager to handle disconnect
     }
-    
+
     private void handleDM(JsonNode json) {
         System.out.println("GOT MESSAGE");
         String sender = json.get("sender").asText();
@@ -249,14 +249,14 @@ public class SignalingClient {
         sendMessage("bye", "", targetClientId);
 //      tell webrtc manager to handle call end
     }
-    
+
     public void sendDM(String targetClientId, String content) throws IOException {
         ObjectNode message = mapper.createObjectNode();
         message.put("type", "message");
         message.put("sender", clientId);
         message.put("target", targetClientId);
         message.put("content", content);
-        
+
         sendJson(message);
     }
 
