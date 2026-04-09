@@ -49,8 +49,6 @@ public class SettingsController {
     @FXML private Circle notificationsToggleButtonSelectorCircle;
     @FXML private Button regenerateKeyButton;
     @FXML private Button saveButton;
-    @FXML private Label signalingServerIPLabel;
-    @FXML private TextField signalingServerIPField;
     @FXML private Label speakerLabel;
     @FXML private ComboBox<String> speakerComboBox;
     @FXML private Label speakerVolumeLabel;
@@ -104,7 +102,6 @@ public class SettingsController {
         audioBitrateLabel.getStyleClass().add("text-label");
         cameraLabel.getStyleClass().add("text-label");
         videoBitrateLabel.getStyleClass().add("text-label");
-        signalingServerIPLabel.getStyleClass().add("text-label");
 
         microphoneComboBox.getStyleClass().add("settings-text-field");
         speakerComboBox.getStyleClass().add("settings-text-field");
@@ -115,7 +112,6 @@ public class SettingsController {
         keyField.getStyleClass().add("settings-text-field");
         audioBitrateField.getStyleClass().add("settings-text-field");
         videoBitrateField.getStyleClass().add("settings-text-field");
-        signalingServerIPField.getStyleClass().add("settings-text-field");
 
         microphoneVolumeSlider.getStyleClass().add("slider-container");
         speakerVolumeSlider.getStyleClass().add("slider-container");
@@ -171,9 +167,6 @@ public class SettingsController {
         bindIntegerField(audioBitrateField, settings.audioBitrateProperty(), 32, 320, "audioBitrate");
         bindIntegerField(videoBitrateField, settings.cameraBitrateProperty(), 100, 10000, "cameraBitrate");
 
-//        videoBitrateField.textProperty().bindBidirectional((Property<String>) settings.cameraBitrateProperty().asString());
-        signalingServerIPField.textProperty().bindBidirectional(settings.signalingServerIpProperty());
-
         // Slider ↔ IntegerProperty
         microphoneVolumeSlider.valueProperty().bindBidirectional(settings.microphoneVolumeProperty());
         speakerVolumeSlider.valueProperty().bindBidirectional(settings.speakerVolumeProperty());
@@ -183,18 +176,6 @@ public class SettingsController {
 
         bindThemeToggle(themeToggleButtonSelector, settings.themeProperty());
 //        themeToggleButtonSelector.selectedProperty().bindBidirectional(settings.themeProperty().isEqualTo("light"));
-
-        // URL field: объединяем IP:Port (двусторонняя привязка сложнее, поэтому делаем одностороннюю + обработчик)
-        updateUrlField(); // Инициализация
-        urlField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
-            if (!isNowFocused) { // При потере фокуса парсим и сохраняем
-                parseAndSaveUrl();
-            }
-        });
-
-        // Слушатель на изменения IP/Port в модели → обновление поля
-        settings.userIpProperty().addListener((obs, old, newVal) -> updateUrlField());
-        settings.userPortProperty().addListener((obs, old, newVal) -> updateUrlField());
     }
 
     /**
@@ -318,48 +299,34 @@ public class SettingsController {
             }
         });
 
-        // IP-адрес: только цифры и точки
-        signalingServerIPField.setTextFormatter(new TextFormatter<>(change -> {
-            String newText = change.getControlNewText();
-            if (newText.isEmpty() || newText.matches("^[0-9.]{0,15}$")) {
-                return change;
-            }
-            return null;
-        }));
-
-        signalingServerIPField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
-            if (!isNowFocused) {
-                Optional<String> error = settings.validateIpAddress(signalingServerIPField.getText());
-                if (error.isPresent()) {
-                    showFieldError(signalingServerIPField, error.get());
-                    signalingServerIPField.setText(settings.getSignalingServerIp());
-                }
-            }
-        });
-
-        // Порт: только цифры
+        // 1. Простой TextFormatter: разрешаем ВСЁ, кроме переносов строк и табов
         urlField.setTextFormatter(new TextFormatter<>(change -> {
             String newText = change.getControlNewText();
-            // Разрешаем формат "123.456.789.012:443"
-            if (newText.isEmpty() || newText.matches("^[0-9.:]{0,21}$")) {
-                return change;
+            // Блокируем только управляющие символы, которые ломают URL
+            if (newText != null && newText.matches(".*[\\n\\r\\t].*")) {
+                return null;
             }
-            return null;
+            return change; // Всё остальное пропускаем
         }));
 
-        urlField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
-            if (!isNowFocused) {
-                String[] parts = urlField.getText().split(":");
-                if (parts.length >= 2) {
-                    Optional<String> ipError = settings.validateIpAddress(parts[0].trim());
-                    Optional<String> portError = settings.validatePort(parts[1].trim());
-                    if (ipError.isPresent()) {
-                        showFieldError(urlField, "IP: " + ipError.get());
-                        updateUrlField(); // откат
-                    } else if (portError.isPresent()) {
-                        showFieldError(urlField, "Порт: " + portError.get());
-                        updateUrlField();
-                    }
+        // 2. Инициализация: модель → поле (ОДИН РАЗ, без bind!)
+        urlField.setText(settings.getSignalingUrl());
+
+        // 3. Слушатель: поле → модель (при потере фокуса)
+            urlField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
+            if (!isNowFocused) { // Только когда пользователь закончил ввод
+                String url = urlField.getText().trim();
+                Optional<String> error = settings.validateSignalingUrl(url);
+
+                if (error.isPresent()) {
+                    // ❌ Ошибка: показываем и откатываем
+                    showFieldError(urlField, error.get());
+                    urlField.setText(settings.getSignalingUrl());
+                } else {
+                    // ✅ Всё ок: сохраняем в модель
+                    settings.setSignalingUrl(url);
+                    urlField.setStyle(""); // Убираем красную рамку
+                    Tooltip.uninstall(urlField, null);
                 }
             }
         });
@@ -399,23 +366,6 @@ public class SettingsController {
                 Tooltip.uninstall(field, tooltip);
             }
         });
-    }
-
-    private void updateUrlField() {
-        String ip = settings.getUserIp();
-        String port = settings.getUserPort();
-        // Обновляем только если поле не в фокусе (чтобы не мешать пользователю вводить)
-        if (!urlField.isFocused()) {
-            urlField.setText(ip + ":" + port);
-        }
-    }
-
-    private void parseAndSaveUrl() {
-        String[] parts = urlField.getText().split(":");
-        if (parts.length >= 2) {
-            settings.setUserIp(parts[0].trim());
-            settings.setUserPort(parts[1].trim());
-        }
     }
 
     private void loadNonReactiveValues() {
@@ -570,8 +520,8 @@ public class SettingsController {
      * Используется при открытии окна настроек и при отмене изменений.
      */
     private static record SettingsSnapshot(
-            String nickname, String userIp, String userPort, String userKey, String theme, String pathToAvatar,
-            String microphone, String speaker, String camera, String signalingServerIp,
+            String nickname, String signalingUrl, String userKey, String theme, String pathToAvatar,
+            String microphone, String speaker, String camera,
             boolean notificationsEnabled,
             int microphoneVolume, int speakerVolume, int audioBitrate, int cameraBitrate) {
 
@@ -581,15 +531,13 @@ public class SettingsController {
         static SettingsSnapshot from(SettingsManager manager) {
             return new SettingsSnapshot(
                     manager.getNickname(),
-                    manager.getUserIp(),
-                    manager.getUserPort(),
+                    manager.getSignalingUrl(),
                     manager.getUserKey(),
                     manager.getTheme(),
                     manager.getPathToAvatar(),
                     manager.getMicrophone(),
                     manager.getSpeaker(),
                     manager.getCamera(),
-                    manager.getSignalingServerIp(),
                     manager.isNotificationsEnabled(),
                     manager.getMicrophoneVolume(),
                     manager.getSpeakerVolume(),
@@ -604,15 +552,13 @@ public class SettingsController {
          */
         void revert(SettingsManager manager) {
             manager.setNickname(nickname);
-            manager.setUserIp(userIp);
-            manager.setUserPort(userPort);
+            manager.setSignalingUrl(signalingUrl);
             manager.setUserKey(userKey);
             manager.setTheme(theme);
             manager.setPathToAvatar(pathToAvatar);
             manager.setMicrophone(microphone);
             manager.setSpeaker(speaker);
             manager.setCamera(camera);
-            manager.setSignalingServerIp(signalingServerIp);
             manager.setNotificationsEnabled(notificationsEnabled);
             manager.setMicrophoneVolume(microphoneVolume);
             manager.setSpeakerVolume(speakerVolume);

@@ -32,22 +32,22 @@ public class SignalingClient {
     private final ObjectMapper mapper = new ObjectMapper();
 
     private final ObjectProperty<Offer> offer = new SimpleObjectProperty<>();
-    
+
     private static SignalingClient instance = null;
-    
+
     public static void initialize(String serverUrl) {
         instance = new SignalingClient(serverUrl);
     }
-    
+
     public static SignalingClient getInstance() {
         return instance;
     }
 
-    
+
     public ObjectProperty<Offer> offerProperty() {
         return offer;
     }
-    
+
     public SignalingClient(String serverUrl) {
         this.serverUrl = serverUrl;
     }
@@ -127,16 +127,16 @@ public class SignalingClient {
 
     private void handlePeer(JsonNode json) {
         try {
-            JsonNode userNode = json.get("user");           
+            JsonNode userNode = json.get("user");
             User user = mapper.treeToValue(userNode.get("data"), User.class);
             UserStatus status = mapper.treeToValue(userNode.get("status"), UserStatus.class);
-            
+
             String toPrint = userNode.asText();
-            
+
             Contact contact = new Contact(user.getName(), status.toString(), user.getPublicKey());
             ChatController cc = ChatController.getInstance();
             cc.addContact(contact);
-            
+
             System.out.println("GOT CONTACT");
             System.out.println(toPrint);
         } catch (IllegalArgumentException ex) {
@@ -149,7 +149,7 @@ public class SignalingClient {
     private void handleWelcome(JsonNode json) {
         // Get actual user info
         System.out.println("GOT WELCOME!");
-        
+
         User me = new User();
         me.setName("me");
         me.setEmail("me@me.me");
@@ -180,7 +180,7 @@ public class SignalingClient {
         WebRTCManager rtcm = WebRTCManager.getInstance();
         rtcm.handleAccept(sdp);
     }
-    
+
     private void handleReject(JsonNode json) {
         String sdp = json.get("sdp").asText();
 //        tell webrtc manager to handle reject
@@ -190,7 +190,7 @@ public class SignalingClient {
         String candidate = json.get("candidate").asText();
         String sdpMid = json.get("sdpMid").asText();
         int sdpMLineIndex = json.get("sdpMLineIndex").asInt();
-        
+
         WebRTCManager rtcm = WebRTCManager.getInstance();
         rtcm.addIceCandidate(candidate, sdpMid, sdpMLineIndex);
     }
@@ -211,7 +211,7 @@ public class SignalingClient {
     public void sendAccept(String sdp, String targetClientId) throws IOException {
         sendMessage("accept", sdp, targetClientId);
     }
-    
+
     public void sendReject(String sdp, String targetClientId) throws IOException {
         sendMessage("reject", sdp, targetClientId);
     }

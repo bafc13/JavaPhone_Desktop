@@ -78,13 +78,13 @@ public class VideoCallController {
 
     private final SettingsManager settings = SettingsManager.getInstance();
     private VideoLayoutMode currentMode = VideoLayoutMode.PIP_PRIMARY_FIRST;
-    
+
     private static VideoCallController instance = null;
-    
+
     public static VideoCallController getInstance() {
         return instance;
-    } 
-    
+    }
+
     @FXML
     public void initialize() {
         setupCallUI();
@@ -95,15 +95,15 @@ public class VideoCallController {
         callChatHistory.setEditable(false);
         instance = this;
     }
-    
+
     public void addLocalTrack(VideoTrack localTrack) {
         localTrack.addSink(localVideo);
     }
-    
+
     public void addRemoteTrack(VideoTrack remoteTrack) {
         remoteTrack.addSink(remoteVideo);
     }
-    
+
     /**
      * Initializes window resizing. Called from ChatController.startVideoCall()
      * with a ready Stage!
@@ -231,7 +231,7 @@ public class VideoCallController {
         // 🔥 Важно: layout после инициализации
         videoContainer.applyCss();
         videoContainer.layout();
-        
+
         WebRTCManager rtcm = WebRTCManager.getInstance();
         VideoTrack localTrack = rtcm.getLocalVideoTrack();
         if (localTrack != null) {
@@ -555,6 +555,7 @@ public class VideoCallController {
                 e.printStackTrace();
             }
             closeWindow();
+            WebRTCManager.getInstance().cleanup();
         });
     }
 

@@ -18,6 +18,8 @@ import java.nio.file.StandardCopyOption;
 import com.mycompany.javaphone_nir2.webrtc.WebRTCManager;
 import dev.onvoid.webrtc.media.audio.AudioDevice;
 import dev.onvoid.webrtc.media.video.VideoDevice;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,8 +41,7 @@ public class SettingsManager {
 
     // === REACTIVE PROPERTIES (transient для Jackson) ===
     private transient final StringProperty nicknameProperty = new SimpleStringProperty(this, "nickname");
-    private transient final StringProperty userIpProperty = new SimpleStringProperty(this, "userIp");
-    private transient final StringProperty userPortProperty = new SimpleStringProperty(this, "userPort");
+    private transient final StringProperty signalingUrlProperty = new SimpleStringProperty(this, "signalingUrl", "ws://127.0.0.1:8080/javaphone/signaling");
     private transient final StringProperty userKeyProperty = new SimpleStringProperty(this, "userKey");
     private transient final StringProperty themeProperty = new SimpleStringProperty(this, "theme");
     private transient final StringProperty pathToAvatarProperty = new SimpleStringProperty(this, "pathToAvatar");
@@ -52,7 +53,6 @@ public class SettingsManager {
     private transient final IntegerProperty audioBitrateProperty = new SimpleIntegerProperty(this, "audioBitrate");
     private transient final StringProperty cameraProperty = new SimpleStringProperty(this, "camera");
     private transient final IntegerProperty cameraBitrateProperty = new SimpleIntegerProperty(this, "cameraBitrate");
-    private transient final StringProperty signalingServerIpProperty = new SimpleStringProperty(this, "signalingServerIp");
     private transient final DoubleProperty mainSplitRatioProperty = new SimpleDoubleProperty(this, "mainSplitRatio", 0.25);
     private transient final DoubleProperty videoSplitRatioProperty = new SimpleDoubleProperty(this, "videoSplitRatio", 0.5);
 
@@ -65,8 +65,7 @@ public class SettingsManager {
 
         // === РЕГИСТРАЦИЯ СЛУШАТЕЛЕЙ: свойство → data ===
         nicknameProperty.addListener((obs, old, newVal) -> { data.nickname = newVal; });
-        userIpProperty.addListener((obs, old, newVal) -> { data.userIp = newVal; });
-        userPortProperty.addListener((obs, old, newVal) -> { data.userPort = newVal; });
+        signalingUrlProperty.addListener((obs, old, newVal) -> { data.signalingUrl = newVal; });
         userKeyProperty.addListener((obs, old, newVal) -> { data.userKey = newVal; });
         themeProperty.addListener((obs, old, newVal) -> { data.theme = newVal; });
         pathToAvatarProperty.addListener((obs, old, newVal) -> { data.pathToAvatar = newVal; });
@@ -93,7 +92,6 @@ public class SettingsManager {
         audioBitrateProperty.addListener((obs, old, newVal) -> { data.audioBitrate = (int) newVal; });
         cameraProperty.addListener((obs, old, newVal) -> { data.camera = newVal; });
         cameraBitrateProperty.addListener((obs, old, newVal) -> { data.cameraBitrate = (int) newVal; });
-        signalingServerIpProperty.addListener((obs, old, newVal) -> { data.signalingServerIp = newVal; });
 
         loadSettings();
     }
@@ -107,8 +105,7 @@ public class SettingsManager {
 
     private void syncPropertiesWithData() {
         nicknameProperty.set(data.nickname);
-        userIpProperty.set(data.userIp);
-        userPortProperty.set(data.userPort);
+        signalingUrlProperty.set(data.signalingUrl);
         userKeyProperty.set(data.userKey);
         themeProperty.set(data.theme);
         pathToAvatarProperty.set(data.pathToAvatar);
@@ -120,7 +117,6 @@ public class SettingsManager {
         audioBitrateProperty.set(data.audioBitrate);
         cameraProperty.set(data.camera);
         cameraBitrateProperty.set(data.cameraBitrate);
-        signalingServerIpProperty.set(data.signalingServerIp);
     }
 
     // === PUBLIC API (без изменений — полная обратная совместимость) ===
@@ -130,13 +126,11 @@ public class SettingsManager {
     public void setNickname(String nickname) { nicknameProperty.set(nickname); }
     public StringProperty nicknameProperty() { return nicknameProperty; }
 
-    public String getUserIp() { return data.userIp; }
-    public void setUserIp(String ip) { userIpProperty.set(ip); }
-    public StringProperty userIpProperty() { return userIpProperty; }
-
-    public String getUserPort() { return data.userPort; }
-    public void setUserPort(String port) { userPortProperty.set(port); }
-    public StringProperty userPortProperty() { return userPortProperty; }
+    public String getSignalingUrl() { return data.signalingUrl; }
+    public void setSignalingUrl(String url) { signalingUrlProperty.set(url); }
+    public StringProperty signalingUrlProperty() { return signalingUrlProperty; }
+    public boolean isSignalingUrlValid(String url) { return validateSignalingUrl(url).isEmpty(); }
+    public Optional<String> getSignalingUrlError(String url) { return validateSignalingUrl(url); }
 
     public String getUserKey() { return data.userKey; }
     public void setUserKey(String key) { userKeyProperty.set(key); }
@@ -181,10 +175,6 @@ public class SettingsManager {
     public int getCameraBitrate() { return data.cameraBitrate; }
     public void setCameraBitrate(int bitrate) { cameraBitrateProperty.set(bitrate); }
     public IntegerProperty cameraBitrateProperty() { return cameraBitrateProperty; }
-
-    public String getSignalingServerIp() { return data.signalingServerIp; }
-    public void setSignalingServerIp(String ip) { signalingServerIpProperty.set(ip); }
-    public StringProperty signalingServerIpProperty() { return signalingServerIpProperty; }
 
     public double getMainSplitRatio() { return data.mainSplitRatio; }
     public void setMainSplitRatio(double ratio) { mainSplitRatioProperty.set(ratio); }
@@ -242,8 +232,7 @@ public class SettingsManager {
         SettingsData defaults = new SettingsData();
         defaults.pathToAvatar = "";
         defaults.nickname = "default Nick Name";
-        defaults.userIp = "127.0.0.1";
-        defaults.userPort = "443";
+        defaults.signalingUrl = "ws://127.0.0.1:8080/javaphone/signaling";
         defaults.userKey = "";
         defaults.theme = "light";
         defaults.notificationsEnabled = true;
@@ -254,7 +243,6 @@ public class SettingsManager {
         defaults.audioBitrate = 120;
         defaults.camera = "";
         defaults.cameraBitrate = 3800;
-        defaults.signalingServerIp = "127.0.0.1";
         defaults.videoSplitRatio = 0.75;
         defaults.mainSplitRatio = 0.25;
         this.data = defaults;
@@ -339,6 +327,55 @@ public class SettingsManager {
         }
     }
 
+    public Optional<String> validateSignalingUrl(String url) {
+        if (url == null || url.isBlank()) {
+            return Optional.of("URL не может быть пустым");
+        }
+
+        String trimmed = url.trim();
+
+        // 1. Проверка протокола (обязательно)
+        if (!trimmed.matches("^(ws|wss|http|https)://.+")) {
+            return Optional.of("Неверный протокол. Ожидается: ws://, wss://, http:// или https://");
+        }
+
+        // 2. Базовая проверка структуры через стандартный Java URI
+        try {
+            URI uri = new URI(trimmed);
+            String host = uri.getHost();
+            int port = uri.getPort();
+
+            if (host == null || host.isEmpty()) {
+                return Optional.of("Хост не указан (пример: ws://localhost:8080)");
+            }
+
+            // Валидация хоста: домен или IP
+            if (!host.matches("^[a-zA-Z0-9.-]+$") && !host.matches("^\\d{1,3}(\\.\\d{1,3}){3}$")) {
+                return Optional.of("Неверный формат хоста");
+            }
+
+            // Валидация порта (если указан)
+            if (port != -1 && (port < 1 || port > 65535)) {
+                return Optional.of("Порт должен быть в диапазоне 1–65535");
+            }
+
+            // Если порт не указан в строке, но протокол требует (опционально)
+            if (port == -1) {
+                 // Можно добавить предупреждение, но не ошибку, т.к. есть дефолтные порты
+            }
+
+        } catch (URISyntaxException e) {
+            return Optional.of("Неверный синтаксис URL: " + e.getReason());
+        }
+
+        // 3. Проверка длины (защита от переполнения)
+        if (trimmed.length() > 255) {
+            return Optional.of("URL слишком длинный (макс. 255 символов)");
+        }
+
+        return Optional.empty();
+    }
+
     // === VALIDATION (без изменений) ===
 
     public Optional<String> validateNickname(String nickname) {
@@ -349,33 +386,6 @@ public class SettingsManager {
         if (!trimmed.matches("^[a-zA-Z0-9_\\s\\u0400-\\u04FF]+$"))
             return Optional.of("Только буквы, цифры, пробелы и подчёркивания");
         return Optional.empty();
-    }
-
-    public Optional<String> validateIpAddress(String ip) {
-        if (ip == null || ip.isBlank()) return Optional.of("IP-адрес не может быть пустым");
-        if (!ip.matches("^\\d{1,3}(\\.\\d{1,3}){3}$")) return Optional.of("Неверный формат IP (xxx.xxx.xxx.xxx)");
-        String[] parts = ip.split("\\.");
-        for (String part : parts) {
-            try {
-                int val = Integer.parseInt(part);
-                if (val < 0 || val > 255) return Optional.of("Каждая часть IP: 0–255");
-            } catch (NumberFormatException e) {
-                return Optional.of("Неверное число в IP-адресе");
-            }
-        }
-        return Optional.empty();
-    }
-
-    public Optional<String> validatePort(String port) {
-        if (port == null || port.isBlank()) return Optional.of("Порт не может быть пустым");
-        try {
-            int val = Integer.parseInt(port.trim());
-            if (val < 1) return Optional.of("Минимальный порт: 1");
-            if (val > 65535) return Optional.of("Максимальный порт: 65535");
-            return Optional.empty();
-        } catch (NumberFormatException e) {
-            return Optional.of("Порт должен быть числом");
-        }
     }
 
     public Optional<String> validateUserKey(String key) {
@@ -397,8 +407,6 @@ public class SettingsManager {
     }
 
     public boolean isNicknameValid(String nickname) { return validateNickname(nickname).isEmpty(); }
-    public boolean isIpAddressValid(String ip) { return validateIpAddress(ip).isEmpty(); }
-    public boolean isPortValid(String port) { return validatePort(port).isEmpty(); }
     public boolean isUserKeyValid(String key) { return validateUserKey(key).isEmpty(); }
     public boolean isAudioBitrateValid(int bitrate) { return validateAudioBitrate(bitrate).isEmpty(); }
     public boolean isCameraBitrateValid(int bitrate) { return validateCameraBitrate(bitrate).isEmpty(); }
@@ -406,8 +414,6 @@ public class SettingsManager {
     public Optional<String> getValidationError(String field, Object value) {
         return switch (field) {
             case "nickname" -> validateNickname((String) value);
-            case "ip" -> validateIpAddress((String) value);
-            case "port" -> validatePort((String) value);
             case "key" -> validateUserKey((String) value);
             case "audioBitrate" -> validateAudioBitrate((Integer) value);
             case "cameraBitrate" -> validateCameraBitrate((Integer) value);
@@ -418,8 +424,7 @@ public class SettingsManager {
     private static class SettingsData {
         @JsonProperty("path_to_avatar") private String pathToAvatar;
         @JsonProperty("nickname") private String nickname;
-        @JsonProperty("user_ip") private String userIp;
-        @JsonProperty("user_port") private String userPort;
+        @JsonProperty("signaling_url") private String signalingUrl = "ws://127.0.0.1:8080/javaphone/signaling";
         @JsonProperty("user_key") private String userKey;
         @JsonProperty("theme") private String theme;
         @JsonProperty("notifications_enabled") private boolean notificationsEnabled;
@@ -430,7 +435,6 @@ public class SettingsManager {
         @JsonProperty("audio_bitrate") private int audioBitrate;
         @JsonProperty("camera") private String camera;
         @JsonProperty("camera_bitrate") private int cameraBitrate;
-        @JsonProperty("signaling_server_ip") private String signalingServerIp;
         @JsonProperty("main_split_ratio") private double mainSplitRatio = 0.25;
         @JsonProperty("video_split_ratio") private double videoSplitRatio = 0.75;
     }

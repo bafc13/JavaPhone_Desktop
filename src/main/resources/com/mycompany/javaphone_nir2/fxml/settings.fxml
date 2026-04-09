@@ -226,21 +226,6 @@
                   <Separator style="-fx-background-color: white;" />
                   <HBox alignment="TOP_CENTER" spacing="10.0">
                      <children>
-                        <Label fx:id="signalingServerIPLabel" prefHeight="46.0" prefWidth="94.0" text="IP сигналинг сервера:" wrapText="true">
-                           <padding>
-                              <Insets left="6.0" right="6.0" />
-                           </padding>
-                        </Label>
-                        <TextField fx:id="signalingServerIPField" prefHeight="46.0" prefWidth="254.0">
-                           <padding>
-                              <Insets left="7.0" />
-                           </padding>
-                        </TextField>
-                     </children>
-                  </HBox>
-                  <Separator style="-fx-background-color: white;" />
-                  <HBox alignment="TOP_CENTER" spacing="10.0">
-                     <children>
                         <Button fx:id="saveButton" alignment="CENTER" mnemonicParsing="false" prefHeight="24.0" prefWidth="174.0" text="Сохранить" textAlignment="CENTER">
                            <padding>
                               <Insets left="4.0" right="4.0" />
