@@ -2,6 +2,7 @@ package com.mycompany.javaphone_nir2.controllers;
 
 import com.mycompany.javaphone_nir2.ChatHistoryCell;
 import com.mycompany.javaphone_nir2.WebRtcVideoPanel;
+import com.mycompany.javaphone_nir2.games.GameMenuApp;
 import com.mycompany.javaphone_nir2.models.Message;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
 import com.mycompany.javaphone_nir2.models.VideoLayoutMode;
@@ -532,6 +533,7 @@ public class VideoCallController {
 
     private void openGameChooser() {
 
+
         //that how i think we might choose themes (example with putting theme and listen to changes)
 
         //scene.getStylesheets().add(getClass().getResource("dark".equals(settings.getTheme()) ?
@@ -544,6 +546,16 @@ public class VideoCallController {
         //                    "css/chat_main_dark.css"
         //                    : "css/chat_main.css").toExternalForm());
         //            });
+
+        if (WebRTCManager.getInstance().isGameChannelReady()) {
+        GameMenuApp.getInstance().showGameSelection();
+    } else {
+        // Ждём открытия канала
+        WebRTCManager.getInstance().setOnGameChannelReady(() -> {
+            GameMenuApp.getInstance().showGameSelection();
+        });
+
+    }
     }
 
     private void setupCloseInterceptor(Stage stage) {

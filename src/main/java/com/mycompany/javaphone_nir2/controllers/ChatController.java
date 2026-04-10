@@ -100,8 +100,10 @@ public class ChatController {
     }
 
     private void initSignalingClient(){
+
         SettingsManager settings = SettingsManager.getInstance();
         SignalingClient.initialize(settings.getSignalingUrl());
+
 
 
         Platform.runLater(() -> connectToSignaling());
