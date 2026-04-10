@@ -570,6 +570,7 @@ public class VideoCallController {
     private void setupCloseInterceptor(Stage stage) {
         stage.setOnCloseRequest(event -> {
                         closeWindow();
+                        WebRTCManager.getInstance().cleanup();
                         event.consume();
                     });
     }
