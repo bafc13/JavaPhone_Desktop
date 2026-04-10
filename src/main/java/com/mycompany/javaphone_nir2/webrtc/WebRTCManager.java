@@ -203,8 +203,8 @@ public class WebRTCManager implements PeerConnectionObserver {
     }
 
     public void startCall(String targetClientId) {
-        //initializeMedia();
-        //initializeCapture();
+        initializeMedia();
+        initializeCapture();
 
         remoteClientId = targetClientId;
 
@@ -448,7 +448,7 @@ public class WebRTCManager implements PeerConnectionObserver {
     }
 
 
-    public void sendGameMessage(ObjectNode message) {
+    public void sendGameMessage(String textMessage) {
         if (gameDataChannel != null && gameDataChannel.getState() == RTCDataChannelState.OPEN) {
             try {
                 ByteBuffer textBuffer = ByteBuffer.wrap(textMessage.getBytes(StandardCharsets.UTF_8));

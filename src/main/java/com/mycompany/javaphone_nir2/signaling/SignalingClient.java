@@ -25,8 +25,7 @@ import javafx.beans.property.SimpleObjectProperty;
 public class SignalingClient {
     private Session session;
     private final String serverUrl;
-    private String clientId = "444";
-;
+    private String clientId;
 
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -49,6 +48,8 @@ public class SignalingClient {
 
     public SignalingClient(String serverUrl) {
         this.serverUrl = serverUrl;
+        SettingsManager settings = SettingsManager.getInstance();
+        clientId = settings.getUserKey();
     }
 
     public final void connect() throws Exception {
@@ -120,9 +121,10 @@ public class SignalingClient {
         ObjectNode message = mapper.createObjectNode();
         message.put("type", "peer");
         message.set("user", userNode);
-
+        
+        SettingsManager settings = SettingsManager.getInstance();
         message.put("target", "all");
-        message.put("sender", clientId);
+        message.put("sender", settings.getUserKey());
 
         sendJson(message);
         // send to all
