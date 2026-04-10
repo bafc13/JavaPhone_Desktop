@@ -140,7 +140,18 @@ public class WebRTCManager implements PeerConnectionObserver {
     }
 
     public void initializeMedia() {
-        VideoDevice camera = cameras.get(cameraId);
+        SettingsManager settings = SettingsManager.getInstance();
+        String cameraName = settings.getCamera();
+        String microphoneName = settings.getMicrophone();
+        String speakerName = settings.getSpeaker();
+        
+        VideoDevice camera = null;
+        for (VideoDevice cam : cameras) {
+            if (cam.getName().equals(cameraName)) {
+                camera = cam;
+                break;
+            }
+        }
 
         cameraCapabilities = MediaDevices.getVideoCaptureCapabilities(camera);
         VideoCaptureCapability capability = cameraCapabilities.get(0);
@@ -149,12 +160,27 @@ public class WebRTCManager implements PeerConnectionObserver {
         videoSource.setVideoCaptureDevice(camera);
         videoSource.setVideoCaptureCapability(capability);
 
-        AudioDevice microphone = microphones.get(microphoneId);
-        AudioDevice speaker = speakers.get(speakerId);
-
+        AudioDevice microphone = null;
+        for (AudioDevice mic : microphones) {
+            if (mic.getName().equals(microphoneName)) {
+                microphone = mic;
+                break;
+            }
+        }
+        AudioDevice speaker = null;
+        for (AudioDevice spk : speakers) {
+            if (spk.getName().equals(speakerName)) {
+                speaker = spk;
+                break;
+            }
+        }
+       
         audioModule.setRecordingDevice(microphone);
         audioModule.setPlayoutDevice(speaker);
-
+        
+        microphoneVolume = settings.getMicrophoneVolume();
+        speakerVolume = settings.getSpeakerVolume();
+        
         audioModule.setMicrophoneVolume(microphoneVolume);
         audioModule.setSpeakerVolume(speakerVolume);
 
