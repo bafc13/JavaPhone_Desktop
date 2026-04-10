@@ -177,8 +177,8 @@ public class WebRTCManager implements PeerConnectionObserver {
     }
 
     public void startCall(String targetClientId) {
-        initializeMedia();
-        initializeCapture();
+        //initializeMedia();
+        //initializeCapture();
 
         remoteClientId = targetClientId;
 
@@ -198,9 +198,12 @@ public class WebRTCManager implements PeerConnectionObserver {
         RTCDataChannelInit init = new RTCDataChannelInit();
         init.ordered = true;
         init.negotiated = false;
-        RTCDataChannel dataChannel = peerConnection.createDataChannel("chat", init);
-        setupDataChannel(dataChannel);
-
+        RTCDataChannel dataChannel1 = peerConnection.createDataChannel("chat", init);
+        setupDataChannel(dataChannel1);
+        
+        RTCDataChannel dataChannel2 = peerConnection.createDataChannel("game", init);
+        setupDataChannel(dataChannel2);
+        
 //        Create offer
 //        RTCMediaConstraints constraints = new MediaConstraints();
 //        constraints.mandatory.add(new MediaConstraints.KeyValuePair("OfferToReceiveVideo", "true"));
@@ -233,8 +236,8 @@ public class WebRTCManager implements PeerConnectionObserver {
     }
 
     public void handleOffer(String sdp, String sender) {
-        initializeMedia();
-        initializeCapture();
+//        initializeMedia();
+//        initializeCapture();
         
         this.remoteClientId = sender;
 
@@ -362,6 +365,33 @@ public class WebRTCManager implements PeerConnectionObserver {
                         
                     }
                 });
+                break;
+            case "game":
+                System.out.println("GOT GAME DATA CHANNEL");
+                gameDataChannel = dataChannel;
+                dataChannel.registerObserver(new RTCDataChannelObserver() {
+                    @Override
+                    public void onBufferedAmountChange(long amount) {}
+
+                    @Override
+                    public void onStateChange() {}
+
+                    @Override
+                    public void onMessage(RTCDataChannelBuffer buffer) {
+                        ByteBuffer data = buffer.data;
+                        byte[] textBytes;
+        
+                        if (data.hasArray()) {
+                            textBytes = data.array();
+                        } else {
+                            textBytes = new byte[data.remaining()];
+                            data.get(textBytes);
+                        }
+
+                        String text = new String(textBytes, StandardCharsets.UTF_8);
+                        // TODO: process game message
+                    }
+                });
         }
         
     }
@@ -391,10 +421,9 @@ public class WebRTCManager implements PeerConnectionObserver {
         }
     }
     
-    public void sendGameMessage(ObjectNode message) {
+    public void sendGameMessage(String textMessage) {
         if (gameDataChannel != null && gameDataChannel.getState() == RTCDataChannelState.OPEN) {
             try {
-                String textMessage = message.asText();
                 ByteBuffer textBuffer = ByteBuffer.wrap(textMessage.getBytes(StandardCharsets.UTF_8));
                 RTCDataChannelBuffer textChannelBuffer = new RTCDataChannelBuffer(textBuffer, false);
                 
