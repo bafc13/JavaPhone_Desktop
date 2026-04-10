@@ -18,6 +18,8 @@ import javafx.stage.Stage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
@@ -89,17 +91,17 @@ public class ChatController {
         initSignalingClient();
 
         Platform.runLater(() -> {
-            appendToChat("Alice", "Привет! Это тестовое сообщение.");
-            appendToChat("Bob", "Отлично, работает! 🎉");
-            appendToChat("You", "Да, интерфейс стал намного лучше.");
+//            appendToChat("Alice", "Привет! Это тестовое сообщение.");
+//            appendToChat("Bob", "Отлично, работает! 🎉");
+//            appendToChat("You", "Да, интерфейс стал намного лучше.");
         });
 
         instance = this;
     }
 
     private void initSignalingClient(){
-        SignalingClient.initialize("ws://26.115.164.175:8080/javaphone/signaling");
-//        SignalingClient.initialize("ws://localhost:8080/javaphone/signaling");
+//        SignalingClient.initialize("ws://26.115.164.175:8080/javaphone/signaling");
+        SignalingClient.initialize("ws://localhost:8080/javaphone/signaling");
 
         Platform.runLater(() -> connectToSignaling());
 
@@ -113,6 +115,13 @@ public class ChatController {
         stage.setOnCloseRequest(event -> {
                         if(webRtcManager != null) {
                             webRtcManager.cleanup();
+                        }
+                        if (SignalingClient.getInstance() != null){
+                            try {
+                                SignalingClient.getInstance().disconnect();
+                            } catch (IOException ex) {
+                                Logger.getLogger(ChatController.class.getName()).log(Level.SEVERE, null, ex);
+                            }
                         }
 
                         closeWindow();
@@ -352,8 +361,17 @@ public class ChatController {
             );
 
             Scene scene = new Scene(loader.load(), 1200, 700);
-            scene.getStylesheets().add(getClass().getResource("/com/mycompany/javaphone_nir2/css/video_call.css").toExternalForm());
+            scene.getStylesheets().add(getClass().getResource("dark".equals(settings.getTheme()) ?
+                                "/com/mycompany/javaphone_nir2/css/video_call_dark.css"
+                                : "/com/mycompany/javaphone_nir2/css/video_call.css").toExternalForm());
 
+            settings.themeProperty().addListener((obs, oldTheme, newTheme) -> {
+                scene.getStylesheets().removeIf(s -> s.contains("/com/mycompany/javaphone_nir2/css/video_call_dark.css")
+                        || s.contains("/com/mycompany/javaphone_nir2/css/video_call.css"));
+                scene.getStylesheets().add(getClass().getResource("dark".equals(newTheme) ?
+                           "/com/mycompany/javaphone_nir2/css/video_call_dark.css"
+                                : "/com/mycompany/javaphone_nir2/css/video_call.css").toExternalForm());
+            });
 
             Stage videoStage = new Stage();
             videoStage.setTitle("WebCommunicator - Video Call with " + contact.getName());
@@ -445,6 +463,13 @@ public class ChatController {
             if(webRtcManager != null) {
                             webRtcManager.cleanup();
                         }
+                        if (SignalingClient.getInstance() != null){
+                            try {
+                                SignalingClient.getInstance().disconnect();
+                            } catch (IOException ex) {
+                                Logger.getLogger(ChatController.class.getName()).log(Level.SEVERE, null, ex);
+                            }
+                        }
             closeWindow();
                 });
         exitButton.getStyleClass().add("header-button");
@@ -452,6 +477,8 @@ public class ChatController {
 
     private void initSplitPane() {
         mainSplitPane.setDividerPositions(settings.getMainSplitRatio());
+
+        mainSplitPane.getStyleClass().add("split-pane");
 
         // 2. Слушаем изменение разделителя
         for (SplitPane.Divider divider : mainSplitPane.getDividers()) {
@@ -723,8 +750,17 @@ public class ChatController {
             );
 
             Scene scene = new Scene(loader.load(), 500, 465);
-            scene.getStylesheets().add(getClass().getResource("/com/mycompany/javaphone_nir2/css/settings.css").toExternalForm());
+            scene.getStylesheets().add(getClass().getResource("dark".equals(settings.getTheme()) ?
+                                "/com/mycompany/javaphone_nir2/css/settings_dark.css"
+                                : "/com/mycompany/javaphone_nir2/css/settings.css").toExternalForm());
 
+            settings.themeProperty().addListener((obs, oldTheme, newTheme) -> {
+                scene.getStylesheets().removeIf(s -> s.contains("/com/mycompany/javaphone_nir2/css/settings_dark.css")
+                        || s.contains("/com/mycompany/javaphone_nir2/css/settings.css"));
+                scene.getStylesheets().add(getClass().getResource("dark".equals(newTheme) ?
+                           "/com/mycompany/javaphone_nir2/css/settings_dark.css"
+                                : "/com/mycompany/javaphone_nir2/css/settings.css").toExternalForm());
+            });
 
             Stage settingsStage = new Stage();
             settingsStage.setTitle("WebCommunicator - Settings");

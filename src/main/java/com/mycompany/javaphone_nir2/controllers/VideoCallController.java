@@ -152,8 +152,10 @@ public class VideoCallController {
             isFilterEnabled = !isFilterEnabled;
             if (isFilterEnabled) {
                 filterButton.setStyle("-fx-background-color: #27ae60;");
+                setCameraFilters(true);
             } else {
                 filterButton.setStyle("-fx-background-color: #e74c3c;");
+                setCameraFilters(false);
             }
         });
         filterButton.getStyleClass().add("call-control-button");
@@ -201,6 +203,17 @@ public class VideoCallController {
         if (remoteTrack != null) {
             remoteTrack.addSink(remoteVideo);
         }
+    }
+
+    private void setCameraFilters(boolean setFilter){
+        if(setFilter) {
+            remoteVideo.setWarmthLevel(60);
+            localVideo.setWarmthLevel(60);
+        } else {
+            remoteVideo.setWarmthLevel(0);
+            localVideo.setWarmthLevel(0);
+        }
+
     }
 
     private void initSplitPane() {
@@ -525,6 +538,18 @@ public class VideoCallController {
 
     private void openGameChooser() {
 
+        //that how i think we might choose themes (example with putting theme and listen to changes)
+
+        //scene.getStylesheets().add(getClass().getResource("dark".equals(settings.getTheme()) ?
+        //                    "css/chat_main_dark.css"
+        //                    : "css/chat_main.css").toExternalForm());
+        //
+        //            settings.themeProperty().addListener((obs, oldTheme, newTheme) -> {
+//       scene.getStylesheets().removeIf(s -> s.contains("css/chat_main_dark.css") || s.contains("css/chat_main.css"));
+        //            scene.getStylesheets().add(getClass().getResource("dark".equals(newTheme) ?
+        //                    "css/chat_main_dark.css"
+        //                    : "css/chat_main.css").toExternalForm());
+        //            });
     }
 
     private void setupCloseInterceptor(Stage stage) {

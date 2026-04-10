@@ -169,17 +169,17 @@
 }
 
 .split-pane {
-    -fx-background-color: #dadef7;
+    -fx-background-color: #545769;
 }
 
 .message-container {
     -fx-padding: 10;
-    -fx-background-color: #dadef7;
+    -fx-background-color: #545769;
 }
 
 /* === Контейнер истории чата === */
 .chat-history {
-    -fx-background-color: #dadef7;  /* Светло-серый фон чата */
+    -fx-background-color: #545769;  /* Светло-серый фон чата */
     -fx-padding: 10px;
     -fx-border-color: transparent;
     -fx-focus-color: transparent;

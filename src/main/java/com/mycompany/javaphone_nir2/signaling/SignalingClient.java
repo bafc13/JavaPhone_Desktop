@@ -14,21 +14,17 @@ import com.mycompany.javaphone_nir2.webrtc.WebRTCManager;
 import jakarta.websocket.*;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
 
 @ClientEndpoint
 public class SignalingClient {
     private Session session;
     private final String serverUrl;
-    private String clientId = "321";
+    private String clientId = "13";
     private final ObjectMapper mapper = new ObjectMapper();
 
     private final ObjectProperty<Offer> offer = new SimpleObjectProperty<>();
