@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mycompany.javaphone_nir2.controllers.ChatController;
 import com.mycompany.javaphone_nir2.models.Contact;
 import com.mycompany.javaphone_nir2.models.Offer;
+import com.mycompany.javaphone_nir2.models.SettingsManager;
 import com.mycompany.javaphone_nir2.models.User;
 import com.mycompany.javaphone_nir2.models.UserStatus;
 import com.mycompany.javaphone_nir2.webrtc.WebRTCManager;
@@ -24,7 +25,9 @@ import javafx.beans.property.SimpleObjectProperty;
 public class SignalingClient {
     private Session session;
     private final String serverUrl;
-    private String clientId = "13";
+    private String clientId = "444";
+;
+
     private final ObjectMapper mapper = new ObjectMapper();
 
     private final ObjectProperty<Offer> offer = new SimpleObjectProperty<>();
@@ -149,10 +152,11 @@ public class SignalingClient {
     private void handleWelcome(JsonNode json) {
         // Get actual user info
         System.out.println("GOT WELCOME!");
-
+        
+        SettingsManager settings = SettingsManager.getInstance();
         User me = new User();
-        me.setName("me");
-        me.setEmail("me@me.me");
+        me.setName(settings.getNickname());
+        me.setEmail("example@example.com");
         me.setIp("localhost");
         me.setPublicKey(clientId);
         me.setAvatarId(Integer.MAX_VALUE);

@@ -100,8 +100,9 @@ public class ChatController {
     }
 
     private void initSignalingClient(){
-//        SignalingClient.initialize("ws://26.115.164.175:8080/javaphone/signaling");
-        SignalingClient.initialize("ws://localhost:8080/javaphone/signaling");
+        SettingsManager settings = SettingsManager.getInstance();
+        SignalingClient.initialize(settings.getSignalingUrl());
+
 
         Platform.runLater(() -> connectToSignaling());
 

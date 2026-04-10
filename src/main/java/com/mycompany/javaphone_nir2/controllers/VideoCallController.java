@@ -556,6 +556,7 @@ public class VideoCallController {
         stage.setOnCloseRequest(event -> {
                         WebRTCManager.getInstance().cleanup();
                         closeWindow();
+                        WebRTCManager.getInstance().cleanup();
                         event.consume();
                     });
     }
