@@ -65,8 +65,6 @@ public class VideoCallController {
     @FXML private Label remoteVideoLabel;
     @FXML private Label localVideoLabel;
 
-    @FXML private BorderPane rootContainer;
-
     private HBox splitModeContainer;
 
     private DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
@@ -114,44 +112,6 @@ public class VideoCallController {
         setupCloseInterceptor(stage);
     }
 
-   /**
-    * Привязывает панель как "главную" в режиме PiP
-    */
-   private void bindPaneAsMain(StackPane pane, DoubleBinding width, DoubleBinding height) {
-       pane.prefWidthProperty().bind(width);
-       pane.prefHeightProperty().bind(height);
-       pane.minWidthProperty().bind(width.multiply(0.8)); // Не сжиматься меньше 80%
-       pane.minHeightProperty().bind(height.multiply(0.8));
-       pane.setMaxWidth(Double.POSITIVE_INFINITY);
-       pane.setMaxHeight(Double.POSITIVE_INFINITY);
-//       pane.maxWidthProperty().bind(Double.POSITIVE_INFINITY);
-//       pane.maxHeightProperty().bind(DoubleBinding.value(Double.MAX_VALUE));
-   }
-
-   /**
-    * Привязывает панель как "маленькую" в режиме PiP
-    */
-   private void bindPaneAsSmall(StackPane pane, DoubleBinding width, DoubleBinding height) {
-       pane.prefWidthProperty().bind(width);
-       pane.prefHeightProperty().bind(height);
-       pane.minWidthProperty().bind(width); // Фиксированный размер
-       pane.minHeightProperty().bind(height);
-       pane.maxWidthProperty().bind(width);
-       pane.maxHeightProperty().bind(height);
-   }
-
-   /**
-    * Привязывает панель для режима Split
-    */
-   private void bindPaneAsSplit(StackPane pane, DoubleBinding width, DoubleBinding height) {
-       pane.prefWidthProperty().bind(width);
-       pane.prefHeightProperty().bind(height);
-       pane.minWidthProperty().bind(width.multiply(0.9));
-       pane.minHeightProperty().bind(height.multiply(0.9));
-       pane.setMaxWidth(Double.POSITIVE_INFINITY);
-       pane.setMaxHeight(Double.POSITIVE_INFINITY);
-   }
-
     /**
      * sets contact name
      */
@@ -192,8 +152,10 @@ public class VideoCallController {
             isFilterEnabled = !isFilterEnabled;
             if (isFilterEnabled) {
                 filterButton.setStyle("-fx-background-color: #27ae60;");
+                setCameraFilters(true);
             } else {
                 filterButton.setStyle("-fx-background-color: #e74c3c;");
+                setCameraFilters(false);
             }
         });
         filterButton.getStyleClass().add("call-control-button");
@@ -241,6 +203,17 @@ public class VideoCallController {
         if (remoteTrack != null) {
             remoteTrack.addSink(remoteVideo);
         }
+    }
+
+    private void setCameraFilters(boolean setFilter){
+        if(setFilter) {
+            remoteVideo.setWarmthLevel(60);
+            localVideo.setWarmthLevel(60);
+        } else {
+            remoteVideo.setWarmthLevel(0);
+            localVideo.setWarmthLevel(0);
+        }
+
     }
 
     private void initSplitPane() {
@@ -521,7 +494,7 @@ public class VideoCallController {
         }
 
         WebRTCManager rtcm = WebRTCManager.getInstance();
-        
+
         System.out.println("MESSAGE TEXT");
         System.out.println(message);
         rtcm.sendChatMessage(message);
@@ -565,10 +538,23 @@ public class VideoCallController {
 
     private void openGameChooser() {
 
+        //that how i think we might choose themes (example with putting theme and listen to changes)
+
+        //scene.getStylesheets().add(getClass().getResource("dark".equals(settings.getTheme()) ?
+        //                    "css/chat_main_dark.css"
+        //                    : "css/chat_main.css").toExternalForm());
+        //
+        //            settings.themeProperty().addListener((obs, oldTheme, newTheme) -> {
+//       scene.getStylesheets().removeIf(s -> s.contains("css/chat_main_dark.css") || s.contains("css/chat_main.css"));
+        //            scene.getStylesheets().add(getClass().getResource("dark".equals(newTheme) ?
+        //                    "css/chat_main_dark.css"
+        //                    : "css/chat_main.css").toExternalForm());
+        //            });
     }
 
     private void setupCloseInterceptor(Stage stage) {
         stage.setOnCloseRequest(event -> {
+                        WebRTCManager.getInstance().cleanup();
                         closeWindow();
                         WebRTCManager.getInstance().cleanup();
                         event.consume();
@@ -594,7 +580,7 @@ public class VideoCallController {
         msg.setSenderPublicKey(sender);
         msg.setContent(content);
         msg.setTime(System.currentTimeMillis() / 1000); // Unix timestamp в секундах
-        
+
         Platform.runLater(() -> {
             appendToCallChat(msg);
         });

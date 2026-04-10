@@ -16,6 +16,8 @@ import javafx.scene.paint.Color;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 
 public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
 
@@ -29,6 +31,12 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
 
     private int frameWidth = -1;
     private int frameHeight = -1;
+
+        // 0 = без фильтра, 100 = максимум «желтизны»
+    private final IntegerProperty warmthLevel = new SimpleIntegerProperty(this, "warmthLevel", 0);
+    public final int getWarmthLevel() { return warmthLevel.get(); }
+    public final void setWarmthLevel(int value) { warmthLevel.set(value); }
+    public IntegerProperty warmthLevelProperty() { return warmthLevel; }
 
     public WebRtcVideoPanel() {
         getChildren().add(canvas);
@@ -140,17 +148,34 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
         src.position(0);
         dst.clear();
 
+        // Локальная копия уровня тёплоты (0..100). Можно ограничить, чтобы не улететь.
+        int warmth = Math.max(0, Math.min(100, getWarmthLevel()));
+
+        // Коэффициенты влияния (подбираются «на глаз»)
+        float redBoost   = 0.3f * warmth / 100f;   // до +30% к красному
+        float greenBoost = 0.15f * warmth / 100f;  // до +15% к зелёному
+        float blueCut    = 0.4f * warmth / 100f;   // до −40% синего
+
         for (int i = 0; i < pixels; i++) {
             int b = src.get() & 0xFF;
             int g = src.get() & 0xFF;
             int r = src.get() & 0xFF;
             int a = src.get() & 0xFF;
 
-            int argb = (a << 24) | (r << 16) | (g << 8) | b;
+            // Применяем «тёплый» фильтр
+            int rAdj = clamp255((int) (r * (1.0f + redBoost)));
+            int gAdj = clamp255((int) (g * (1.0f + greenBoost)));
+            int bAdj = clamp255((int) (b * (1.0f - blueCut)));
+
+            int argb = (a << 24) | (rAdj << 16) | (gAdj << 8) | bAdj;
             dst.put(argb);
         }
 
         dst.flip();
+    }
+
+    private static int clamp255(int v) {
+        return (v < 0) ? 0 : (v > 255 ? 255 : v);
     }
 
     private void redraw() {

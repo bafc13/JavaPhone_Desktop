@@ -18,6 +18,8 @@ import javafx.stage.Stage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
@@ -72,13 +74,13 @@ public class ChatController {
     private final WebRTCManager webRtcManager = WebRTCManager.getInstance();
 
     public Offer offer;
-    
+
     private static ChatController instance;
-    
+
     public static ChatController getInstance() {
         return instance;
     }
-    
+
     @FXML
     public void initialize() {
         setupContactList();
@@ -89,17 +91,18 @@ public class ChatController {
         initSignalingClient();
 
         Platform.runLater(() -> {
-            appendToChat("Alice", "Привет! Это тестовое сообщение.");
-            appendToChat("Bob", "Отлично, работает! 🎉");
-            appendToChat("You", "Да, интерфейс стал намного лучше.");
+//            appendToChat("Alice", "Привет! Это тестовое сообщение.");
+//            appendToChat("Bob", "Отлично, работает! 🎉");
+//            appendToChat("You", "Да, интерфейс стал намного лучше.");
         });
-        
+
         instance = this;
     }
 
     private void initSignalingClient(){
         SettingsManager settings = SettingsManager.getInstance();
         SignalingClient.initialize(settings.getSignalingUrl());
+
 
         Platform.runLater(() -> connectToSignaling());
 
@@ -111,6 +114,17 @@ public class ChatController {
 
     private void setupCloseInterceptor(Stage stage) {
         stage.setOnCloseRequest(event -> {
+                        if(webRtcManager != null) {
+                            webRtcManager.cleanup();
+                        }
+                        if (SignalingClient.getInstance() != null){
+                            try {
+                                SignalingClient.getInstance().disconnect();
+                            } catch (IOException ex) {
+                                Logger.getLogger(ChatController.class.getName()).log(Level.SEVERE, null, ex);
+                            }
+                        }
+
                         closeWindow();
                         event.consume();
                     });
@@ -316,7 +330,7 @@ public class ChatController {
         webRtcManager.handleOffer(offer.getSdp(), offer.getSender());
         startVideoCallWithContact(incomingCallContact);
     }
-    
+
     public void handleCallAccepted() {
         Platform.runLater(() -> {
             startVideoCallWithContact(selectedContact);
@@ -348,8 +362,17 @@ public class ChatController {
             );
 
             Scene scene = new Scene(loader.load(), 1200, 700);
-            scene.getStylesheets().add(getClass().getResource("/com/mycompany/javaphone_nir2/css/video_call.css").toExternalForm());
+            scene.getStylesheets().add(getClass().getResource("dark".equals(settings.getTheme()) ?
+                                "/com/mycompany/javaphone_nir2/css/video_call_dark.css"
+                                : "/com/mycompany/javaphone_nir2/css/video_call.css").toExternalForm());
 
+            settings.themeProperty().addListener((obs, oldTheme, newTheme) -> {
+                scene.getStylesheets().removeIf(s -> s.contains("/com/mycompany/javaphone_nir2/css/video_call_dark.css")
+                        || s.contains("/com/mycompany/javaphone_nir2/css/video_call.css"));
+                scene.getStylesheets().add(getClass().getResource("dark".equals(newTheme) ?
+                           "/com/mycompany/javaphone_nir2/css/video_call_dark.css"
+                                : "/com/mycompany/javaphone_nir2/css/video_call.css").toExternalForm());
+            });
 
             Stage videoStage = new Stage();
             videoStage.setTitle("WebCommunicator - Video Call with " + contact.getName());
@@ -412,12 +435,12 @@ public class ChatController {
     public void addContact(Contact contact) {
         System.out.println("GOT CONTACT TO UI");
         System.out.println(contact.getKey());
-        
+
         contacts.put(contact.getKey(), contact);
         contactsList.setItems(FXCollections.observableArrayList(contacts.values()));
         contactsList.refresh();
     }
-    
+
     /**
      * setuping chat ui
      */
@@ -437,12 +460,26 @@ public class ChatController {
         callButton.setOnAction(e -> startVideoCall());
         callButton.getStyleClass().add("header-button");
 
-        exitButton.setOnAction(e -> closeWindow());
+        exitButton.setOnAction(e -> {
+            if(webRtcManager != null) {
+                            webRtcManager.cleanup();
+                        }
+                        if (SignalingClient.getInstance() != null){
+                            try {
+                                SignalingClient.getInstance().disconnect();
+                            } catch (IOException ex) {
+                                Logger.getLogger(ChatController.class.getName()).log(Level.SEVERE, null, ex);
+                            }
+                        }
+            closeWindow();
+                });
         exitButton.getStyleClass().add("header-button");
     }
 
     private void initSplitPane() {
         mainSplitPane.setDividerPositions(settings.getMainSplitRatio());
+
+        mainSplitPane.getStyleClass().add("split-pane");
 
         // 2. Слушаем изменение разделителя
         for (SplitPane.Divider divider : mainSplitPane.getDividers()) {
@@ -475,11 +512,11 @@ public class ChatController {
 
         messageContainer.getStyleClass().add("message-container");
     }
-    
+
     public void initIncomingCall(Offer offer) {
         this.offer = offer;
         String callerKey = offer.getSender();
-        
+
         incomingCallContact = contacts.getOrDefault(callerKey, null);
         if (incomingCallContact != null) {
             Platform.runLater( () -> {
@@ -488,7 +525,7 @@ public class ChatController {
             });
         }
     }
-    
+
     public void initIncomingCall(String callerKey) {
         incomingCallContact = contacts.getOrDefault(callerKey, null);
         if (incomingCallContact != null) {
@@ -498,7 +535,7 @@ public class ChatController {
             });
         }
     }
-    
+
     /**
      * func responsible for initialization of incoming call notification popup
      */
@@ -595,10 +632,10 @@ public class ChatController {
         } catch (IOException ex) {
             System.getLogger(ChatController.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
         }
- 
+
         // simulateResponse();
     }
-    
+
     public void handleMessage(String sender, String content) {
         Platform.runLater(() -> {
             appendToChat(sender, content);
@@ -714,8 +751,17 @@ public class ChatController {
             );
 
             Scene scene = new Scene(loader.load(), 500, 465);
-            scene.getStylesheets().add(getClass().getResource("/com/mycompany/javaphone_nir2/css/settings.css").toExternalForm());
+            scene.getStylesheets().add(getClass().getResource("dark".equals(settings.getTheme()) ?
+                                "/com/mycompany/javaphone_nir2/css/settings_dark.css"
+                                : "/com/mycompany/javaphone_nir2/css/settings.css").toExternalForm());
 
+            settings.themeProperty().addListener((obs, oldTheme, newTheme) -> {
+                scene.getStylesheets().removeIf(s -> s.contains("/com/mycompany/javaphone_nir2/css/settings_dark.css")
+                        || s.contains("/com/mycompany/javaphone_nir2/css/settings.css"));
+                scene.getStylesheets().add(getClass().getResource("dark".equals(newTheme) ?
+                           "/com/mycompany/javaphone_nir2/css/settings_dark.css"
+                                : "/com/mycompany/javaphone_nir2/css/settings.css").toExternalForm());
+            });
 
             Stage settingsStage = new Stage();
             settingsStage.setTitle("WebCommunicator - Settings");

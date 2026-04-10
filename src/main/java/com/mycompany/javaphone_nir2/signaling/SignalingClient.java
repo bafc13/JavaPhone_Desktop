@@ -15,21 +15,19 @@ import com.mycompany.javaphone_nir2.webrtc.WebRTCManager;
 import jakarta.websocket.*;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
 
 @ClientEndpoint
 public class SignalingClient {
     private Session session;
     private final String serverUrl;
     private String clientId = "444";
+;
+
     private final ObjectMapper mapper = new ObjectMapper();
 
     private final ObjectProperty<Offer> offer = new SimpleObjectProperty<>();
@@ -205,7 +203,7 @@ public class SignalingClient {
         String disconnectedClientId = json.get("clientId").asText();
 //        tell webrtc manager to handle disconnect
     }
-    
+
     private void handleDM(JsonNode json) {
         System.out.println("GOT MESSAGE");
         String sender = json.get("sender").asText();
@@ -251,14 +249,14 @@ public class SignalingClient {
         sendMessage("bye", "", targetClientId);
 //      tell webrtc manager to handle call end
     }
-    
+
     public void sendDM(String targetClientId, String content) throws IOException {
         ObjectNode message = mapper.createObjectNode();
         message.put("type", "message");
         message.put("sender", clientId);
         message.put("target", targetClientId);
         message.put("content", content);
-        
+
         sendJson(message);
     }
 
