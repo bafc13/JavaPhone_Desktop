@@ -138,7 +138,8 @@ public class VideoCallController {
 
         // mic button
         micButton.setOnAction(e -> {
-            isMicEnabled = !isMicEnabled;
+            isMicEnabled = WebRTCManager.getInstance().isMicrophoneEnabled();;
+            WebRTCManager.getInstance().toggleMicrophone();
             if (isMicEnabled) {
                 micButton.setStyle("-fx-background-color: #27ae60;");
             } else {
@@ -162,7 +163,8 @@ public class VideoCallController {
 
         // camera button
         cameraButton.setOnAction(e -> {
-            isCameraEnabled = !isCameraEnabled;
+            isCameraEnabled = WebRTCManager.getInstance().isCameraEnabled();
+            WebRTCManager.getInstance().toggleCamera();
             if (isCameraEnabled) {
                 cameraButton.setStyle("-fx-background-color: #27ae60;");
             } else {
@@ -417,21 +419,17 @@ public class VideoCallController {
                 // Если кликнули на маленькую (камера 2) → она становится главной
                 if (clickedPane == localVideoContainer) {
                     currentMode = VideoLayoutMode.PIP_PRIMARY_SECOND;
-                    System.out.println("PRIMARY SECOND");
                 } else {
                     // Клик на главную → переход в split
                     currentMode = VideoLayoutMode.SPLIT;
-                    System.out.println("SPLIT");
                 }
                 break;
 
             case PIP_PRIMARY_SECOND:
                 if (clickedPane == remoteVideoContainer) {
                     currentMode = VideoLayoutMode.PIP_PRIMARY_FIRST;
-                    System.out.println("PRIMARY FIRST");
                 } else {
                     currentMode = VideoLayoutMode.SPLIT;
-                    System.out.println("SPLIT");
                 }
                 break;
 
@@ -439,10 +437,8 @@ public class VideoCallController {
                 // В режиме split: клик на камеру делает её главной (возврат к PiP)
                 if (clickedPane == remoteVideoContainer) {
                     currentMode = VideoLayoutMode.PIP_PRIMARY_FIRST;
-                    System.out.println("PRIMARY FIRST");
                 } else {
                     currentMode = VideoLayoutMode.PIP_PRIMARY_SECOND;
-                    System.out.println("PRIMARY SECOND");
                 }
                 break;
         }
