@@ -16,6 +16,7 @@ import javafx.scene.paint.Color;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 
@@ -38,6 +39,10 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
     public final void setWarmthLevel(int value) { warmthLevel.set(value); }
     public IntegerProperty warmthLevelProperty() { return warmthLevel; }
 
+    // Чтобы не забивать FX-очередь, держим флаг «кадр в обработке»
+    private final AtomicBoolean frameInQueue = new AtomicBoolean(false);
+
+
     public WebRtcVideoPanel() {
         getChildren().add(canvas);
 
@@ -58,35 +63,79 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
 
     @Override
     public void onVideoFrame(VideoFrame vf) {
-        Platform.runLater(() -> {
-            if (vf == null || vf.buffer == null) return;
+        if (vf == null || vf.buffer == null) {
+            return;
+        }
 
-            VideoFrameBuffer src = vf.buffer;
-            int width = src.getWidth();
-            int height = src.getHeight();
-
-            ensureBuffers(width, height);
-
+        // Если предыдущий кадр ещё не отрисован — этот просто дропаем.
+        // Так ты не накопишь тысячи Runnable в FX-очереди.
+        if (!frameInQueue.compareAndSet(false, true)) {
+            // Мы НЕ будем использовать этот кадр → обязательно освободить.
             try {
+                // Если у VideoFrame есть release() — вызываем его.
+                vf.release();
+            } catch (Throwable ignore) {
+                // В некоторых версиях webrtc-java release может быть только у buffer.
+                try {
+                    vf.buffer.release();
+                } catch (Throwable ignored2) {
+                    // ничего страшного, просто продолжаем
+                }
+            }
+            return;
+        }
+
+        // Мы собираемся использовать кадр позже на FX-потоке.
+        // У WebRTC-обёрток есть ref-count → держим свою ссылку.
+        try {
+            vf.retain();
+        } catch (Throwable ignore) {
+            // Если retain() нет (редкий случай), просто надеемся, что библиотека
+            // держит кадр живым на время вызова sink'а.
+        }
+
+        Platform.runLater(() -> {
+            try {
+                VideoFrameBuffer src = vf.buffer;
+                int width = src.getWidth();
+                int height = src.getHeight();
+
+                ensureBuffers(width, height);
+
                 int expectedBytes = width * height * 4;
 
                 argbNativeBuffer.clear();
 
-                // ВАЖНО: используем ARGB, а не RGBA.
+                // Конвертация I420 → ARGB (native)
                 VideoBufferConverter.convertFromI420(src, argbNativeBuffer, FourCC.ARGB);
 
-                // Не используем flip() после native-вызова.
                 argbNativeBuffer.position(0);
                 argbNativeBuffer.limit(expectedBytes);
 
+                // Перегоняем в IntBuffer для JavaFX
                 convertNativeArgbToFxArgb(argbNativeBuffer, fxArgbBuffer, width, height);
 
+                // Дёргаем PixelBuffer, чтобы JavaFX перерисовал Image
                 pixelBuffer.updateBuffer(pb -> null);
                 redraw();
+
+                src.release();
 
             } catch (Exception e) {
                 System.err.println("Video frame conversion error: " + e.getMessage());
                 e.printStackTrace();
+            } finally {
+                // Обязательно отпускаем ref на кадр, который мы retain'или
+                try {
+                    vf.release();
+                } catch (Throwable ignore) {
+                    try {
+                        vf.buffer.release();
+                    } catch (Throwable ignored2) {
+                        // если и это не поддерживается — значит библиотека сама менеджит память
+                    }
+                }
+                frameInQueue.set(false);
             }
         });
     }

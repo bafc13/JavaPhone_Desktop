@@ -121,7 +121,7 @@ public class SignalingClient {
         ObjectNode message = mapper.createObjectNode();
         message.put("type", "peer");
         message.set("user", userNode);
-        
+
         SettingsManager settings = SettingsManager.getInstance();
         message.put("target", "all");
         message.put("sender", settings.getUserKey());
@@ -154,7 +154,7 @@ public class SignalingClient {
     private void handleWelcome(JsonNode json) {
         // Get actual user info
         System.out.println("GOT WELCOME!");
-        
+
         SettingsManager settings = SettingsManager.getInstance();
         User me = new User();
         me.setName(settings.getNickname());
