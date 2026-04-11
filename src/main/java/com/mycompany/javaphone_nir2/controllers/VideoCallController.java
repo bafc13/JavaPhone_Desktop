@@ -495,8 +495,6 @@ public class VideoCallController {
 
         WebRTCManager rtcm = WebRTCManager.getInstance();
 
-        System.out.println("MESSAGE TEXT");
-        System.out.println(message);
         rtcm.sendChatMessage(message);
         callMessageInput.clear();
         // simulateRemoteResponse();
@@ -577,7 +575,11 @@ public class VideoCallController {
         Message msg = new Message();
         msg.setId(generateMessageId()); // Простая генерация ID
         msg.setChatId(1); // Или динамически
-        msg.setSenderPublicKey(sender);
+        if (sender.equals(settings.getUserKey())) {
+            msg.setSenderPublicKey("Вы");
+        } else {
+            msg.setSenderPublicKey(sender);
+        }
         msg.setContent(content);
         msg.setTime(System.currentTimeMillis() / 1000); // Unix timestamp в секундах
 
