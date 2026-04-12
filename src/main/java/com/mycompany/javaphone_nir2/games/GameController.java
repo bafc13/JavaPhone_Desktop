@@ -126,6 +126,10 @@ private void handleMoveMessage(String remaining) {
         System.err.println("⚠️ Message for different game: " + gameType);
         return;
     }
+    // Special handling for chess - content is like "e2e4"
+    if ("chess".equals(gameType)) {
+        System.out.println("   Chess move detected: " + content);
+    }
     
     currentGame.onOpponentMove(content);
 }
