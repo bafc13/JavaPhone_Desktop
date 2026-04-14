@@ -208,8 +208,8 @@ public class WebRTCManager implements PeerConnectionObserver {
     }
 
     public void startCall(String targetClientId) {
-        //initializeMedia();
-        //initializeCapture();
+       initializeMedia();
+        initializeCapture();
 
         remoteClientId = targetClientId;
 

@@ -25,50 +25,60 @@ public class GameMenuApp {
     }
     
     // Shows the game selection window
-    public void showGameSelection() {
-        gameSelectionStage = new Stage();
-        gameSelectionStage.setTitle("Выбор игры");
+   public void showGameSelection() {
+    gameSelectionStage = new Stage();
+    gameSelectionStage.setTitle("Выбор игры");
+    
+    VBox root = new VBox(15);
+    root.setAlignment(Pos.CENTER);
+    // Просто применяем цвет фона из темы
+    root.setStyle(String.format(
+        "-fx-padding: 30; -fx-background-color: %s;",
+        ThemeHelper.getBackgroundColorHex()
+    ));
+    
+    Text title = new Text("Выберите игру");
+    title.setStyle(String.format(
+        "-fx-font-size: 24px; -fx-font-weight: bold; -fx-fill: %s;",
+        ThemeHelper.getTextColorHex()
+    ));
+    
+    Label statusLabel = new Label("Выберите игру и нажмите 'Готов'");
+    statusLabel.setStyle(String.format(
+        "-fx-font-size: 14px; -fx-fill: %s;",
+        ThemeHelper.getTextColorHex()
+    ));
+    
+    ComboBox<String> gameSelector = new ComboBox<>();
+    gameSelector.getItems().addAll("Крестики-нолики", "Морской бой", "Шахматы");
+    gameSelector.setPromptText("Выберите игру");
+    gameSelector.setStyle("-fx-font-size: 14px;");
+    gameSelector.setPrefWidth(200);
+    
+    Button readyButton = new Button("Готов");
+    readyButton.setStyle(String.format(
+        "-fx-font-size: 14px; -fx-padding: 10 20; -fx-background-color: %s; -fx-text-fill: white;",
+        ThemeHelper.getButtonColorHex()
+    ));
+    readyButton.setOnAction(e -> {
+        String selected = gameSelector.getValue();
+        if (selected == null) {
+            statusLabel.setText("Пожалуйста, выберите игру!");
+            statusLabel.setStyle("-fx-fill: #ef4444; -fx-font-size: 14px;");
+            return;
+        }
         
-        VBox root = new VBox(15);
-        root.setAlignment(Pos.CENTER);
-        root.setStyle("-fx-padding: 30; -fx-background-color: #2c3e50;");
-        
-        Text title = new Text("Выберите игру");
-        title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-fill: #ecf0f1;");
-        
-        Label statusLabel = new Label("Выберите игру и нажмите 'Готов'");
-        statusLabel.setStyle("-fx-font-size: 14px; -fx-fill: #bdc3c7;");
-        
-        ComboBox<String> gameSelector = new ComboBox<>();
-        gameSelector.getItems().addAll("Крестики-нолики", "Морской бой", "Шахматы");
-        gameSelector.setPromptText("Выберите игру");
-        gameSelector.setStyle("-fx-font-size: 14px;");
-        gameSelector.setPrefWidth(200);
-        
-        Button readyButton = new Button("Готов");
-        readyButton.setStyle("-fx-font-size: 14px; -fx-padding: 10 20; -fx-background-color: #27ae60; -fx-text-fill: white;");
-        readyButton.setOnAction(e -> {
-            String selected = gameSelector.getValue();
-            if (selected == null) {
-                statusLabel.setText("Пожалуйста, выберите игру!");
-                statusLabel.setStyle("-fx-fill: #e74c3c;");
-                return;
-            }
-            
-            String gameType = convertGameType(selected);
-            
-            // Notify GameController about game selection
-            GameController.getInstance().onGameSelected(gameType);
-            
-            gameSelectionStage.close();
-        });
-        
-        root.getChildren().addAll(title, statusLabel, gameSelector, readyButton);
-        
-        Scene scene = new Scene(root, 400, 350);
-        gameSelectionStage.setScene(scene);
-        gameSelectionStage.show();
-    }
+        String gameType = convertGameType(selected);
+        GameController.getInstance().onGameSelected(gameType);
+        gameSelectionStage.close();
+    });
+    
+    root.getChildren().addAll(title, statusLabel, gameSelector, readyButton);
+    
+    Scene scene = new Scene(root, 400, 350);
+    gameSelectionStage.setScene(scene);
+    gameSelectionStage.show();
+}
     
     private String convertGameType(String displayName) {
         switch (displayName) {

@@ -24,6 +24,7 @@ import java.util.Map;
 
 public class ChessModule extends FXGLGame {
     
+    private ThemeApplier themeApplier = new ThemeApplier();  
     private Label statusLabel;
     private ChessCell[][] cellButtons = new ChessCell[8][8];
     private Board chessBoard;
@@ -76,7 +77,7 @@ public class ChessModule extends FXGLGame {
         }
     }
     
-    @Override
+     @Override
     public void showUI() {
         gameStage = new Stage();
         gameStage.setTitle("Шахматы");
@@ -89,21 +90,10 @@ public class ChessModule extends FXGLGame {
         statusLabel.setFont(Font.font(16));
         statusLabel.setTextFill(Color.WHITE);
         
-        // Create chess board with pieces
         chessBoard = new Board();
-        System.out.println("Chess board created with FEN: " + chessBoard.getFen());
-        
-        // Create UI board
         GridPane boardGrid = createChessBoard();
         
-        Button debugButton = new Button("Force Turn (Debug)");
-        debugButton.setOnAction(e -> {
-            isMyTurn = true;
-            waitingForOpponent = false;
-            statusLabel.setText("✅ Ваш ход! (принудительно)");
-            statusLabel.setTextFill(Color.GREEN);
-            System.out.println("=== DEBUG: Turn forced to player ===");
-        });
+        
         
         Button backButton = new Button("Выйти в меню");
         backButton.setOnAction(e -> {
@@ -113,12 +103,14 @@ public class ChessModule extends FXGLGame {
             }
         });
         
-        root.getChildren().addAll(statusLabel, boardGrid, debugButton, backButton);
+        root.getChildren().addAll(statusLabel, boardGrid, backButton);
         
         Scene scene = new Scene(root, 600, 700);
-        gameStage.setScene(scene);
         
-        // Update board with pieces
+        // ПРИМЕНЯЕМ ТЕМУ (как в комментарии коллеги)
+        themeApplier.applyThemeToScene(scene);
+        
+        gameStage.setScene(scene);
         Platform.runLater(() -> updateBoardUI());
     }
     

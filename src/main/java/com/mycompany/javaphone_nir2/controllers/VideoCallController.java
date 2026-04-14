@@ -537,7 +537,7 @@ public class VideoCallController {
         //that how i think we might choose themes (example with putting theme and listen to changes)
 
         //scene.getStylesheets().add(getClass().getResource("dark".equals(settings.getTheme()) ?
-        //                    "css/chat_main_dark.css"
+         //                  "css/chat_main_dark.css"
         //                    : "css/chat_main.css").toExternalForm());
         //
         //            settings.themeProperty().addListener((obs, oldTheme, newTheme) -> {

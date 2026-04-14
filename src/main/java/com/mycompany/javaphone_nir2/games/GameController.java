@@ -216,38 +216,39 @@ private void handleResultMessage(String remaining) {
     
     VBox root = new VBox(15);
     root.setAlignment(Pos.CENTER);
-    root.setStyle("-fx-padding: 30; -fx-background-color: #2c3e50;");
+    root.setStyle(String.format(
+        "-fx-padding: 30; -fx-background-color: %s;",
+        ThemeHelper.getBackgroundColorHex()
+    ));
     
     Text title = new Text("Приглашение на игру");
-    title.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-fill: #ecf0f1;");
+    title.setStyle(String.format(
+        "-fx-font-size: 20px; -fx-font-weight: bold; -fx-fill: %s;",
+        ThemeHelper.getTextColorHex()
+    ));
     
     Text info = new Text("Соперник хочет играть в " + displayName);
-    info.setStyle("-fx-font-size: 14px; -fx-fill: #bdc3c7;");
+    info.setStyle(String.format(
+        "-fx-font-size: 14px; -fx-fill: %s;",
+        ThemeHelper.getTextColorHex()
+    ));
     
     Button acceptButton = new Button("Принять и играть");
-    acceptButton.setStyle("-fx-font-size: 14px; -fx-padding: 10 20; -fx-background-color: #27ae60; -fx-text-fill: white;");
+    acceptButton.setStyle(String.format(
+        "-fx-font-size: 14px; -fx-padding: 10 20; -fx-background-color: #27ae60; -fx-text-fill: white;"
+    ));
     acceptButton.setOnAction(e -> {
-        System.out.println("→ Invitation ACCEPTED");
-        System.out.println("   currentGameType = " + currentGameType);
-        System.out.println("   handshakeSent = " + handshakeSent);
-        System.out.println("   handshakeReceived = " + handshakeReceived);
-        
-        // Note: currentGameType is already set when proposal was shown
         handshakeReceived = true;
         amIHost = false;
-        
-        System.out.println("   After setting: handshakeReceived = " + handshakeReceived);
-        
-        // Send response handshake
         sendHandshake();
-        
         proposalStage.close();
     });
     
     Button rejectButton = new Button("Отказаться");
-    rejectButton.setStyle("-fx-font-size: 14px; -fx-padding: 10 20; -fx-background-color: #e74c3c; -fx-text-fill: white;");
+    rejectButton.setStyle(String.format(
+        "-fx-font-size: 14px; -fx-padding: 10 20; -fx-background-color: #ef4444; -fx-text-fill: white;"
+    ));
     rejectButton.setOnAction(e -> {
-        System.out.println("→ Invitation DECLINED");
         proposalStage.close();
         resetState();
     });
@@ -258,31 +259,40 @@ private void handleResultMessage(String remaining) {
     proposalStage.setScene(scene);
     proposalStage.show();
 }
+
+private void showError(String message) {
+    Stage errorStage = new Stage();
+    errorStage.setTitle("Ошибка");
     
-    // Shows error dialog
-    private void showError(String message) {
-        Stage errorStage = new Stage();
-        errorStage.setTitle("Ошибка");
-        
-        VBox root = new VBox(15);
-        root.setAlignment(Pos.CENTER);
-        root.setStyle("-fx-padding: 30; -fx-background-color: #2c3e50;");
-        
-        Text title = new Text("Ошибка");
-        title.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-fill: #e74c3c;");
-        
-        Text info = new Text(message);
-        info.setStyle("-fx-font-size: 14px; -fx-fill: #bdc3c7;");
-        
-        Button okButton = new Button("Понятно");
-        okButton.setOnAction(e -> errorStage.close());
-        
-        root.getChildren().addAll(title, info, okButton);
-        
-        Scene scene = new Scene(root, 400, 250);
-        errorStage.setScene(scene);
-        errorStage.show();
-    }
+    VBox root = new VBox(15);
+    root.setAlignment(Pos.CENTER);
+    root.setStyle(String.format(
+        "-fx-padding: 30; -fx-background-color: %s;",
+        ThemeHelper.getBackgroundColorHex()
+    ));
+    
+    Text title = new Text("Ошибка");
+    title.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-fill: #ef4444;");
+    
+    Text info = new Text(message);
+    info.setStyle(String.format(
+        "-fx-font-size: 14px; -fx-fill: %s;",
+        ThemeHelper.getTextColorHex()
+    ));
+    
+    Button okButton = new Button("Понятно");
+    okButton.setStyle(String.format(
+        "-fx-font-size: 14px; -fx-padding: 10 20; -fx-background-color: %s; -fx-text-fill: white;",
+        ThemeHelper.getButtonColorHex()
+    ));
+    okButton.setOnAction(e -> errorStage.close());
+    
+    root.getChildren().addAll(title, info, okButton);
+    
+    Scene scene = new Scene(root, 400, 250);
+    errorStage.setScene(scene);
+    errorStage.show();
+}
     
     // Starts the actual game module
    private void startGame() {
