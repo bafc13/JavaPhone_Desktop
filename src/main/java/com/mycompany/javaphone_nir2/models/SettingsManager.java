@@ -1,9 +1,7 @@
 package com.mycompany.javaphone_nir2.models;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import javafx.beans.property.*;
@@ -24,6 +22,12 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+/**
+ * Settings controller of application
+ *
+ * Responsible for saving, loading, validate
+ */
 
 public class SettingsManager {
 

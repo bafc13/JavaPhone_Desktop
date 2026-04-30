@@ -20,23 +20,20 @@ public class ContactListCell extends ListCell<Contact> {
 
     private HBox root;
     private StackPane avatarContainer;
-    /**
-     * first letter in name
-     */
+    /** first letter in name */
     private Label avatarLabel;
     private VBox textContainer;
     private Label nameLabel;
     private Label statusLabel;
 
-    /**
-     * avatar size in px
-     */
+    /** avatar size in px */
     private static final double AVATAR_SIZE = 36;
 
     public ContactListCell() {
         initializeUI();
     }
 
+    /** This method responsible for create ui elements, avatar and set styles */
     private void initializeUI() {
         createAvatar();
 
@@ -49,6 +46,7 @@ public class ContactListCell extends ListCell<Contact> {
         HBox.setHgrow(textContainer, Priority.ALWAYS);
     }
 
+    /** This method responsible for generating avatar */
     private void createAvatar() {
         avatarLabel = new Label();
         avatarLabel.setFont(Font.font("System", 20));
@@ -60,6 +58,7 @@ public class ContactListCell extends ListCell<Contact> {
         avatarContainer.getStyleClass().add("contacts-list-avatar-container");
     }
 
+    /** This method responsible for create text container elements, styles */
     private void createTextContainer() {
         nameLabel = new Label();
         nameLabel.getStyleClass().add("contacts-list-name-label");
@@ -76,7 +75,7 @@ public class ContactListCell extends ListCell<Contact> {
     }
 
     /**
-     * this method pulls every time, that cell is updating
+     * This method pulls every time, that cell is updating
      *
      * @param contact contact object
      * @param empty status of cell
@@ -96,7 +95,7 @@ public class ContactListCell extends ListCell<Contact> {
     }
 
     /**
-     * updating contact info
+     * This method responsible for updating contact info
      *
      * @param contact contact to show
      */
@@ -109,7 +108,7 @@ public class ContactListCell extends ListCell<Contact> {
     }
 
     /**
-     * updating avatar
+     * This method responsible for updating avatar
      *
      * @param contact contact with info for contact
      */

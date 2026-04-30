@@ -10,12 +10,10 @@ import dev.onvoid.webrtc.media.video.VideoTrack;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.TextArea;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import javafx.animation.FadeTransition;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.DoubleBinding;
@@ -24,21 +22,18 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import javafx.stage.Window;
-import javafx.util.Duration;
 
 /**
- * controller for video call
+ * Controller for video call
  *
- * Responsible for: 1. Video stream management (simulation for prototype) 2.
- * Button management (microphone, camera, filter) 3. Displaying messages during
+ * Responsible for: 1. Video stream showing
+ * 2. Call managing (microphone, camera, filter) 3. Displaying messages during
  * a call. 4. Ending the call and returning to the main window
+ * 5. Starting games
  */
 public class VideoCallController {
 
@@ -83,6 +78,11 @@ public class VideoCallController {
         return instance;
     }
 
+    /**
+     * This method is automatically called by the FXMLLoader after the FXML file is loaded
+     * and all @FXML fields have been injected
+     * So this method is key method to init styles, listeners and etc before showing ui
+     */
     @FXML
     public void initialize() {
         setupCallUI();
@@ -94,26 +94,29 @@ public class VideoCallController {
         instance = this;
     }
 
+    /** This method responsible for add local video track
+     * @param localTrack
+     */
     public void addLocalTrack(VideoTrack localTrack) {
         localTrack.addSink(localVideo);
     }
 
+    /** This method responsible for add remote video track
+     * @param remoteTrack
+     */
     public void addRemoteTrack(VideoTrack remoteTrack) {
         remoteTrack.addSink(remoteVideo);
     }
 
-    /**
-     * Initializes window resizing. Called from ChatController.startVideoCall()
-     * with a ready Stage!
-     *
+    /** This method responsible for Initialize window resizing. Called from ChatController.startVideoCall() with a ready Stage!
      * @param stage video call scene
      */
     public void initializeResponsiveLayout(Stage stage) {
         setupCloseInterceptor(stage);
     }
 
-    /**
-     * sets contact name
+    /** This method responsible for set contact name
+     * @param name contact name
      */
     public void setContactName(String name) {
         this.contactName = name;
@@ -122,9 +125,7 @@ public class VideoCallController {
         }
     }
 
-    /**
-     * sets styles and listeners for all buttons
-     */
+    /** This method responsible for set styles and listeners for all buttons */
     private void setupCallUI() {
         initSplitPane();
 
@@ -136,7 +137,6 @@ public class VideoCallController {
         applyLayoutMode(currentMode);
         setupClickHandlers();
 
-        // mic button
         micButton.setOnAction(e -> {
             isMicEnabled = WebRTCManager.getInstance().isMicrophoneEnabled();;
             WebRTCManager.getInstance().toggleMicrophone();
@@ -148,7 +148,6 @@ public class VideoCallController {
         });
         micButton.getStyleClass().add("call-control-button");
 
-        // filter button
         filterButton.setOnAction(e -> {
             isFilterEnabled = !isFilterEnabled;
             if (isFilterEnabled) {
@@ -161,7 +160,6 @@ public class VideoCallController {
         });
         filterButton.getStyleClass().add("call-control-button");
 
-        // camera button
         cameraButton.setOnAction(e -> {
             isCameraEnabled = WebRTCManager.getInstance().isCameraEnabled();
             WebRTCManager.getInstance().toggleCamera();
@@ -184,7 +182,6 @@ public class VideoCallController {
             openGameChooser();
         });
 
-        // exit button
         endCallButton.setOnAction(e -> endCall());
         endCallButton.getStyleClass().add("header-button");
 
@@ -192,10 +189,14 @@ public class VideoCallController {
 
         footerContainer.getStyleClass().add("footer-container");
 
-        // 🔥 Важно: layout после инициализации
         videoContainer.applyCss();
         videoContainer.layout();
 
+        initVideoNet();
+    }
+
+    /** This method responsible for initialize video net */
+    private void initVideoNet() {
         WebRTCManager rtcm = WebRTCManager.getInstance();
         VideoTrack localTrack = rtcm.getLocalVideoTrack();
         if (localTrack != null) {
@@ -207,6 +208,9 @@ public class VideoCallController {
         }
     }
 
+    /** This method responsible for set camera filters
+     * @param setFilter true - filter on, false - filter off
+     */
     private void setCameraFilters(boolean setFilter){
         if(setFilter) {
             remoteVideo.setWarmthLevel(60);
@@ -215,53 +219,43 @@ public class VideoCallController {
             remoteVideo.setWarmthLevel(0);
             localVideo.setWarmthLevel(0);
         }
-
     }
 
+    /** This method responsible for init split pane */
     private void initSplitPane() {
         videoSplitPane.setDividerPositions(settings.getVideoSplitRatio());
 
-        // 2. Слушаем изменение разделителя
+        // listen for divider pos change
         for (SplitPane.Divider divider : videoSplitPane.getDividers()) {
             divider.positionProperty().addListener((obs, oldPos, newPos) -> {
-                // Сохраняем в модель (реактивно вызовет update data)
                 settings.setVideoSplitRatio(newPos.doubleValue());
             });
         }
     }
 
-    /**
-     * Применяет выбранный режим отображения
-     */
+    /** This method responsible for applyLayoutMode */
     private void applyLayoutMode(VideoLayoutMode mode) {
-        // 🔥 1. ПОЛНАЯ ОЧИСТКА: удаляем ВСЕХ прямых детей из корневого контейнера
-        // Это гарантирует, что камеры не "зависнут" с двумя родителями
         videoContainer.getChildren().clear();
 
-        // 2. Сброс стилей и позиционирования (визуальная часть)
         remoteVideoContainer.getStyleClass().removeAll("pip-main", "pip-small", "split");
         localVideoContainer.getStyleClass().removeAll("pip-main", "pip-small", "split");
         StackPane.setAlignment(remoteVideoContainer, null);
         StackPane.setAlignment(localVideoContainer, null);
 
-        // 🔥 3. Сбрасываем старые привязки размеров (важно!)
         unbindAllSizeProperties(remoteVideoContainer);
         unbindAllSizeProperties(localVideoContainer);
 
         switch (mode) {
-            case PIP_PRIMARY_FIRST:
-                // === PiP: Камера 1 главная, Камера 2 в углу ===
+            case PIP_PRIMARY_FIRST: //picture in picture primary full, remote small
                 remoteVideoContainer.getStyleClass().add("pip-main");
                 localVideoContainer.getStyleClass().add("pip-small");
 
-                // Добавляем КАМЕРЫ напрямую в StackPane
                 videoContainer.getChildren().addAll(remoteVideoContainer, localVideoContainer);
                 StackPane.setAlignment(localVideoContainer, Pos.BOTTOM_LEFT);
-                localVideoContainer.toFront(); // Маленькая поверх большой
+                localVideoContainer.toFront();
                 break;
 
-            case PIP_PRIMARY_SECOND:
-                // === PiP: Камера 2 главная, Камера 1 в углу ===
+            case PIP_PRIMARY_SECOND: //picture in picture remote full, local small
                 localVideoContainer.getStyleClass().add("pip-main");
                 remoteVideoContainer.getStyleClass().add("pip-small");
 
@@ -270,49 +264,40 @@ public class VideoCallController {
                 remoteVideoContainer.toFront();
                 break;
 
-            case SPLIT:
-                // === SPLIT: Обе камеры рядом в HBox ===
+            case SPLIT: //same remote and local sizes
                 remoteVideoContainer.getStyleClass().add("split");
                 localVideoContainer.getStyleClass().add("split");
 
-                // Создаём/настраиваем HBox
                 if (splitModeContainer == null) {
-                    splitModeContainer = new HBox(10); // 10px зазор
+                    splitModeContainer = new HBox(10);
                     splitModeContainer.setAlignment(Pos.CENTER);
                     splitModeContainer.setFillHeight(true);
                 } else {
-                    splitModeContainer.getChildren().clear(); // На всякий случай
+                    splitModeContainer.getChildren().clear();
                 }
 
-                // Настраиваем приоритеты роста для HBox
                 HBox.setHgrow(remoteVideoContainer, Priority.ALWAYS);
                 HBox.setHgrow(localVideoContainer, Priority.ALWAYS);
 
-                // 🔥 КЛЮЧЕВОЙ МОМЕНТ:
-                // 1. Кладём камеры в HBox
                 splitModeContainer.getChildren().addAll(remoteVideoContainer, localVideoContainer);
-                // 2. Кладём ТОЛЬКО HBox в корневой StackPane
+
                 videoContainer.getChildren().add(splitModeContainer);
                 break;
         }
-
-        // 🔥 4. Применяем новые привязки размеров
         setupVideoSizeBindings(mode);
 
-        // 6. Принудительный пересчёт макета
+        //recalc layout size
         videoContainer.requestLayout();
     }
 
-    /**
-    * Настраивает привязки размеров в зависимости от режима
-    */
+    /** This method responsible for setup split pane bindings
+     * @param mode pip_primary_first, pip_primary_second, split
+     */
     private void setupVideoSizeBindings(VideoLayoutMode mode) {
-       // Получаем корневой контейнер
        StackPane rootContainer = videoContainer;
 
-       // === Базовые привязки для доступного пространства ===
        DoubleBinding availableWidth = Bindings.createDoubleBinding(() ->
-           Math.max(400, rootContainer.getWidth() - 40), // -40px отступы
+           Math.max(400, rootContainer.getWidth() - 40), // -40px margins
            rootContainer.widthProperty()
        );
        DoubleBinding availableHeight = Bindings.createDoubleBinding(() ->
@@ -320,27 +305,24 @@ public class VideoCallController {
            rootContainer.heightProperty()
        );
 
-       // === Привязки для PiP режима ===
        DoubleBinding pipMainWidth = availableWidth;
        DoubleBinding pipMainHeight = availableHeight;
 
        DoubleBinding pipSmallWidth = Bindings.createDoubleBinding(() ->
-           pipMainWidth.get() * 0.25, // 25% от главной
+           pipMainWidth.get() * 0.25, // 25% of primary
            pipMainWidth
        );
        DoubleBinding pipSmallHeight = Bindings.createDoubleBinding(() ->
-           pipSmallWidth.get() * 0.75, // 4:3 пропорция
+           pipSmallWidth.get() * 0.75, // 4:3 res
            pipSmallWidth
        );
 
-       // === Привязки для Split режима (каждая ~48% ширины) ===
        DoubleBinding splitWidth = Bindings.createDoubleBinding(() ->
-           (availableWidth.get() - 10) * 0.48, // -10px зазор, 48% каждая
+           (availableWidth.get() - 10) * 0.48, // -10px margin, 48% each
            availableWidth
        );
        DoubleBinding splitHeight = availableHeight;
 
-       // === Применяем привязки ===
        unbindAllSizeProperties(remoteVideoContainer);
        unbindAllSizeProperties(localVideoContainer);
 
@@ -354,16 +336,14 @@ public class VideoCallController {
                bindPane(remoteVideoContainer, pipSmallWidth, pipSmallHeight, false);
                break;
            case SPLIT:
-               // В Split режиме HBox сам управляет шириной через Hgrow,
-               // но задаём min/max для корректного сжатия
                bindPane(remoteVideoContainer, splitWidth, splitHeight, true);
                bindPane(localVideoContainer, splitWidth, splitHeight, true);
                break;
        }
    }
 
-   /**
-    * Убирает все привязки размеров с панели
+   /** This method responsible for unbind size properties from stack pane
+    * @param pane pane that u like to unbind size properties
     */
    private void unbindAllSizeProperties(StackPane pane) {
        pane.prefWidthProperty().unbind();
@@ -372,26 +352,27 @@ public class VideoCallController {
        pane.minHeightProperty().unbind();
        pane.maxWidthProperty().unbind();
        pane.maxHeightProperty().unbind();
-       // Сбрасываем к дефолтным значениям
+
        pane.setPrefWidth(Region.USE_COMPUTED_SIZE);
        pane.setPrefHeight(Region.USE_COMPUTED_SIZE);
    }
 
-   /**
-    * Привязывает размеры панели с опцией "гибкости" (для Split режима)
+   /** This method responsible for bind stackpane size properties
+    * @param pane pane that u bind
+    * @param width width property
+    * @param height height property
+    * @param flexible flexible flag
     */
    private void bindPane(StackPane pane, DoubleBinding width, DoubleBinding height, boolean flexible) {
        pane.prefWidthProperty().bind(width);
        pane.prefHeightProperty().bind(height);
 
        if (flexible) {
-           // В Split режиме позволяем сжиматься/растягиваться
            pane.minWidthProperty().bind(width.multiply(0.5));
            pane.minHeightProperty().bind(height.multiply(0.8));
            pane.setMaxWidth(Double.MAX_VALUE);
            pane.setMaxHeight(Double.MAX_VALUE);
        } else {
-           // В PiP маленькая камера — фиксированный размер
            pane.minWidthProperty().bind(width);
            pane.minHeightProperty().bind(height);
            pane.maxWidthProperty().bind(width);
@@ -399,28 +380,25 @@ public class VideoCallController {
        }
    }
 
-    /**
-     * Настраивает переключение режима по клику
-     */
+    /** This method responsible for setup click handle for cameras */
     private void setupClickHandlers() {
-        // Клики на камеры переключают режим
         remoteVideoContainer.setOnMouseClicked(this::handleCameraClick);
         localVideoContainer.setOnMouseClicked(this::handleCameraClick);
     }
 
-    /**
-     * Обработчик клика: переключает режим
+    /** This method responsible for switch camera modes by clic
+     * @param event mouse event
      */
     private void handleCameraClick(MouseEvent event) {
         StackPane clickedPane = (StackPane) event.getSource();
 
         switch (currentMode) {
             case PIP_PRIMARY_FIRST:
-                // Если кликнули на маленькую (камера 2) → она становится главной
+                // if clicked on small - she becomes main
                 if (clickedPane == localVideoContainer) {
                     currentMode = VideoLayoutMode.PIP_PRIMARY_SECOND;
                 } else {
-                    // Клик на главную → переход в split
+                    // click on main - split mode
                     currentMode = VideoLayoutMode.SPLIT;
                 }
                 break;
@@ -434,7 +412,7 @@ public class VideoCallController {
                 break;
 
             case SPLIT:
-                // В режиме split: клик на камеру делает её главной (возврат к PiP)
+                // in split mode click on each camera makes it main
                 if (clickedPane == remoteVideoContainer) {
                     currentMode = VideoLayoutMode.PIP_PRIMARY_FIRST;
                 } else {
@@ -447,23 +425,23 @@ public class VideoCallController {
         event.consume();
     }
 
-
+    /** This method responsible for load chat history from list
+     * @param messages list of messages
+     */
     public void loadCallChatHistory(List<Message> messages) {
         callChatHistory.getItems().setAll(messages);
-        // Прокрутка в конец после загрузки
+
         Platform.runLater(() -> callChatHistory.scrollTo(callChatHistory.getItems().size() - 1));
     }
 
+    /** This method responsible for init chat */
     private void initChat() {
         callChatHistory.setCellFactory(lv -> new ChatHistoryCell());
         callChatHistory.getStyleClass().add("chat-history");
         callChatHistory.setOnMousePressed(event -> {
-            // Передаём фокус полю ввода сообщений
             if (callMessageInput != null) {
                 callMessageInput.requestFocus();
             }
-            // Позволяем событию идти дальше (чтобы можно было скроллить чат)
-            // Если скролл не нужен, можно добавить event.consume();
         });
 
         // send message button
@@ -479,9 +457,7 @@ public class VideoCallController {
     }
 
 
-    /**
-     * send message to call chat
-     */
+    /** This method responsible for send message to call chat */
     private void sendCallMessage() {
         String message = callMessageInput.getText().trim();
 
@@ -493,9 +469,9 @@ public class VideoCallController {
 
         rtcm.sendChatMessage(message);
         callMessageInput.clear();
-        // simulateRemoteResponse();
     }
 
+    /** This method responsible for simulate chat response */
     private void simulateRemoteResponse() {
         String[] responses = {
             "Да, я слышу тебя!",
@@ -512,24 +488,17 @@ public class VideoCallController {
         });
     }
 
-    /**
-     * ending call and closing window
-     */
+    /** This method responsible for ending call and closing window */
     private void endCall() {
         appendToCallChat("System", "📞 Звонок завершен");
 
         javafx.application.Platform.runLater(() -> {
-            try {
-                Thread.sleep(1000);
-                //do close video and audio threads job
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
             closeWindow();
-            WebRTCManager.getInstance().cleanup();
+            WebRTCManager.getInstance().hangup();
         });
     }
 
+    /** This method responsible for open game chooser window */
     private void openGameChooser() {
 
         //that how i think we might choose themes (example with putting theme and listen to changes)
@@ -546,15 +515,17 @@ public class VideoCallController {
         //            });
     }
 
+    /** This method responsible for redefine window closing */
     private void setupCloseInterceptor(Stage stage) {
         stage.setOnCloseRequest(event -> {
-                        WebRTCManager.getInstance().cleanup();
-                        closeWindow();
-                        WebRTCManager.getInstance().cleanup();
-                        event.consume();
-                    });
+            WebRTCManager.getInstance().cleanup();
+            closeWindow();
+            WebRTCManager.getInstance().cleanup();
+            event.consume();
+        });
     }
 
+    /** This method responsible for close window */
     private void closeWindow() {
         settings.save();
 
@@ -564,9 +535,10 @@ public class VideoCallController {
         });
     }
 
-    /**
-    * Добавляет сообщение в историю чата (обратная совместимость со старым кодом)
-    */
+    /** This method responsible for add message to chat
+     * @param sender
+     * @param content message
+     */
     public void appendToCallChat(String sender, String content) {
         Message msg = new Message();
         msg.setId(generateMessageId()); // Простая генерация ID
@@ -584,14 +556,12 @@ public class VideoCallController {
         });
     }
 
-    /**
-     * Добавляет готовое сообщение в историю
-     */
+    /** This method responsible for adding message to history
+    * @param message (id, chatId, sender public key, content, time, attachments)
+    */
     public void appendToCallChat(Message message) {
-        // Добавляем в конец списка
         callChatHistory.getItems().add(message);
 
-        // 🔥 Прокрутка вниз к новому сообщению
         Platform.runLater(() -> {
             int lastIndex = callChatHistory.getItems().size() - 1;
             if (lastIndex >= 0) {
@@ -600,10 +570,7 @@ public class VideoCallController {
         });
     }
 
-    /**
-     * Простая генерация уникального ID (заглушка)
-     * В реальном приложении — использовать базу данных или UUID
-     */
+    /** This method responsible for  simple generation message id */
     private int generateMessageId() {
         return (int) (System.currentTimeMillis() % Integer.MAX_VALUE);
     }

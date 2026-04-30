@@ -14,46 +14,37 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import javafx.scene.layout.Region;
 /**
- * Кастомная ячейка для отображения сообщения в истории чата.
- * Реализует современный дизайн: "пузырь" сообщения с временем.
+ * A custom cell for displaying messages in the chat history.
+ * Implements a modern design: a message "bubble" with a time stamp.
  */
 public class ChatHistoryCell extends ListCell<Message> {
-
     private static final DateTimeFormatter TIME_FORMATTER =
         DateTimeFormatter.ofPattern("HH:mm")
             .withZone(ZoneId.systemDefault());
 
-    // Корневой контейнер ячейки
     private final HBox root;
 
-    // Контейнер для "пузыря" сообщения
     private final VBox bubbleContainer;
 
-    // Элементы контента
     private final Label contentLabel = new Label();
     private final Label timeLabel = new Label();
     private final Label senderLabel = new Label();
 
+    /** Ctor that set components, styles */
     public ChatHistoryCell() {
-        // === Настройка корневой компоновки ===
         root = new HBox(8);
         root.setAlignment(Pos.CENTER_LEFT);
         root.setPadding(new Insets(1, 6, 1, 6));
 
-        // === Настройка "пузыря" сообщения ===
         bubbleContainer = new VBox(4);
         bubbleContainer.getStyleClass().add("message-bubble");
         bubbleContainer.setPadding(new Insets(8, 12, 8, 12));
-//        bubbleContainer.setMaxWidth(Region.USE_PREF_SIZE); // Будет задано через CSS
 
-        // === Сборка контента ===
         senderLabel.getStyleClass().add("message-sender");
-        senderLabel.setVisible(false); // Скрыт по умолчанию, показывается при необходимости
-//        senderLabel.setMaxWidth(Region.USE_COMPUTED_SIZE);
+        senderLabel.setVisible(false);
 
         contentLabel.setWrapText(true);
         contentLabel.getStyleClass().add("message-content");
-//        contentLabel.setPrefWidth(Region.USE_PREF_SIZE);
         contentLabel.setMaxWidth(Region.USE_COMPUTED_SIZE);
 
         timeLabel.getStyleClass().add("message-time");
@@ -61,15 +52,13 @@ public class ChatHistoryCell extends ListCell<Message> {
 
         bubbleContainer.getChildren().addAll(senderLabel, contentLabel, timeLabel);
 
-        // === Добавление "пузыря" в корень ===
-        // HBox.setHgrow позволяет пузырю сжиматься/растягиваться
         HBox.setHgrow(bubbleContainer, Priority.NEVER);
         root.getChildren().add(bubbleContainer);
 
-        // === Привязка контейнера к ячейке ===
         setGraphic(root);
     }
 
+    /** This method responsible for updating item */
     @Override
     protected void updateItem(Message message, boolean empty) {
         super.updateItem(message, empty);
@@ -79,15 +68,12 @@ public class ChatHistoryCell extends ListCell<Message> {
             return;
         }
 
-        // Заполнение контента
         contentLabel.setText(message.getContent());
         timeLabel.setText(formatTime(message.getTime()));
 
-        // Показывать отправителя только если это не своё сообщение (опционально)
-        // if (!isOwnMessage(message)) { ... }
         senderLabel.setVisible(false);
 
-        // === Позиционирование: свои сообщения — справа, чужие — слева ===
+        // local - right align, remote - left align
         if (isOwnMessage(message)) {
             root.setAlignment(Pos.CENTER_RIGHT);
             bubbleContainer.getStyleClass().add("message-bubble-own");
@@ -100,23 +86,21 @@ public class ChatHistoryCell extends ListCell<Message> {
         setGraphic(root);
     }
 
-    /**
-     * Форматирует Unix-timestamp в читаемое время
-     */
+    /** This method formats Unix-timestamp */
     private String formatTime(long timestamp) {
         return TIME_FORMATTER.format(Instant.ofEpochSecond(timestamp));
     }
 
     /**
-     * Определяет, является ли сообщение "своим".
-     * Можно кастомизировать: сравнивать с публичным ключом текущего пользователя.
+    * Determines whether the message is "one's own."
+    * Can be customized: compare with the current user's public key.
      */
     private boolean isOwnMessage(Message message) {
         if(message.getSenderPublicKey() == "Вы") {
             return true;
         }
-        // TODO: заменить на реальную проверку
+        // TODO: replace with a real check
         // return message.getSenderPublicKey().equals(SettingsManager.getInstance().getUserKey());
-        return false; // Пока все сообщения считаем "чужими" для демонстрации
+        return false; // For now, we consider all messages "foreign" for demonstration purposes
     }
 }
