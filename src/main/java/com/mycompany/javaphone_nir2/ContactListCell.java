@@ -1,6 +1,10 @@
 package com.mycompany.javaphone_nir2;
 
 import com.mycompany.javaphone_nir2.models.Contact;
+import javafx.animation.Interpolator;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -10,6 +14,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
+import javafx.util.Duration;
 
 /**
  * Custom cell for ListView, which show contacts with avatar, name и status/last
@@ -29,6 +34,9 @@ public class ContactListCell extends ListCell<Contact> {
     /** avatar size in px */
     private static final double AVATAR_SIZE = 36;
 
+    private Timeline appearAnimation;
+    private boolean isAnimated = false;
+
     public ContactListCell() {
         initializeUI();
     }
@@ -41,6 +49,19 @@ public class ContactListCell extends ListCell<Contact> {
 
         root = new HBox(15);
         root.getStyleClass().add("contact-list-cell-item");
+        root.setOpacity(0);
+        root.setTranslateX(-20);
+
+        appearAnimation = new Timeline(
+            new KeyFrame(Duration.ZERO,
+                new KeyValue(root.opacityProperty(), 0),
+                new KeyValue(root.translateXProperty(), -20, Interpolator.EASE_OUT)
+            ),
+            new KeyFrame(Duration.millis(180),
+                new KeyValue(root.opacityProperty(), 1),
+                new KeyValue(root.translateXProperty(), 0)
+            )
+        );
 
         root.getChildren().addAll(avatarContainer, textContainer);
         HBox.setHgrow(textContainer, Priority.ALWAYS);
@@ -84,14 +105,30 @@ public class ContactListCell extends ListCell<Contact> {
     protected void updateItem(Contact contact, boolean empty) {
         super.updateItem(contact, empty);
 
+//        if (empty || contact == null) {
+//            setGraphic(null);
+//            return;
+//        }
         if (empty || contact == null) {
             setGraphic(null);
+            appearAnimation.stop();
+            isAnimated = false;
             return;
         }
 
         updateContactDisplay(contact);
 
         setGraphic(root);
+
+        int lastIndex = getListView().getItems().size() - 1;
+        if (getIndex() == lastIndex && !empty) {
+            root.setOpacity(0);
+            root.setTranslateX(-20);
+            appearAnimation.playFromStart();
+        } else {
+            root.setOpacity(1);
+            root.setTranslateY(0);
+        }
     }
 
     /**

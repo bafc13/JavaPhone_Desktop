@@ -2,6 +2,7 @@ package com.mycompany.javaphone_nir2.controllers;
 
 import com.mycompany.javaphone_nir2.ChatHistoryCell;
 import com.mycompany.javaphone_nir2.WebRtcVideoPanel;
+import com.mycompany.javaphone_nir2.logging.SessionLogger;
 import com.mycompany.javaphone_nir2.models.Message;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
 import com.mycompany.javaphone_nir2.models.VideoLayoutMode;
@@ -69,7 +70,12 @@ public class VideoCallController {
     private boolean isFilterEnabled = false;
     private String contactName = "Собеседник";
 
+    /** SettingsManager stores and saves settings */
     private final SettingsManager settings = SettingsManager.getInstance();
+
+    /** Logger saves session information into log */
+    private final SessionLogger logger = SessionLogger.getInstance();
+
     private VideoLayoutMode currentMode = VideoLayoutMode.PIP_PRIMARY_FIRST;
 
     private static VideoCallController instance = null;
@@ -85,6 +91,8 @@ public class VideoCallController {
      */
     @FXML
     public void initialize() {
+        logger.log("Video call window initializing");
+
         setupCallUI();
 
         appendToCallChat("System", "Соединение установлено");
@@ -98,6 +106,8 @@ public class VideoCallController {
      * @param localTrack
      */
     public void addLocalTrack(VideoTrack localTrack) {
+        logger.log("Video call window: add local track sink");
+
         localTrack.addSink(localVideo);
     }
 
@@ -105,6 +115,8 @@ public class VideoCallController {
      * @param remoteTrack
      */
     public void addRemoteTrack(VideoTrack remoteTrack) {
+        logger.log("Video call window: add remote track sink");
+
         remoteTrack.addSink(remoteVideo);
     }
 
@@ -112,6 +124,8 @@ public class VideoCallController {
      * @param stage video call scene
      */
     public void initializeResponsiveLayout(Stage stage) {
+        logger.log("Video call window: called func initializeResponsiveLayout");
+
         setupCloseInterceptor(stage);
     }
 
@@ -119,6 +133,8 @@ public class VideoCallController {
      * @param name contact name
      */
     public void setContactName(String name) {
+        logger.log("Video call window: setting call status label");
+
         this.contactName = name;
         if (callStatusLabel != null) {
             callStatusLabel.setText("Звонок с " + contactName);
@@ -127,6 +143,8 @@ public class VideoCallController {
 
     /** This method responsible for set styles and listeners for all buttons */
     private void setupCallUI() {
+        logger.log("Video call window: setupping call UI");
+
         initSplitPane();
 
         remoteVideoContainer.getStyleClass().add("video-pane");
@@ -138,7 +156,10 @@ public class VideoCallController {
         setupClickHandlers();
 
         micButton.setOnAction(e -> {
-            isMicEnabled = WebRTCManager.getInstance().isMicrophoneEnabled();;
+            isMicEnabled = WebRTCManager.getInstance().isMicrophoneEnabled();
+
+            logger.log("Video call window: turn " + isMicEnabled + " the mic");
+
             WebRTCManager.getInstance().toggleMicrophone();
             if (isMicEnabled) {
                 micButton.setStyle("-fx-background-color: #27ae60;");
@@ -150,6 +171,8 @@ public class VideoCallController {
 
         filterButton.setOnAction(e -> {
             isFilterEnabled = !isFilterEnabled;
+
+            logger.log("Video call window: turn " + isFilterEnabled + " the filter");
             if (isFilterEnabled) {
                 filterButton.setStyle("-fx-background-color: #27ae60;");
                 setCameraFilters(true);
@@ -162,6 +185,9 @@ public class VideoCallController {
 
         cameraButton.setOnAction(e -> {
             isCameraEnabled = WebRTCManager.getInstance().isCameraEnabled();
+
+            logger.log("Video call window: turn " + isCameraEnabled + " the camera");
+
             WebRTCManager.getInstance().toggleCamera();
             if (isCameraEnabled) {
                 cameraButton.setStyle("-fx-background-color: #27ae60;");
@@ -197,6 +223,8 @@ public class VideoCallController {
 
     /** This method responsible for initialize video net */
     private void initVideoNet() {
+        logger.log("Video call window: initializing video net part");
+
         WebRTCManager rtcm = WebRTCManager.getInstance();
         VideoTrack localTrack = rtcm.getLocalVideoTrack();
         if (localTrack != null) {
@@ -212,6 +240,8 @@ public class VideoCallController {
      * @param setFilter true - filter on, false - filter off
      */
     private void setCameraFilters(boolean setFilter){
+        logger.log("Video call window: setting camera filters");
+
         if(setFilter) {
             remoteVideo.setWarmthLevel(60);
             localVideo.setWarmthLevel(60);
@@ -223,6 +253,8 @@ public class VideoCallController {
 
     /** This method responsible for init split pane */
     private void initSplitPane() {
+        logger.log("Video call window: initializing split pane");
+
         videoSplitPane.setDividerPositions(settings.getVideoSplitRatio());
 
         // listen for divider pos change
@@ -235,6 +267,8 @@ public class VideoCallController {
 
     /** This method responsible for applyLayoutMode */
     private void applyLayoutMode(VideoLayoutMode mode) {
+        logger.log("Video call window: applying layout mode: " + mode.name());
+
         videoContainer.getChildren().clear();
 
         remoteVideoContainer.getStyleClass().removeAll("pip-main", "pip-small", "split");
@@ -287,6 +321,7 @@ public class VideoCallController {
         setupVideoSizeBindings(mode);
 
         //recalc layout size
+        logger.log("Video call window: recalculating layout sizes");
         videoContainer.requestLayout();
     }
 
@@ -294,6 +329,8 @@ public class VideoCallController {
      * @param mode pip_primary_first, pip_primary_second, split
      */
     private void setupVideoSizeBindings(VideoLayoutMode mode) {
+        logger.log("Video call window: setuping video size bindings");
+
        StackPane rootContainer = videoContainer;
 
        DoubleBinding availableWidth = Bindings.createDoubleBinding(() ->
@@ -346,6 +383,8 @@ public class VideoCallController {
     * @param pane pane that u like to unbind size properties
     */
    private void unbindAllSizeProperties(StackPane pane) {
+       logger.log("Video call window: unbinding layout size properties");
+
        pane.prefWidthProperty().unbind();
        pane.prefHeightProperty().unbind();
        pane.minWidthProperty().unbind();
@@ -364,6 +403,8 @@ public class VideoCallController {
     * @param flexible flexible flag
     */
    private void bindPane(StackPane pane, DoubleBinding width, DoubleBinding height, boolean flexible) {
+       logger.log("Video call window: bind pane custom layout properties");
+
        pane.prefWidthProperty().bind(width);
        pane.prefHeightProperty().bind(height);
 
@@ -382,6 +423,8 @@ public class VideoCallController {
 
     /** This method responsible for setup click handle for cameras */
     private void setupClickHandlers() {
+        logger.log("Video call window: setuping click handlers for cameras");
+
         remoteVideoContainer.setOnMouseClicked(this::handleCameraClick);
         localVideoContainer.setOnMouseClicked(this::handleCameraClick);
     }
@@ -390,6 +433,8 @@ public class VideoCallController {
      * @param event mouse event
      */
     private void handleCameraClick(MouseEvent event) {
+        logger.log("Video call window: handle camera click");
+
         StackPane clickedPane = (StackPane) event.getSource();
 
         switch (currentMode) {
@@ -429,6 +474,8 @@ public class VideoCallController {
      * @param messages list of messages
      */
     public void loadCallChatHistory(List<Message> messages) {
+        logger.log("Video call window: loading call chat history");
+
         callChatHistory.getItems().setAll(messages);
 
         Platform.runLater(() -> callChatHistory.scrollTo(callChatHistory.getItems().size() - 1));
@@ -436,6 +483,8 @@ public class VideoCallController {
 
     /** This method responsible for init chat */
     private void initChat() {
+        logger.log("Video call window: initializing chat history");
+
         callChatHistory.setCellFactory(lv -> new ChatHistoryCell());
         callChatHistory.getStyleClass().add("chat-history");
         callChatHistory.setOnMousePressed(event -> {
@@ -459,6 +508,8 @@ public class VideoCallController {
 
     /** This method responsible for send message to call chat */
     private void sendCallMessage() {
+        logger.log("Video call window: sending call message");
+
         String message = callMessageInput.getText().trim();
 
         if (message.isEmpty()) {
@@ -490,6 +541,8 @@ public class VideoCallController {
 
     /** This method responsible for ending call and closing window */
     private void endCall() {
+        logger.log("Video call window: ending call");
+
         appendToCallChat("System", "📞 Звонок завершен");
 
         javafx.application.Platform.runLater(() -> {
@@ -500,6 +553,8 @@ public class VideoCallController {
 
     /** This method responsible for open game chooser window */
     private void openGameChooser() {
+        logger.log("Video call window: open game chooser");
+
 
         //that how i think we might choose themes (example with putting theme and listen to changes)
 
@@ -517,6 +572,8 @@ public class VideoCallController {
 
     /** This method responsible for redefine window closing */
     private void setupCloseInterceptor(Stage stage) {
+        logger.log("Video call window: override the window closing method");
+
         stage.setOnCloseRequest(event -> {
             WebRTCManager.getInstance().cleanup();
             closeWindow();
@@ -527,6 +584,8 @@ public class VideoCallController {
 
     /** This method responsible for close window */
     private void closeWindow() {
+        logger.log("Video call window: user requested closing window");
+
         settings.save();
 
         Platform.runLater(() -> {
@@ -540,16 +599,18 @@ public class VideoCallController {
      * @param content message
      */
     public void appendToCallChat(String sender, String content) {
+        logger.log("Video call window: append message to call chat, sender");
+
         Message msg = new Message();
-        msg.setId(generateMessageId()); // Простая генерация ID
-        msg.setChatId(1); // Или динамически
+        msg.setId(generateMessageId());
+        msg.setChatId(1);
         if (sender.equals(settings.getUserKey())) {
             msg.setSenderPublicKey("Вы");
         } else {
             msg.setSenderPublicKey(sender);
         }
         msg.setContent(content);
-        msg.setTime(System.currentTimeMillis() / 1000); // Unix timestamp в секундах
+        msg.setTime(System.currentTimeMillis() / 1000); // Unix timestamp in sec
 
         Platform.runLater(() -> {
             appendToCallChat(msg);
@@ -560,6 +621,8 @@ public class VideoCallController {
     * @param message (id, chatId, sender public key, content, time, attachments)
     */
     public void appendToCallChat(Message message) {
+        logger.log("Video call window: append message to call chat");
+
         callChatHistory.getItems().add(message);
 
         Platform.runLater(() -> {
@@ -572,7 +635,10 @@ public class VideoCallController {
 
     /** This method responsible for  simple generation message id */
     private int generateMessageId() {
-        return (int) (System.currentTimeMillis() % Integer.MAX_VALUE);
+        int id = (int) (System.currentTimeMillis() % Integer.MAX_VALUE);
+        logger.log("Video call window: generationg message id: " + id);
+
+        return id;
     }
 }
 

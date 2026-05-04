@@ -1,5 +1,6 @@
 package com.mycompany.javaphone_nir2.controllers;
 
+import com.mycompany.javaphone_nir2.logging.SessionLogger;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
 import java.io.File;
 import java.util.List;
@@ -78,6 +79,9 @@ public class SettingsController {
     /** SettingsManager stores and saves settings */
     private SettingsManager settings;
 
+    /** Logger saves session information into log */
+    private final SessionLogger logger = SessionLogger.getInstance();
+
     /** SettingsSnapshot necessary  to realize transactional mechanism
      * in settings window (when button cancel clicked - transaction cancelling) */
     private SettingsSnapshot initialSnapshot;
@@ -88,8 +92,11 @@ public class SettingsController {
      * So this method is key method to init styles, listeners and etc before showing ui
      */
     @FXML public void initialize() {
+        logger.log("Settings window initializing");
+
         settings = SettingsManager.getInstance();
 
+        logger.log("Settings window: initializing settings snapshot");
         initialSnapshot = SettingsSnapshot.from(settings);
 
         setupSettingsUI();
@@ -100,6 +107,8 @@ public class SettingsController {
 
     /** This method set styles and onClick handlers */
     private void setupSettingsUI() {
+        logger.log("Settings window: setupping settings UI");
+
         mainContainer.getStyleClass().add("main-container");
         gradientBackgroundContainer.getStyleClass().add("gradient-background-container");
 
@@ -157,6 +166,8 @@ public class SettingsController {
 
     /** This method saves settings */
     private void saveSettings() {
+        logger.log("Settings window: saving settings");
+
         SettingsManager.getInstance().save();
 
         closeWindow();
@@ -167,6 +178,8 @@ public class SettingsController {
      * @param stage helps to accurately set the event handler on the initialized object
      */
     public void initializeResponsiveLayout(Stage stage) {
+        logger.log("Settings window: called func initializeResponsiveLayout");
+
         setupCloseInterceptor(stage);
     }
 
@@ -175,6 +188,8 @@ public class SettingsController {
     *  @param stage helps to accurately set the event handler on the initialized object
     */
     private void setupCloseInterceptor(Stage stage) {
+        logger.log("Settings window: override the window closing method");
+
         stage.setOnCloseRequest(event -> {
             onDiscardButtonClicked();
             event.consume();
@@ -183,6 +198,8 @@ public class SettingsController {
 
     /** This method response for binding reactive fields to SettingsManager fields */
     private void bindReactiveFields() {
+        logger.log("Settings window: binding reactive fields");
+
         nicknameField.textProperty().bindBidirectional(settings.nicknameProperty());
 
         keyField.textProperty().bindBidirectional(settings.userKeyProperty());
@@ -199,6 +216,8 @@ public class SettingsController {
 
     /** This method responsible for manual bidirectional bindings for theme */
     private void bindThemeToggle(ToggleButton toggle, StringProperty themeProperty) {
+        logger.log("Settings window: binding theme toggle");
+
         toggle.setSelected("light".equals(themeProperty.get()));
 
         themeProperty.addListener((obs, oldVal, newVal) -> {
@@ -225,6 +244,8 @@ public class SettingsController {
      * @param max max value
      */
     private void bindIntegerField(TextField textField, IntegerProperty intProperty, int min, int max, String fieldName) {
+        logger.log("Settings window: binding integer field");
+
         textField.setText(String.valueOf(intProperty.get()));
 
         textField.setTextFormatter(new TextFormatter<>(change -> {
@@ -275,6 +296,8 @@ public class SettingsController {
 
     /** This method responsible for validation text fields */
     private void setupFieldValidation() {
+        logger.log("Settings window: setupping field validation");
+
         nicknameField.setTextFormatter(new TextFormatter<>(change -> {
             String newText = change.getControlNewText();
             // allow empty characters, letters (latin/cyr), numbers, spaces, underscores
@@ -345,6 +368,8 @@ public class SettingsController {
 
     /** This method responsible for showing validation error: tooltip and field color */
     private void showFieldError(TextField field, String message) {
+        logger.log("Settings window: showing field error via tooltip");
+
         Tooltip tooltip = new Tooltip(message);
         tooltip.setStyle("-fx-background-color: #ff6b6b; -fx-text-fill: white; -fx-font-size: 12px;");
         Tooltip.install(field, tooltip);
@@ -361,6 +386,8 @@ public class SettingsController {
 
     /** This method responsible for load and set listeners for non reactive fields */
     private void loadNonReactiveValues() {
+        logger.log("Settings window: loading non reactive values to the UI");
+
         showAvatar();
         setMicrophoneComboBox();
         setSpeakerComboBox();
@@ -385,6 +412,8 @@ public class SettingsController {
 
     /** This method responsible for set available microphones on ui */
     private void setMicrophoneComboBox() {
+        logger.log("Settings window: setting microphone combo box");
+
         List<String> devices = settings.getAvailableMicrophones();
         microphoneComboBox.getItems().addAll(devices);
 
@@ -404,6 +433,8 @@ public class SettingsController {
 
     /** This method responsible for set available speakers on ui */
     private void setSpeakerComboBox() {
+        logger.log("Settings window: setting speaker combo box");
+
         List<String> devices = settings.getAvailableSpeakers();
         speakerComboBox.getItems().addAll(devices);
 
@@ -423,6 +454,8 @@ public class SettingsController {
 
     /** This method responsible for set available cameras on ui */
     private void setCameraComboBox() {
+        logger.log("Settings window: setting camera combo box");
+
         List<String> devices = settings.getAvailableCameras();
         cameraComboBox.getItems().addAll(devices);
 
@@ -442,6 +475,7 @@ public class SettingsController {
 
     /** This method responsible for show avatar */
     private void showAvatar() {
+        logger.log("Settings window: showing avatar");
 //        if (settings.isRegistered()) {
 //            String path = settings.getPathToAvatar();
 //            if (path != null && !path.isEmpty()) {
@@ -474,6 +508,8 @@ public class SettingsController {
 
     /** This method responsible for upload avatar */
     private void uploadAvatar() {
+        logger.log("Settings window: uploading avatar");
+
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Выберите изображение для аватара");
         fileChooser.getExtensionFilters().addAll(
@@ -494,12 +530,17 @@ public class SettingsController {
 
     /** This method responsible for handling discard button click */
     private void onDiscardButtonClicked() {
+        logger.log("Settings window: handling discard button clicked");
+
+        logger.log("Settings window: revert settings to the previous");
         initialSnapshot.revert(settings);
         closeWindow();
     }
 
     /** This method responsible for close window properly */
     private void closeWindow() {
+        logger.log("Settings window: user requested closing window");
+
         Platform.runLater(() -> {
             Stage stage = (Stage) discardButton.getScene().getWindow();
             stage.close();
@@ -558,5 +599,4 @@ public class SettingsController {
             manager.setCameraBitrate(cameraBitrate);
         }
     }
-
 }

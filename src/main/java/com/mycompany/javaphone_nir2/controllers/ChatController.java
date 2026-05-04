@@ -2,6 +2,7 @@ package com.mycompany.javaphone_nir2.controllers;
 
 import com.mycompany.javaphone_nir2.ChatHistoryCell;
 import com.mycompany.javaphone_nir2.ContactListCell;
+import com.mycompany.javaphone_nir2.logging.SessionLogger;
 import com.mycompany.javaphone_nir2.models.Contact;
 import com.mycompany.javaphone_nir2.models.Message;
 import com.mycompany.javaphone_nir2.models.Offer;
@@ -79,6 +80,9 @@ public class ChatController {
     /** WebRTCManager let users communicate, used when call is starting */
     private final WebRTCManager webRtcManager = WebRTCManager.getInstance();
 
+    /** Logger saves session information into log */
+    private final SessionLogger logger = SessionLogger.getInstance();
+
     /** Offer stores info about call offer (name, sdp) */
     public Offer offer;
 
@@ -95,6 +99,8 @@ public class ChatController {
      * So this method is key method to init styles, listeners and etc before showing ui
      */
     @FXML public void initialize() {
+        logger.log("Chat window initializing");
+
         setupContactList();
 
         setupChatUI();
@@ -104,10 +110,10 @@ public class ChatController {
         instance = this;
     }
 
-    /**
-     * This method inits observableHashMap for contacts, sets cells for contacts ListView and styles
-     */
+    /** This method inits observableHashMap for contacts, sets cells for contacts ListView and styles */
     private void setupContactList() {
+        logger.log("Chat window: setupping contacts");
+
         contacts = FXCollections.observableHashMap();
 
         contactsList.setItems(FXCollections.observableArrayList(contacts.values()));
@@ -124,6 +130,8 @@ public class ChatController {
 
     /** This method set styles for nav bar and contacts and set onClick handlers for nav buttons */
     private void setupChatUI() {
+        logger.log("Chat window: setupping chatUI");
+
         initSplitPane();
         initChat();
 
@@ -136,13 +144,19 @@ public class ChatController {
         settingsButton.setOnAction(e -> openSettings());
         settingsButton.getStyleClass().add("header-button");
 
-        callButton.setOnAction(e -> startVideoCall());
+//        callButton.setOnAction(e -> startVideoCall());
+        callButton.setOnAction(e -> startVideoCallWithContact(new Contact("BaFC13", "ONLINE", "1333")));
         callButton.getStyleClass().add("header-button");
 
         exitButton.getStyleClass().add("header-button");
         exitButton.setOnAction(e -> {
             if(webRtcManager != null) {
-                webRtcManager.cleanup();
+                try {
+                    webRtcManager.cleanup();
+                } catch (Exception ex){
+
+                }
+
                 }
                 if (SignalingClient.getInstance() != null){
                     try {
@@ -157,6 +171,8 @@ public class ChatController {
 
     /** This method open settings window when user is not registered */
     private void checkRegistration() {
+        logger.log("Chat window: checking registration");
+
         if(!settings.isRegistered()) {
             Platform.runLater(() -> {
                 openSettings();
@@ -166,6 +182,8 @@ public class ChatController {
 
     /** This method init signaling client and add handler for notify about incoming call */
     private void initSignalingClient(){
+        logger.log("Chat window: initializing signaling client");
+
         SettingsManager settings = SettingsManager.getInstance();
         SignalingClient.initialize(settings.getSignalingUrl());
 
@@ -179,6 +197,8 @@ public class ChatController {
 
     /** This method connect to signaling client */
     private void connectToSignaling() {
+        logger.log("Chat window: connecting to signaling client");
+
         try {
             SignalingClient.getInstance().connect();
         } catch (Exception e) {
@@ -195,6 +215,8 @@ public class ChatController {
 
     /** This method get split ratio of splitPane from settingsManager and add handler for split ratio change */
     private void initSplitPane() {
+        logger.log("Chat window: initializing split pane");
+
         mainSplitPane.setDividerPositions(settings.getMainSplitRatio());
 
         mainSplitPane.getStyleClass().add("split-pane");
@@ -208,6 +230,8 @@ public class ChatController {
 
     /** This method set cells for chat, styles of chat elements and handler for mousePress */
     private void initChat() {
+        logger.log("Chat window: initializing chat history");
+
         chatHistory.setCellFactory(lv -> new ChatHistoryCell());
         chatHistory.getStyleClass().add("chat-history");
         chatHistory.setOnMousePressed(event -> {
@@ -230,6 +254,8 @@ public class ChatController {
      * @param stage helps to accurately set the event handler on the initialized object
      */
     public void initializeResponsiveLayout(Stage stage) {
+        logger.log("Chat window: called func initializeResponsiveLayout");
+
         setupCloseInterceptor(stage);
         setupGlobalKeyboardNavigation(stage);
     }
@@ -239,9 +265,13 @@ public class ChatController {
     *  @param stage helps to accurately set the event handler on the initialized object
     */
     private void setupCloseInterceptor(Stage stage) {
+        logger.log("Chat window: override the window closing method");
+
         stage.setOnCloseRequest(event -> {
             if (webRtcManager != null) {
-                webRtcManager.cleanup();
+                try {
+                    webRtcManager.cleanup();
+                } catch (Exception ex) {}
             }
             try {
                 SignalingClient.getInstance().disconnect();
@@ -258,6 +288,8 @@ public class ChatController {
     * @param Stage stage helps to accurately set the event handler on the initialized object
     */
     private void setupGlobalKeyboardNavigation(Stage stage) {
+        logger.log("Chat window: setupping keyboard navigation");
+
         if (stage.getScene() != null && stage.isShowing()) {
             Parent root = stage.getScene().getRoot();
             root.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
@@ -274,6 +306,8 @@ public class ChatController {
     * @param direction -1 means selecting upper contact, 1 means selecting lower contact
     */
     private void switchChat(int direction) {
+        logger.log("Chat window: switch chat via alt + arrow in direction: " + direction);
+
         int currentIndex = contactsList.getSelectionModel().getSelectedIndex();
         int size = contactsList.getItems().size();
         if (size == 0) return;
@@ -305,6 +339,8 @@ public class ChatController {
 
     /** This method shows notification via popup */
     private void showIncomingCallNotification() {
+        logger.log("Chat window: showing incoming call notification");
+
         if (incomingCallContact == null) {
             return;
         }
@@ -356,6 +392,8 @@ public class ChatController {
 
     /** This method responsible for notificaion pos update */
     private void updateCallPopupPosition() {
+        logger.log("Chat window: updating call popup position");
+
         if (callButton == null || callButton.getScene() == null) {
             return;
         }
@@ -379,6 +417,8 @@ public class ChatController {
 
     /** This method responsible for hiding incoming call notification */
     private void hideIncomingCallNotification() {
+        logger.log("Chat window: hiding incoming call notification");
+
         isCallPopupActive = false;
 
         if (incomingCallPopup == null || !incomingCallPopup.isShowing()) {
@@ -415,12 +455,16 @@ public class ChatController {
 
     /** This method responsible for accept the call */
     private void acceptCall() {
+        logger.log("Chat window: accepting call with: " + incomingCallContact.getName() + ", key: " + incomingCallContact.getKey());
+
         hideIncomingCallNotification();
         startVideoCallWithContact(incomingCallContact);
     }
 
     /** This method responsible for handle call accept */
     public void handleCallAccepted() {
+        logger.log("Chat window: handling call accepted");
+
         Platform.runLater(() -> {
             startVideoCallWithContact(selectedContact);
         });
@@ -428,6 +472,8 @@ public class ChatController {
 
     /** This method responsible for handle call rejected */
     private void handleCallRejected() {
+        logger.log("Chat window: handling call rejected");
+
         hideIncomingCallNotification();
 
         offer.clear();
@@ -437,6 +483,8 @@ public class ChatController {
      * @param contact contact to start call with
      */
     private void startVideoCallWithContact(Contact contact) {
+        logger.log("Chat window: starting video call with contact: " + contact.getName() + ", key: " + contact.getKey());
+
         try {
             FXMLLoader loader = new FXMLLoader(
                     getClass().getResource("/com/mycompany/javaphone_nir2/fxml/video_call.fxml") //the path is searched from the classpath
@@ -449,6 +497,8 @@ public class ChatController {
 
             //listener for theme change
             settings.themeProperty().addListener((obs, oldTheme, newTheme) -> {
+                logger.log("Video call window: theme changing, new theme: " + newTheme);
+
                 scene.getStylesheets().removeIf(s -> s.contains("/com/mycompany/javaphone_nir2/css/video_call_dark.css")
                         || s.contains("/com/mycompany/javaphone_nir2/css/video_call.css"));
                 scene.getStylesheets().add(getClass().getResource("dark".equals(newTheme) ?
@@ -466,6 +516,7 @@ public class ChatController {
             controller.setContactName(contact.getName());
             controller.initializeResponsiveLayout(videoStage);
 
+            logger.log("Showing video call window, call with: " + contact.getName() + ", key: " + contact.getKey());
             videoStage.show();
 
             appendToChat("System", "📞 Видеозвонок с " + contact.getName() + " начат");
@@ -484,6 +535,8 @@ public class ChatController {
 
     /** This method responsible for add contact to the UI */
     public void addContact(Contact contact) {
+        logger.log("Chat window: adding contact to UI: " + contact.getName() + ", key: " + contact.getKey());
+
         System.out.println("GOT CONTACT TO UI");
         System.out.println(contact.getKey());
 
@@ -496,6 +549,8 @@ public class ChatController {
      * @param offer object that include sdp and sender name
      */
     public void initIncomingCall(Offer offer) {
+        logger.log("Chat window: initialize incoming call with offer, sdp: " + offer.getSdp() + ", sender: " + offer.getSender());
+
         this.offer = offer;
         String callerKey = offer.getSender();
 
@@ -512,6 +567,8 @@ public class ChatController {
      * @param callerKey caller id in signal server
      */
     public void initIncomingCall(String callerKey) {
+        logger.log("Chat window: initialize incoming call with callerKey: " + callerKey);
+
         incomingCallContact = contacts.getOrDefault(callerKey, null);
         if (incomingCallContact != null) {
             Platform.runLater( () -> {
@@ -523,6 +580,8 @@ public class ChatController {
 
     /** This method responsible for components initialization of incoming call notification popup */
     private void initIncomingCallNotification() {
+        logger.log("Chat window: initializing ui for incoming call notification");
+
         // container for notification
         notificationBox = new VBox(12);
         notificationBox.getStyleClass().add("notification-box");
@@ -576,8 +635,12 @@ public class ChatController {
 
     /** This method responsible for updating chat with selected contact */
     private void updateChatPanel() {
+        logger.log("Chat window: updating chatTitleLabel with contact: " + selectedContact);
+
         if (selectedContact != null) {
             chatTitleLabel.setText("Чат с " + selectedContact.getName());
+        } else {
+            chatTitleLabel.setText("");
         }
     }
 
@@ -585,6 +648,8 @@ public class ChatController {
      * @param messages is list of messages in this chat
      */
     public void loadChatHistory(List<Message> messages) {
+        logger.log("Chat window: loading chat history with list of messages");
+
         chatHistory.getItems().setAll(messages);
 
         Platform.runLater(() -> chatHistory.scrollTo(chatHistory.getItems().size() - 1));
@@ -592,6 +657,8 @@ public class ChatController {
 
     /** This method responsible for send message to focused contact in contact list */
     private void sendMessage() {
+        logger.log("Chat window: sending message");
+
         if (selectedContact == null) {
             Alert alert = new Alert(Alert.AlertType.WARNING);
             alert.setTitle("Предупреждение");
@@ -612,7 +679,7 @@ public class ChatController {
             appendToChat("Вы", message);
             messageInput.clear();
         } catch (IOException ex) {
-            System.getLogger(ChatController.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+            System.getLogger(ChatController.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex); /////////
         }
     }
 
@@ -621,6 +688,8 @@ public class ChatController {
      * @param content message
      */
     public void handleMessage(String sender, String content) {
+        logger.log("Chat window: handling message, sender: " + sender);
+
         Platform.runLater(() -> {
             appendToChat(sender, content);
         });
@@ -650,6 +719,8 @@ public class ChatController {
 
     /** This method responsible for close window properly */
     private void closeWindow() {
+        logger.log("Chat window: user requested closing window, closing application");
+
         settings.save();
 
         Platform.runLater(() -> {
@@ -661,6 +732,9 @@ public class ChatController {
 
     /** This method responsible for starting videocall with focused contact in contact list */
     private void startVideoCall() {
+        logger.log("Chat window: starting video call with focused contact in contact list: " + selectedContact.getName() + ", key: "
+        + selectedContact.getKey());
+
         if (selectedContact == null) {
             Alert alert = new Alert(Alert.AlertType.WARNING);
             alert.setTitle("Предупреждение");
@@ -678,6 +752,8 @@ public class ChatController {
      * @param content message
      */
    public void appendToChat(String sender, String content) {
+       logger.log("Chat window: appending message to chat with sender and content");
+
        Message msg = new Message();
        msg.setId(generateMessageId());
        msg.setChatId(1);
@@ -692,6 +768,7 @@ public class ChatController {
     * @param message (id, chatId, sender public key, content, time, attachments)
     */
    public void appendToChat(Message message) {
+       logger.log("Chat window: appending message to chat with Message");
        chatHistory.getItems().add(message);
 
        Platform.runLater(() -> {
@@ -702,13 +779,18 @@ public class ChatController {
        });
    }
 
-   /** This method responsible for  simple generation message id */
+   /** This method responsible for  simple generation of message id */
    private int generateMessageId() {
-       return (int) (System.currentTimeMillis() % Integer.MAX_VALUE);
+       int id = (int) (System.currentTimeMillis() % Integer.MAX_VALUE);
+       logger.log("Chat window: generationg message id: " + id);
+
+       return id;
    }
 
    /** This method responsible for open settings window */
     private void openSettings() {
+        logger.log("Chat window: user open settings");
+
          try {
             FXMLLoader loader = new FXMLLoader(
                     getClass().getResource("/com/mycompany/javaphone_nir2/fxml/settings.fxml") //the path is searched from the classpath
@@ -721,6 +803,8 @@ public class ChatController {
 
             //listener for theme property
             settings.themeProperty().addListener((obs, oldTheme, newTheme) -> {
+                logger.log("Settings window: theme changing, new theme: " + newTheme);
+
                 scene.getStylesheets().removeIf(s -> s.contains("/com/mycompany/javaphone_nir2/css/settings_dark.css")
                         || s.contains("/com/mycompany/javaphone_nir2/css/settings.css"));
                 scene.getStylesheets().add(getClass().getResource("dark".equals(newTheme) ?
@@ -737,6 +821,7 @@ public class ChatController {
             SettingsController controller = loader.getController();
             controller.initializeResponsiveLayout(settingsStage);
 
+            logger.log("Showing settings window");
             settingsStage.show();
 
             settingsStage.requestFocus();

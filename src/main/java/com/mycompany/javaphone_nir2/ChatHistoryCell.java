@@ -12,7 +12,12 @@ import javafx.scene.layout.VBox;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import javafx.animation.Interpolator;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
 import javafx.scene.layout.Region;
+import javafx.util.Duration;
 /**
  * A custom cell for displaying messages in the chat history.
  * Implements a modern design: a message "bubble" with a time stamp.
@@ -29,6 +34,9 @@ public class ChatHistoryCell extends ListCell<Message> {
     private final Label contentLabel = new Label();
     private final Label timeLabel = new Label();
     private final Label senderLabel = new Label();
+
+    private Timeline appearAnimation;
+    private boolean isAnimated = false;
 
     /** Ctor that set components, styles */
     public ChatHistoryCell() {
@@ -55,6 +63,20 @@ public class ChatHistoryCell extends ListCell<Message> {
         HBox.setHgrow(bubbleContainer, Priority.NEVER);
         root.getChildren().add(bubbleContainer);
 
+        root.setOpacity(0);
+        root.setTranslateY(15);
+
+        appearAnimation = new Timeline(
+            new KeyFrame(Duration.ZERO,
+                new KeyValue(root.opacityProperty(), 0),
+                new KeyValue(root.translateYProperty(), 15, Interpolator.EASE_OUT)
+            ),
+            new KeyFrame(Duration.millis(200),
+                new KeyValue(root.opacityProperty(), 1),
+                new KeyValue(root.translateYProperty(), 0)
+            )
+        );
+
         setGraphic(root);
     }
 
@@ -63,8 +85,14 @@ public class ChatHistoryCell extends ListCell<Message> {
     protected void updateItem(Message message, boolean empty) {
         super.updateItem(message, empty);
 
+//        if (empty || message == null) {
+//            setGraphic(null);
+//            return;
+//        }
         if (empty || message == null) {
             setGraphic(null);
+            appearAnimation.stop();
+            isAnimated = false;
             return;
         }
 
@@ -84,6 +112,16 @@ public class ChatHistoryCell extends ListCell<Message> {
             bubbleContainer.getStyleClass().remove("message-bubble-own");
         }
         setGraphic(root);
+
+        int lastIndex = getListView().getItems().size() - 1;
+        if (getIndex() == lastIndex && !empty) {
+            root.setOpacity(0);
+            root.setTranslateY(15);
+            appearAnimation.playFromStart();
+        } else {
+            root.setOpacity(1);
+            root.setTranslateY(0);
+        }
     }
 
     /** This method formats Unix-timestamp */
