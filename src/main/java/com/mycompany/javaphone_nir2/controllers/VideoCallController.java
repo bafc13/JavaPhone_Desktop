@@ -6,6 +6,8 @@ import com.mycompany.javaphone_nir2.logging.SessionLogger;
 import com.mycompany.javaphone_nir2.models.Message;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
 import com.mycompany.javaphone_nir2.models.VideoLayoutMode;
+import com.mycompany.javaphone_nir2.webrtc.JavaPhoneChatHandler;
+import com.mycompany.javaphone_nir2.webrtc.JavaPhoneVideoHandler;
 import com.mycompany.javaphone_nir2.webrtc.WebRTCManager;
 import dev.onvoid.webrtc.media.video.VideoTrack;
 import javafx.fxml.FXML;
@@ -36,7 +38,7 @@ import javafx.scene.layout.VBox;
  * a call. 4. Ending the call and returning to the main window
  * 5. Starting games
  */
-public class VideoCallController {
+public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideoHandler {
 
     @FXML private StackPane remoteVideoContainer;
     @FXML private HBox headerContainer;
@@ -78,12 +80,6 @@ public class VideoCallController {
 
     private VideoLayoutMode currentMode = VideoLayoutMode.PIP_PRIMARY_FIRST;
 
-    private static VideoCallController instance = null;
-
-    public static VideoCallController getInstance() {
-        return instance;
-    }
-
     /**
      * This method is automatically called by the FXMLLoader after the FXML file is loaded
      * and all @FXML fields have been injected
@@ -95,30 +91,15 @@ public class VideoCallController {
 
         setupCallUI();
 
-        appendToCallChat("System", "Соединение установлено");
-        appendToCallChat("System", "Звонок активен");
+        handleStringMessage("System", "Соединение установлено");
+        handleStringMessage("System", "Звонок активен");
 
         callChatHistory.setEditable(false);
-        instance = this;
+        
+        WebRTCManager.getInstance().setVideoHandler(this);
+        WebRTCManager.getInstance().addChatHandler(this);
     }
 
-    /** This method responsible for add local video track
-     * @param localTrack
-     */
-    public void addLocalTrack(VideoTrack localTrack) {
-        logger.log("Video call window: add local track sink");
-
-        localTrack.addSink(localVideo);
-    }
-
-    /** This method responsible for add remote video track
-     * @param remoteTrack
-     */
-    public void addRemoteTrack(VideoTrack remoteTrack) {
-        logger.log("Video call window: add remote track sink");
-
-        remoteTrack.addSink(remoteVideo);
-    }
 
     /** This method responsible for Initialize window resizing. Called from ChatController.startVideoCall() with a ready Stage!
      * @param stage video call scene
@@ -535,7 +516,7 @@ public class VideoCallController {
         String response = responses[(int) (Math.random() * responses.length)];
 
         Platform.runLater(() -> {
-            appendToCallChat(contactName, response);
+            handleStringMessage(contactName, response);
         });
     }
 
@@ -543,7 +524,7 @@ public class VideoCallController {
     private void endCall() {
         logger.log("Video call window: ending call");
 
-        appendToCallChat("System", "📞 Звонок завершен");
+        handleStringMessage("System", "📞 Звонок завершен");
 
         javafx.application.Platform.runLater(() -> {
             closeWindow();
@@ -594,13 +575,26 @@ public class VideoCallController {
         });
     }
 
-    /** This method responsible for add message to chat
-     * @param sender
-     * @param content message
+    /**
+     * Простая генерация уникального ID (заглушка)
+     * В реальном приложении — использовать базу данных или UUID
      */
-    public void appendToCallChat(String sender, String content) {
-        logger.log("Video call window: append message to call chat, sender");
+    private int generateMessageId() {
+        return (int) (System.currentTimeMillis() % Integer.MAX_VALUE);
+    }
 
+    @Override
+    public void addLocalTrack(VideoTrack localTrack) {
+        localTrack.addSink(localVideo);
+    }
+
+    @Override
+    public void addRemoteTrack(VideoTrack remoteTrack) {
+        remoteTrack.addSink(remoteVideo);
+    }
+
+    @Override
+    public void handleStringMessage(String sender, String content) {
         Message msg = new Message();
         msg.setId(generateMessageId());
         msg.setChatId(1);
@@ -613,16 +607,13 @@ public class VideoCallController {
         msg.setTime(System.currentTimeMillis() / 1000); // Unix timestamp in sec
 
         Platform.runLater(() -> {
-            appendToCallChat(msg);
+            this.handleMessage(msg);
         });
     }
 
-    /** This method responsible for adding message to history
-    * @param message (id, chatId, sender public key, content, time, attachments)
-    */
-    public void appendToCallChat(Message message) {
-        logger.log("Video call window: append message to call chat");
-
+    @Override
+    public void handleMessage(Message message) {
+        // Добавляем в конец списка
         callChatHistory.getItems().add(message);
 
         Platform.runLater(() -> {
@@ -631,14 +622,6 @@ public class VideoCallController {
                 callChatHistory.scrollTo(lastIndex);
             }
         });
-    }
-
-    /** This method responsible for  simple generation message id */
-    private int generateMessageId() {
-        int id = (int) (System.currentTimeMillis() % Integer.MAX_VALUE);
-        logger.log("Video call window: generationg message id: " + id);
-
-        return id;
     }
 }
 

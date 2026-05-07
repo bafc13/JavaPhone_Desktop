@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -79,6 +80,13 @@ public class WebRTCManager implements PeerConnectionObserver {
     private static RTCIceServer ICE_SERVERS = null;
 
     private static WebRTCManager instance = null;
+    
+    private JavaPhoneCallManager callManager = null;
+    
+    private JavaPhoneVideoHandler videoHandler = null;
+    private final Set<JavaPhoneChatHandler> chatHandlers = new HashSet<>();
+    
+    private PeerConnectionObserverImpl peerConnectionObserver = null;
 
     public static WebRTCManager getInstance() {
         if (instance == null) {
@@ -120,23 +128,23 @@ public class WebRTCManager implements PeerConnectionObserver {
 
     public void initializeDevices() {
         Thread deviceThread = new Thread(() -> {
-                try {
-                    audioModule = new AudioDeviceModule();
-                    factory = new PeerConnectionFactory(audioModule);
+            try {
+                audioModule = new AudioDeviceModule();
+                factory = new PeerConnectionFactory(audioModule);
 
-                    cameras = MediaDevices.getVideoCaptureDevices();
-                    microphones = MediaDevices.getAudioCaptureDevices();
-                    speakers = MediaDevices.getAudioRenderDevices();
-                } catch (Exception e) {
-                    Platform.runLater(() -> {
-                        System.out.print("Ошибка инициализации устройств: " + e.getMessage());
-                    });
-                }
-            });
+                cameras = MediaDevices.getVideoCaptureDevices();
+                microphones = MediaDevices.getAudioCaptureDevices();
+                speakers = MediaDevices.getAudioRenderDevices();
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    System.out.print("Ошибка инициализации устройств: " + e.getMessage());
+                });
+            }
+        });
 
-            deviceThread.setName("webrtc-device-init");
-            deviceThread.setDaemon(true);
-            deviceThread.start();
+        deviceThread.setName("webrtc-device-init");
+        deviceThread.setDaemon(true);
+        deviceThread.start();
     }
 
     public void initializeMedia() {
@@ -190,9 +198,8 @@ public class WebRTCManager implements PeerConnectionObserver {
         videoSource.start();
         localVideoTrack = factory.createVideoTrack("video0", videoSource);
 
-        VideoCallController vcc = VideoCallController.getInstance();
-        if (vcc != null) {
-            vcc.addLocalTrack(localVideoTrack);
+        if (videoHandler != null) {
+            videoHandler.addLocalTrack(localVideoTrack);
         }
 
         audioModule.initRecording();
@@ -203,12 +210,18 @@ public class WebRTCManager implements PeerConnectionObserver {
     }
 
     public void startCall(String targetClientId) {
-        initializeMedia();
+
+        initializeMedia();  
         initializeCapture();
 
         remoteClientId = targetClientId;
 
-        peerConnection = factory.createPeerConnection(config, new PeerConnectionObserverImpl(this, remoteClientId));
+        peerConnectionObserver = new PeerConnectionObserverImpl(this, remoteClientId);
+        if (videoHandler != null) {
+            peerConnectionObserver.setVideoHandler(videoHandler);
+        }
+        
+        peerConnection = factory.createPeerConnection(config, peerConnectionObserver);
 
         List<String> streamIds = new ArrayList<>();
         streamIds.add("stream");
@@ -266,8 +279,12 @@ public class WebRTCManager implements PeerConnectionObserver {
         initializeCapture();
 
         this.remoteClientId = sender;
-
-        peerConnection = factory.createPeerConnection(config, new PeerConnectionObserverImpl(this, remoteClientId));
+        peerConnectionObserver = new PeerConnectionObserverImpl(this, remoteClientId);
+        if (videoHandler != null) {
+            peerConnectionObserver.setVideoHandler(videoHandler);
+        }
+        
+        peerConnection = factory.createPeerConnection(config, peerConnectionObserver);
         for (RTCIceCandidate candidate : candidates) {
             peerConnection.addIceCandidate(candidate);
         }
@@ -333,8 +350,9 @@ public class WebRTCManager implements PeerConnectionObserver {
         peerConnection.setRemoteDescription(remoteSdp, new SetSessionDescriptionObserver() {
             @Override
             public void onSuccess() {
-                ChatController cc = ChatController.getInstance();
-                cc.handleCallAccepted();
+                if (callManager != null) {
+                    callManager.handleCallAccepted();
+                }
             }
 
             @Override
@@ -354,7 +372,6 @@ public class WebRTCManager implements PeerConnectionObserver {
     public void setupDataChannel(RTCDataChannel dataChannel) {
         switch (dataChannel.getLabel()) {
             case "chat":
-                System.out.println("GOT CHAT DATA CHANNEL");
                 chatDataChannel = dataChannel;
                 dataChannel.registerObserver(new RTCDataChannelObserver() {
                     @Override
@@ -383,15 +400,19 @@ public class WebRTCManager implements PeerConnectionObserver {
                             String sender = message.get("sender").asText();
                             String content = message.get("content").asText();
 
-                            VideoCallController vcc = VideoCallController.getInstance();
-                            vcc.appendToCallChat(sender, content);
+                            for (JavaPhoneChatHandler chatHandler : chatHandlers) {
+                                if (chatHandler != null) {
+                                    chatHandler.handleStringMessage(sender, content);
+                                }
+                            }
+
                         } catch (Exception ex) {
                             System.getLogger(WebRTCManager.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
                         }
-
                     }
                 });
                 break;
+           
             case "game":
                 System.out.println("GOT GAME DATA CHANNEL");
                 gameDataChannel = dataChannel;
@@ -419,7 +440,6 @@ public class WebRTCManager implements PeerConnectionObserver {
                     }
                 });
         }
-
     }
 
     public void sendChatMessage(String content) {
@@ -435,8 +455,11 @@ public class WebRTCManager implements PeerConnectionObserver {
                 ByteBuffer textBuffer = ByteBuffer.wrap(textMessage.getBytes(StandardCharsets.UTF_8));
                 RTCDataChannelBuffer textChannelBuffer = new RTCDataChannelBuffer(textBuffer, false);
 
-                VideoCallController vcc = VideoCallController.getInstance();
-                vcc.appendToCallChat(sender, content);
+                for (JavaPhoneChatHandler chatHandler : chatHandlers) {
+                    if (chatHandler != null) {
+                        chatHandler.handleStringMessage(sender, content);
+                    }
+                }
 
                 chatDataChannel.send(textChannelBuffer);
             } catch (Exception ex) {
@@ -615,5 +638,30 @@ public class WebRTCManager implements PeerConnectionObserver {
 
     public Integer getSpeakerVolume() {
         return speakerVolume;
+    }
+    
+    public void setCallManager(JavaPhoneCallManager callManager) {
+        this.callManager = callManager;
+    }
+    
+    public void setVideoHandler(JavaPhoneVideoHandler videoHandler) {
+        this.videoHandler = videoHandler;
+        
+        if (videoHandler != null) {
+            if (localVideoTrack != null) {
+                this.videoHandler.addLocalTrack(localVideoTrack);
+            }
+            if (peerConnectionObserver != null) {
+                peerConnectionObserver.setVideoHandler(videoHandler);
+            }
+        }
+    }
+    
+    public boolean addChatHandler(JavaPhoneChatHandler chatHandler) {
+        return this.chatHandlers.add(chatHandler);
+    }
+    
+    public boolean removeChatHandler(JavaPhoneChatHandler chatHandler) {
+        return this.chatHandlers.remove(chatHandler);
     }
 }
