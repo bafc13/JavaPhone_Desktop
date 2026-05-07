@@ -1,6 +1,7 @@
 package com.mycompany.javaphone_nir2.games;
 
 import com.mycompany.javaphone_nir2.webrtc.WebRTCManager;
+import com.mycompany.javaphone_nir2.models.SettingsManager;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -9,13 +10,21 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import java.util.UUID;
 
 public class GameMenuApp {
     
     private static GameMenuApp instance;
     private Stage gameSelectionStage;
+    private String myPersistentId;
+    private GameThemeHelper themeHelper;
     
-    private GameMenuApp() {}
+    private GameMenuApp() {
+        myPersistentId = UUID.randomUUID().toString();
+        themeHelper = GameThemeHelper.getInstance();
+        themeHelper.init(); // <- Инициализируем хелпер тем
+        System.out.println("🎮 GameMenuApp created with ID: " + myPersistentId);
+    }
     
     public static GameMenuApp getInstance() {
         if (instance == null) {
@@ -24,61 +33,59 @@ public class GameMenuApp {
         return instance;
     }
     
-    // Shows the game selection window
-   public void showGameSelection() {
-    gameSelectionStage = new Stage();
-    gameSelectionStage.setTitle("Выбор игры");
+    public String getMyId() {
+        return myPersistentId;
+    }
     
-    VBox root = new VBox(15);
-    root.setAlignment(Pos.CENTER);
-    // Просто применяем цвет фона из темы
-    root.setStyle(String.format(
-        "-fx-padding: 30; -fx-background-color: %s;",
-        ThemeHelper.getBackgroundColorHex()
-    ));
-    
-    Text title = new Text("Выберите игру");
-    title.setStyle(String.format(
-        "-fx-font-size: 24px; -fx-font-weight: bold; -fx-fill: %s;",
-        ThemeHelper.getTextColorHex()
-    ));
-    
-    Label statusLabel = new Label("Выберите игру и нажмите 'Готов'");
-    statusLabel.setStyle(String.format(
-        "-fx-font-size: 14px; -fx-fill: %s;",
-        ThemeHelper.getTextColorHex()
-    ));
-    
-    ComboBox<String> gameSelector = new ComboBox<>();
-    gameSelector.getItems().addAll("Крестики-нолики", "Морской бой", "Шахматы");
-    gameSelector.setPromptText("Выберите игру");
-    gameSelector.setStyle("-fx-font-size: 14px;");
-    gameSelector.setPrefWidth(200);
-    
-    Button readyButton = new Button("Готов");
-    readyButton.setStyle(String.format(
-        "-fx-font-size: 14px; -fx-padding: 10 20; -fx-background-color: %s; -fx-text-fill: white;",
-        ThemeHelper.getButtonColorHex()
-    ));
-    readyButton.setOnAction(e -> {
-        String selected = gameSelector.getValue();
-        if (selected == null) {
-            statusLabel.setText("Пожалуйста, выберите игру!");
-            statusLabel.setStyle("-fx-fill: #ef4444; -fx-font-size: 14px;");
-            return;
+    public void showGameSelection() {
+        gameSelectionStage = new Stage();
+        gameSelectionStage.setTitle("Выбор игры");
+        
+        VBox root = new VBox(15);
+        root.setAlignment(Pos.CENTER);
+        themeHelper.applyToContainer(root);
+        
+        Text title = new Text("Выберите игру");
+        themeHelper.styleText(title, true);
+        
+        Label statusLabel = new Label("Выберите игру и нажмите 'Готов'");
+        themeHelper.styleLabel(statusLabel, false);
+        
+        ComboBox<String> gameSelector = new ComboBox<>();
+        gameSelector.getItems().addAll("Крестики-нолики", "Морской бой", "Шахматы");
+        gameSelector.setPromptText("Выберите игру");
+        gameSelector.setStyle("-fx-font-size: 14px;");
+        gameSelector.setPrefWidth(200);
+        
+        // Стилизуем ComboBox под тему
+        if (themeHelper.isDarkTheme()) {
+            gameSelector.setStyle("-fx-font-size: 14px; -fx-background-color: #2d2d3d; -fx-text-fill: white;");
+        } else {
+            gameSelector.setStyle("-fx-font-size: 14px; -fx-background-color: white; -fx-text-fill: black;");
         }
         
-        String gameType = convertGameType(selected);
-        GameController.getInstance().onGameSelected(gameType);
-        gameSelectionStage.close();
-    });
-    
-    root.getChildren().addAll(title, statusLabel, gameSelector, readyButton);
-    
-    Scene scene = new Scene(root, 400, 350);
-    gameSelectionStage.setScene(scene);
-    gameSelectionStage.show();
-}
+        Button readyButton = new Button("Готов");
+        themeHelper.styleButton(readyButton);
+        readyButton.setOnAction(e -> {
+            String selected = gameSelector.getValue();
+            if (selected == null) {
+                statusLabel.setText("Пожалуйста, выберите игру!");
+                statusLabel.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 14px;");
+                return;
+            }
+            
+            String gameType = convertGameType(selected);
+            GameController.getInstance().onGameSelected(gameType);
+            gameSelectionStage.close();
+        });
+        
+        root.getChildren().addAll(title, statusLabel, gameSelector, readyButton);
+        
+        Scene scene = new Scene(root, 400, 350);
+        themeHelper.applyThemeToScene(scene);
+        gameSelectionStage.setScene(scene);
+        gameSelectionStage.show();
+    }
     
     private String convertGameType(String displayName) {
         switch (displayName) {
@@ -89,28 +96,24 @@ public class GameMenuApp {
         }
     }
     
-    // Called when a message is received from WebRTC - forwards to GameController
     public void onGameMessage(String message) {
-        System.out.println("📨 [Menu] Message got, pass to contorller: " + message);
+        System.out.println("📨 [Menu] Message received, passing to controller: " + message);
         if (GameController.getInstance() != null) {
             GameController.getInstance().handleMessage(message);
         }
     }
     
-    // Sends a message through WebRTC
     public void sendGameMessage(String message) {
-        System.out.println("📤 [Menu] Отправка сообщения: " + message);
+        System.out.println("📤 [Menu] Sending message: " + message);
         WebRTCManager.getInstance().sendGameMessage(message);
     }
     
-    // Called when the game window is closed
     public void closeGame() {
         GameController.getInstance().closeGame();
     }
     
-    // Called when the game data channel is ready
     public void onGameChannelReady() {
-        System.out.println("🎮 GameMenuApp: Игровой канал готов!");
+        System.out.println("🎮 GameMenuApp: Game channel ready!");
         GameController.getInstance().onGameChannelReady();
     }
 }

@@ -39,7 +39,7 @@ public class SeaBattleModule extends FXGLGame {
         myBoard.randomizeShips();
         
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: #34495e; -fx-padding: 20;");
+        root.setStyle("-fx-background-color: #dadef7; -fx-padding: 20;");
         
         statusLabel = new Label(waitingForOpponent ? "Ожидание соперника..." : "Ваш ход!");
         statusLabel.setFont(Font.font(16));
@@ -197,7 +197,7 @@ public class SeaBattleModule extends FXGLGame {
                 
                 int value = fullBoard[i][j];
                 if (value == SeaBattleCell.SHIP) {
-                    cell.setText("■");
+                    cell.setText("[]");
                     cell.setStyle(
                         "-fx-background-color: #34495e; " +
                         "-fx-text-fill: #ecf0f1; " +
@@ -209,7 +209,7 @@ public class SeaBattleModule extends FXGLGame {
                         "-fx-background-radius: 4;"
                     );
                 } else if (value == SeaBattleCell.HIT) {
-                    cell.setText("💥");
+                    cell.setText("X");
                     cell.setStyle(
                         "-fx-background-color: #e74c3c; " +
                         "-fx-text-fill: white; " +
@@ -255,9 +255,9 @@ public class SeaBattleModule extends FXGLGame {
                 
                 int value = visibleBoard[i][j];
                 if (value == SeaBattleCell.HIT) {
-                    if (!cell.getText().equals("💥")) {
+                    if (!cell.getText().equals("X")) {
                         System.out.println("   Updating [" + i + "," + j + "] to HIT");
-                        cell.setText("💥");
+                        cell.setText("X");
                         cell.setStyle(
                             "-fx-background-color: #e74c3c; " +
                             "-fx-text-fill: white; " +

@@ -12,6 +12,11 @@ public abstract class FXGLGame {
     protected boolean amIHost = false;
     private Runnable onCloseCallback;
     protected Stage gameStage;
+    protected GameThemeHelper themeHelper;
+    
+    public FXGLGame() {
+        this.themeHelper = GameThemeHelper.getInstance();
+    }
     
     public void setGameType(String gameType) {
         this.gameType = gameType;
@@ -29,38 +34,17 @@ public abstract class FXGLGame {
         this.onCloseCallback = callback;
     }
     
-    /**
-     * Called when opponent's move is received
-     */
     public abstract void onOpponentMove(String moveData);
-    
-    /**
-     * Called when battle starts (both players are ready)
-     */
     public abstract void startBattle();
-    
-    /**
-     * Cleans up resources
-     */
     public abstract void cleanup();
-    
-    /**
-     * Displays the game UI
-     */
     public abstract void showUI();
     
-    /**
-     * Sends a move to the opponent via GameController
-     */
     protected void sendMove(String moveData) {
         if (controller != null) {
             controller.sendMove(moveData);
         }
     }
     
-    /**
-     * Launches the game window
-     */
     public void launchGame() {
         showUI();
         if (gameStage != null) {
@@ -71,5 +55,35 @@ public abstract class FXGLGame {
             });
             gameStage.show();
         }
+    }
+    
+    protected void applyThemeToScene(javafx.scene.Scene scene) {
+        if (themeHelper != null && scene != null) {
+            themeHelper.applyThemeToScene(scene);
+        }
+    }
+    
+    protected String getBackgroundColor() {
+        return themeHelper != null ? themeHelper.getBackgroundColor() : "#f5f5f5";
+    }
+    
+    protected String getTextColor() {
+        return themeHelper != null ? themeHelper.getTextColor() : "#000000";
+    }
+    
+    protected String getBoardColor() {
+        return themeHelper != null ? themeHelper.getBoardColor() : "#ffffff";
+    }
+    
+    protected String getGridColor() {
+        return themeHelper != null ? themeHelper.getGridColor() : "#333333";
+    }
+    
+    protected String getXColor() {
+        return themeHelper != null ? themeHelper.getXColor() : "#e74c3c";
+    }
+    
+    protected String getOColor() {
+        return themeHelper != null ? themeHelper.getOColor() : "#3498db";
     }
 }

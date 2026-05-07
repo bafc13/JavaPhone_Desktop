@@ -1,12 +1,12 @@
 package com.mycompany.javaphone_nir2.games;
 
+import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
@@ -16,28 +16,26 @@ public class TicTacToeModule extends FXGLGame {
     private Button[][] board = new Button[3][3];
     private Label statusLabel;
     private boolean gameOver = false;
-    private ThemeApplier themeApplier = new ThemeApplier();
+    private VBox root;
+    private GridPane boardGrid;
+    
     @Override
     public void showUI() {
         gameStage = new Stage();
         gameStage.setTitle("Крестики-нолики");
         
-        VBox root = new VBox(20);
+        root = new VBox(20);
         root.setAlignment(Pos.CENTER);
-        root.setStyle("-fx-padding: 30; -fx-background-color: #34495e;");
+        themeHelper.applyToContainer(root);
         
         statusLabel = new Label(waitingForOpponent ? "Ожидание соперника..." : "Ваш ход!");
         statusLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
-        statusLabel.setTextFill(Color.WHITE);
+        themeHelper.styleLabel(statusLabel, false);
         
-        GridPane boardGrid = createBoard();
+        boardGrid = createBoard();
         
         Button backButton = new Button("Выйти в меню");
-        backButton.setStyle(
-            "-fx-font-size: 14px; -fx-padding: 8 20; " +
-            "-fx-background-color: #1a225d; -fx-text-fill: white; " +
-            "-fx-background-radius: 20; -fx-cursor: hand;"
-        );
+        themeHelper.styleButton(backButton);
         backButton.setOnAction(e -> {
             gameStage.close();
             if (controller != null) {
@@ -48,9 +46,12 @@ public class TicTacToeModule extends FXGLGame {
         root.getChildren().addAll(statusLabel, boardGrid, backButton);
         
         Scene scene = new Scene(root, 450, 550);
+        themeHelper.applyThemeToScene(scene);
         
-        // ПРИМЕНЯЕМ ТЕМУ
-        themeApplier.applyThemeToScene(scene);
+        // Подписываемся на изменения темы
+        com.mycompany.javaphone_nir2.models.SettingsManager.getInstance().themeProperty().addListener((obs, oldTheme, newTheme) -> {
+            Platform.runLater(() -> updateTheme());
+        });
         
         gameStage.setScene(scene);
     }
@@ -67,48 +68,35 @@ public class TicTacToeModule extends FXGLGame {
                 button.setPrefSize(100, 100);
                 button.setFont(Font.font("Segoe UI", FontWeight.BOLD, 48));
                 
-                // Современный дизайн клетки
-                button.setStyle(
-                    "-fx-background-color: rgba(255, 255, 255, 0.9); " +
-                    "-fx-border-color: #bdc3c7; " +
-                    "-fx-border-width: 2; " +
-                    "-fx-border-radius: 12; " +
-                    "-fx-background-radius: 12; " +
-                    "-fx-cursor: hand; " +
-                    "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0.5, 0, 2);"
-                );
+                // Применяем стиль клетки в зависимости от темы
+                updateCellStyle(button, " ", false);
                 
                 // Эффект при наведении
+                final int row = i;
+                final int col = j;
                 button.setOnMouseEntered(e -> {
                     if (button.getText().equals(" ") && !gameOver && isMyTurn && !waitingForOpponent) {
+                        String hoverColor = themeHelper.isDarkTheme() ? "#4a4a5a" : "#3498db";
                         button.setStyle(
-                            "-fx-background-color: rgba(255, 255, 255, 1); " +
-                            "-fx-border-color: #3498db; " +
-                            "-fx-border-width: 3; " +
+                            String.format("-fx-background-color: %s; " +
+                            "-fx-text-fill: %s; " +
+                            "-fx-font-size: 48px; " +
+                            "-fx-font-weight: bold; " +
                             "-fx-border-radius: 12; " +
                             "-fx-background-radius: 12; " +
                             "-fx-cursor: hand; " +
-                            "-fx-effect: dropshadow(gaussian, rgba(52,152,219,0.3), 8, 0.5, 0, 2);"
+                            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0.5, 0, 2);",
+                            hoverColor, themeHelper.getTextColor())
                         );
                     }
                 });
                 
                 button.setOnMouseExited(e -> {
                     if (button.getText().equals(" ")) {
-                        button.setStyle(
-                            "-fx-background-color: rgba(255, 255, 255, 0.9); " +
-                            "-fx-border-color: #bdc3c7; " +
-                            "-fx-border-width: 2; " +
-                            "-fx-border-radius: 12; " +
-                            "-fx-background-radius: 12; " +
-                            "-fx-cursor: hand; " +
-                            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0.5, 0, 2);"
-                        );
+                        updateCellStyle(button, " ", false);
                     }
                 });
                 
-                final int row = i;
-                final int col = j;
                 button.setOnAction(e -> makeMove(row, col));
                 
                 board[row][col] = button;
@@ -118,29 +106,98 @@ public class TicTacToeModule extends FXGLGame {
         return grid;
     }
     
+    private void updateCellStyle(Button button, String symbol, boolean isWinning) {
+        String bgColor;
+        String textColor;
+        String borderColor = themeHelper.getGridColor();
+        int borderWidth = isWinning ? 3 : 2;
+        
+        if (isWinning) {
+            bgColor = themeHelper.isDarkTheme() ? "#f1c40f" : "#f39c12";
+            textColor = "#ffffff";
+            borderColor = "#f1c40f";
+        } else if (symbol.equals("X")) {
+            bgColor = themeHelper.isDarkTheme() ? "#4ecdc4" : "#3498db";
+            textColor = "#ffffff";
+        } else if (symbol.equals("O")) {
+            bgColor = themeHelper.isDarkTheme() ? "#ffe66d" : "#e74c3c";
+            textColor = "#ffffff";
+        } else {
+            // Пустая клетка
+            bgColor = themeHelper.getBoardColor();
+            textColor = themeHelper.getTextColor();
+        }
+        
+        String effect = isWinning ? 
+            "-fx-effect: dropshadow(gaussian, #f1c40f, 20, 0.8, 0, 0);" : 
+            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0.5, 0, 2);";
+        
+        button.setStyle(String.format(
+            "-fx-background-color: %s; " +
+            "-fx-text-fill: %s; " +
+            "-fx-font-size: 48px; " +
+            "-fx-font-weight: bold; " +
+            "-fx-border-color: %s; " +
+            "-fx-border-width: %d; " +
+            "-fx-border-radius: 12; " +
+            "-fx-background-radius: 12; " +
+            "-fx-cursor: %s; " +
+            "%s",
+            bgColor, textColor, borderColor, borderWidth,
+            symbol.equals(" ") ? "hand" : "default",
+            effect
+        ));
+    }
+    
+    private void updateTheme() {
+        // Обновляем фон контейнера
+        themeHelper.applyToContainer(root);
+        
+        // Обновляем стиль статуса
+        if (!gameOver) {
+            if (waitingForOpponent) {
+                statusLabel.setText("Ожидание соперника...");
+            } else if (isMyTurn) {
+                statusLabel.setText("✅ Ваш ход!");
+            } else {
+                statusLabel.setText("Ожидание хода соперника...");
+            }
+            themeHelper.styleLabel(statusLabel, false);
+        }
+        
+        // Обновляем стиль всех клеток
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                Button btn = board[i][j];
+                if (btn != null) {
+                    String symbol = btn.getText();
+                    if (!symbol.equals(" ")) {
+                        // Перерисовываем X и O с новыми цветами
+                        if (symbol.equals("X")) {
+                            updateCellStyle(btn, "X", false);
+                        } else if (symbol.equals("O")) {
+                            updateCellStyle(btn, "O", false);
+                        }
+                    } else {
+                        updateCellStyle(btn, " ", false);
+                    }
+                }
+            }
+        }
+    }
+    
     private void makeMove(int row, int col) {
         if (gameOver || !isMyTurn || waitingForOpponent) return;
         if (!board[row][col].getText().equals(" ")) return;
         
-        // Устанавливаем X с красивым стилем
+        // Устанавливаем X
         board[row][col].setText("X");
-        board[row][col].setStyle(
-            "-fx-background-color: #3498db; " +
-            "-fx-text-fill: white; " +
-            "-fx-font-size: 48px; " +
-            "-fx-font-weight: bold; " +
-            "-fx-border-radius: 12; " +
-            "-fx-background-radius: 12; " +
-            "-fx-cursor: default;"
-        );
+        updateCellStyle(board[row][col], "X", false);
         board[row][col].setDisable(true);
         
         isMyTurn = false;
         statusLabel.setText("Ожидание хода соперника...");
-        statusLabel.setStyle(String.format(
-            "-fx-text-fill: #f39c12; -fx-font-size: 18px; -fx-font-weight: bold;",
-            ThemeHelper.getTextColorHex()
-        ));
+        themeHelper.styleLabel(statusLabel, false);
         
         sendMove(row + "," + col);
         
@@ -161,17 +218,9 @@ public class TicTacToeModule extends FXGLGame {
         int row = Integer.parseInt(coords[0]);
         int col = Integer.parseInt(coords[1]);
         
-        // Устанавливаем O с красивым стилем
+        // Устанавливаем O
         board[row][col].setText("O");
-        board[row][col].setStyle(
-            "-fx-background-color: #e74c3c; " +
-            "-fx-text-fill: white; " +
-            "-fx-font-size: 48px; " +
-            "-fx-font-weight: bold; " +
-            "-fx-border-radius: 12; " +
-            "-fx-background-radius: 12; " +
-            "-fx-cursor: default;"
-        );
+        updateCellStyle(board[row][col], "O", false);
         board[row][col].setDisable(true);
         
         if (checkWin("O")) {
@@ -185,9 +234,7 @@ public class TicTacToeModule extends FXGLGame {
         } else {
             isMyTurn = true;
             statusLabel.setText("✅ Ваш ход!");
-            statusLabel.setStyle(String.format(
-                "-fx-text-fill: #27ae60; -fx-font-size: 18px; -fx-font-weight: bold;"
-            ));
+            themeHelper.styleLabel(statusLabel, false);
         }
     }
     
@@ -200,15 +247,10 @@ public class TicTacToeModule extends FXGLGame {
         
         if (isMyTurn) {
             statusLabel.setText("✅ Ваш ход!");
-            statusLabel.setStyle(String.format(
-                "-fx-text-fill: #27ae60; -fx-font-size: 18px; -fx-font-weight: bold;"
-            ));
         } else {
             statusLabel.setText("Ожидание хода соперника...");
-            statusLabel.setStyle(String.format(
-                "-fx-text-fill: #f39c12; -fx-font-size: 18px; -fx-font-weight: bold;"
-            ));
         }
+        themeHelper.styleLabel(statusLabel, false);
     }
     
     @Override
@@ -255,12 +297,7 @@ public class TicTacToeModule extends FXGLGame {
         for (int i = 0; i < cells.length; i += 2) {
             int row = cells[i];
             int col = cells[i+1];
-            board[row][col].setStyle(
-                board[row][col].getStyle() + 
-                "-fx-effect: dropshadow(gaussian, #f1c40f, 20, 0.8, 0, 0); " +
-                "-fx-border-color: #f1c40f; " +
-                "-fx-border-width: 3;"
-            );
+            updateCellStyle(board[row][col], board[row][col].getText(), true);
         }
     }
     

@@ -84,7 +84,7 @@ public class ChessModule extends FXGLGame {
         
         VBox root = new VBox(10);
         root.setAlignment(Pos.CENTER);
-        root.setStyle("-fx-padding: 20; -fx-background-color: #34495e;");
+        root.setStyle("-fx-padding: 20; -fx-background-color: #dadef7;");
         
         statusLabel = new Label(waitingForOpponent ? "Ожидание соперника..." : "Ваш ход!");
         statusLabel.setFont(Font.font(16));

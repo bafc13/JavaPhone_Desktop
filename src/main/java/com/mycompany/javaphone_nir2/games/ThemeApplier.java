@@ -6,6 +6,7 @@ package com.mycompany.javaphone_nir2.games;
 
 //import com.mycompany.javaphone_nir2.settings.Settings;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
+import javafx.application.Platform;
 import javafx.scene.Scene;
 
 public class ThemeApplier {
@@ -22,6 +23,8 @@ public class ThemeApplier {
         
         
         String currentTheme = Settings.getInstance().getTheme();
+        Platform.runLater(()->{
+            
         
         // Очищаем старые стили
         scene.getStylesheets().removeIf(s -> 
@@ -30,7 +33,7 @@ public class ThemeApplier {
         
         // Добавляем нужный CSS файл
         String cssFile = "dark".equals(currentTheme) ? 
-            "/css/chat_main_dark.css" : "/css/chat_main.css";
+            "/com/mycompany/javaphone_nir2/css/chat_main_dark.css" : "/com/mycompany/javaphone_nir2/css/chat_main.css";
         
         try {
             scene.getStylesheets().add(
@@ -44,12 +47,12 @@ public class ThemeApplier {
         // Добавляем специфичные для игр стили (опционально)
         try {
             scene.getStylesheets().add(
-                getClass().getResource("/css/game_styles.css").toExternalForm()
+                getClass().getResource("/com/mycompany/javaphone_nir2/css/game_styles.css").toExternalForm()
             );
         } catch (Exception e) {
             // game_styles.css опционален
         }
-        
+        });
         // Подписываемся на изменения темы
         subscribeToThemeChanges();
     }
@@ -59,20 +62,21 @@ public class ThemeApplier {
      */
     private void subscribeToThemeChanges() {
         Settings.getInstance().themeProperty().addListener((obs, oldTheme, newTheme) -> {
+            Platform.runLater(()->{
             if (scene != null) {
                 scene.getStylesheets().removeIf(s -> 
                     s.contains("chat_main.css") || s.contains("chat_main_dark.css")
                 );
                 
                 String cssFile = "dark".equals(newTheme) ? 
-                    "/css/chat_main_dark.css" : "/css/chat_main.css";
+                    "/com/mycompany/javaphone_nir2/css/chat_main_dark.css" : "/com/mycompany/javaphone_nir2/css/chat_main.css";
                 
                 scene.getStylesheets().add(
                     getClass().getResource(cssFile).toExternalForm()
                 );
                 
                 System.out.println("🎨 Game theme updated to: " + newTheme);
-            }
+            }});
         });
     }
 }
