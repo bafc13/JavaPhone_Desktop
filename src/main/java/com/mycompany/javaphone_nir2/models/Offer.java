@@ -9,6 +9,7 @@ package com.mycompany.javaphone_nir2.models;
  * @author bafc13
  */
 public class Offer {
+
     private String sdp;
     private String sender;
 

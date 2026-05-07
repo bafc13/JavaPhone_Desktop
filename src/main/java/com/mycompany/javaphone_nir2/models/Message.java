@@ -3,6 +3,7 @@ package com.mycompany.javaphone_nir2.models;
 import java.util.List;
 
 public class Message {
+
     private int id;
     private int chatId;
     private String senderPublicKey;
@@ -10,7 +11,8 @@ public class Message {
     private long time;           // Unix timestamp
     private List<Media> attachments; // optional, for convenience
 
-    public Message() {}
+    public Message() {
+    }
 
     public Message(int id, int chatId, String senderPublicKey, String content, long time) {
         this.id = id;
@@ -21,21 +23,51 @@ public class Message {
     }
 
     // Getters and setters
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
+    public int getId() {
+        return id;
+    }
 
-    public int getChatId() { return chatId; }
-    public void setChatId(int chatId) { this.chatId = chatId; }
+    public void setId(int id) {
+        this.id = id;
+    }
 
-    public String getSenderPublicKey() { return senderPublicKey; }
-    public void setSenderPublicKey(String senderPublicKey) { this.senderPublicKey = senderPublicKey; }
+    public int getChatId() {
+        return chatId;
+    }
 
-    public String getContent() { return content; }
-    public void setContent(String content) { this.content = content; }
+    public void setChatId(int chatId) {
+        this.chatId = chatId;
+    }
 
-    public long getTime() { return time; }
-    public void setTime(long time) { this.time = time; }
+    public String getSenderPublicKey() {
+        return senderPublicKey;
+    }
 
-    public List<Media> getAttachments() { return attachments; }
-    public void setAttachments(List<Media> attachments) { this.attachments = attachments; }
+    public void setSenderPublicKey(String senderPublicKey) {
+        this.senderPublicKey = senderPublicKey;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+    public long getTime() {
+        return time;
+    }
+
+    public void setTime(long time) {
+        this.time = time;
+    }
+
+    public List<Media> getAttachments() {
+        return attachments;
+    }
+
+    public void setAttachments(List<Media> attachments) {
+        this.attachments = attachments;
+    }
 }

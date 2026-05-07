@@ -12,7 +12,12 @@ import com.mycompany.javaphone_nir2.models.Offer;
  * @author Andrey
  */
 public interface JavaPhoneCallManager {
+
     public void handleContact(Contact contact);
+
     public void handleIncomingCall(Offer offer);
+
     public void handleIncomingCall(String callerKey);
+
+    public void handleCallAccepted();
 }

@@ -45,28 +45,50 @@ import javafx.util.Duration;
  */
 public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideoHandler {
 
-    @FXML private StackPane remoteVideoContainer;
-    @FXML private HBox headerContainer;
-    @FXML private StackPane localVideoContainer;
-    @FXML private SplitPane videoSplitPane;
-    @FXML private ListView<Message> callChatHistory;
-    @FXML private TextField callMessageInput;
-    @FXML private Button sendCallMessageButton;
-    @FXML private Button gameButton;
-    @FXML private HBox callControlContainer;
-    @FXML private Button micButton;
-    @FXML private Button filterButton;
-    @FXML private Button cameraButton;
-    @FXML private Button endCallButton;
-    @FXML private Label callStatusLabel;
-    @FXML private HBox messageContainer;
-    @FXML private HBox footerContainer;
-    @FXML private VBox chatContainer;
-    @FXML private StackPane videoContainer;
-    @FXML private WebRtcVideoPanel remoteVideo;
-    @FXML private WebRtcVideoPanel localVideo;
-    @FXML private Label remoteVideoLabel;
-    @FXML private Label localVideoLabel;
+    @FXML
+    private StackPane remoteVideoContainer;
+    @FXML
+    private HBox headerContainer;
+    @FXML
+    private StackPane localVideoContainer;
+    @FXML
+    private SplitPane videoSplitPane;
+    @FXML
+    private ListView<Message> callChatHistory;
+    @FXML
+    private TextField callMessageInput;
+    @FXML
+    private Button sendCallMessageButton;
+    @FXML
+    private Button gameButton;
+    @FXML
+    private HBox callControlContainer;
+    @FXML
+    private Button micButton;
+    @FXML
+    private Button filterButton;
+    @FXML
+    private Button cameraButton;
+    @FXML
+    private Button endCallButton;
+    @FXML
+    private Label callStatusLabel;
+    @FXML
+    private HBox messageContainer;
+    @FXML
+    private HBox footerContainer;
+    @FXML
+    private VBox chatContainer;
+    @FXML
+    private StackPane videoContainer;
+    @FXML
+    private WebRtcVideoPanel remoteVideo;
+    @FXML
+    private WebRtcVideoPanel localVideo;
+    @FXML
+    private Label remoteVideoLabel;
+    @FXML
+    private Label localVideoLabel;
 
     private HBox splitModeContainer;
 
@@ -88,12 +110,10 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
         handleStringMessage("System", "Звонок активен");
 
         callChatHistory.setEditable(false);
-        
+
         WebRTCManager.getInstance().setVideoHandler(this);
         WebRTCManager.getInstance().addChatHandler(this);
     }
-
-    
 
     /**
      * Initializes window resizing. Called from ChatController.startVideoCall()
@@ -200,8 +220,8 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
         }
     }
 
-    private void setCameraFilters(boolean setFilter){
-        if(setFilter) {
+    private void setCameraFilters(boolean setFilter) {
+        if (setFilter) {
             remoteVideo.setWarmthLevel(60);
             localVideo.setWarmthLevel(60);
         } else {
@@ -297,100 +317,100 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
     }
 
     /**
-    * Настраивает привязки размеров в зависимости от режима
-    */
+     * Настраивает привязки размеров в зависимости от режима
+     */
     private void setupVideoSizeBindings(VideoLayoutMode mode) {
-       // Получаем корневой контейнер
-       StackPane rootContainer = videoContainer;
+        // Получаем корневой контейнер
+        StackPane rootContainer = videoContainer;
 
-       // === Базовые привязки для доступного пространства ===
-       DoubleBinding availableWidth = Bindings.createDoubleBinding(() ->
-           Math.max(400, rootContainer.getWidth() - 40), // -40px отступы
-           rootContainer.widthProperty()
-       );
-       DoubleBinding availableHeight = Bindings.createDoubleBinding(() ->
-           Math.max(300, rootContainer.getHeight() - 40),
-           rootContainer.heightProperty()
-       );
+        // === Базовые привязки для доступного пространства ===
+        DoubleBinding availableWidth = Bindings.createDoubleBinding(()
+                -> Math.max(400, rootContainer.getWidth() - 40), // -40px отступы
+                rootContainer.widthProperty()
+        );
+        DoubleBinding availableHeight = Bindings.createDoubleBinding(()
+                -> Math.max(300, rootContainer.getHeight() - 40),
+                rootContainer.heightProperty()
+        );
 
-       // === Привязки для PiP режима ===
-       DoubleBinding pipMainWidth = availableWidth;
-       DoubleBinding pipMainHeight = availableHeight;
+        // === Привязки для PiP режима ===
+        DoubleBinding pipMainWidth = availableWidth;
+        DoubleBinding pipMainHeight = availableHeight;
 
-       DoubleBinding pipSmallWidth = Bindings.createDoubleBinding(() ->
-           pipMainWidth.get() * 0.25, // 25% от главной
-           pipMainWidth
-       );
-       DoubleBinding pipSmallHeight = Bindings.createDoubleBinding(() ->
-           pipSmallWidth.get() * 0.75, // 4:3 пропорция
-           pipSmallWidth
-       );
+        DoubleBinding pipSmallWidth = Bindings.createDoubleBinding(()
+                -> pipMainWidth.get() * 0.25, // 25% от главной
+                pipMainWidth
+        );
+        DoubleBinding pipSmallHeight = Bindings.createDoubleBinding(()
+                -> pipSmallWidth.get() * 0.75, // 4:3 пропорция
+                pipSmallWidth
+        );
 
-       // === Привязки для Split режима (каждая ~48% ширины) ===
-       DoubleBinding splitWidth = Bindings.createDoubleBinding(() ->
-           (availableWidth.get() - 10) * 0.48, // -10px зазор, 48% каждая
-           availableWidth
-       );
-       DoubleBinding splitHeight = availableHeight;
+        // === Привязки для Split режима (каждая ~48% ширины) ===
+        DoubleBinding splitWidth = Bindings.createDoubleBinding(()
+                -> (availableWidth.get() - 10) * 0.48, // -10px зазор, 48% каждая
+                availableWidth
+        );
+        DoubleBinding splitHeight = availableHeight;
 
-       // === Применяем привязки ===
-       unbindAllSizeProperties(remoteVideoContainer);
-       unbindAllSizeProperties(localVideoContainer);
+        // === Применяем привязки ===
+        unbindAllSizeProperties(remoteVideoContainer);
+        unbindAllSizeProperties(localVideoContainer);
 
-       switch (mode) {
-           case PIP_PRIMARY_FIRST:
-               bindPane(remoteVideoContainer, pipMainWidth, pipMainHeight, true);
-               bindPane(localVideoContainer, pipSmallWidth, pipSmallHeight, false);
-               break;
-           case PIP_PRIMARY_SECOND:
-               bindPane(localVideoContainer, pipMainWidth, pipMainHeight, true);
-               bindPane(remoteVideoContainer, pipSmallWidth, pipSmallHeight, false);
-               break;
-           case SPLIT:
-               // В Split режиме HBox сам управляет шириной через Hgrow,
-               // но задаём min/max для корректного сжатия
-               bindPane(remoteVideoContainer, splitWidth, splitHeight, true);
-               bindPane(localVideoContainer, splitWidth, splitHeight, true);
-               break;
-       }
-   }
+        switch (mode) {
+            case PIP_PRIMARY_FIRST:
+                bindPane(remoteVideoContainer, pipMainWidth, pipMainHeight, true);
+                bindPane(localVideoContainer, pipSmallWidth, pipSmallHeight, false);
+                break;
+            case PIP_PRIMARY_SECOND:
+                bindPane(localVideoContainer, pipMainWidth, pipMainHeight, true);
+                bindPane(remoteVideoContainer, pipSmallWidth, pipSmallHeight, false);
+                break;
+            case SPLIT:
+                // В Split режиме HBox сам управляет шириной через Hgrow,
+                // но задаём min/max для корректного сжатия
+                bindPane(remoteVideoContainer, splitWidth, splitHeight, true);
+                bindPane(localVideoContainer, splitWidth, splitHeight, true);
+                break;
+        }
+    }
 
-   /**
-    * Убирает все привязки размеров с панели
-    */
-   private void unbindAllSizeProperties(StackPane pane) {
-       pane.prefWidthProperty().unbind();
-       pane.prefHeightProperty().unbind();
-       pane.minWidthProperty().unbind();
-       pane.minHeightProperty().unbind();
-       pane.maxWidthProperty().unbind();
-       pane.maxHeightProperty().unbind();
-       // Сбрасываем к дефолтным значениям
-       pane.setPrefWidth(Region.USE_COMPUTED_SIZE);
-       pane.setPrefHeight(Region.USE_COMPUTED_SIZE);
-   }
+    /**
+     * Убирает все привязки размеров с панели
+     */
+    private void unbindAllSizeProperties(StackPane pane) {
+        pane.prefWidthProperty().unbind();
+        pane.prefHeightProperty().unbind();
+        pane.minWidthProperty().unbind();
+        pane.minHeightProperty().unbind();
+        pane.maxWidthProperty().unbind();
+        pane.maxHeightProperty().unbind();
+        // Сбрасываем к дефолтным значениям
+        pane.setPrefWidth(Region.USE_COMPUTED_SIZE);
+        pane.setPrefHeight(Region.USE_COMPUTED_SIZE);
+    }
 
-   /**
-    * Привязывает размеры панели с опцией "гибкости" (для Split режима)
-    */
-   private void bindPane(StackPane pane, DoubleBinding width, DoubleBinding height, boolean flexible) {
-       pane.prefWidthProperty().bind(width);
-       pane.prefHeightProperty().bind(height);
+    /**
+     * Привязывает размеры панели с опцией "гибкости" (для Split режима)
+     */
+    private void bindPane(StackPane pane, DoubleBinding width, DoubleBinding height, boolean flexible) {
+        pane.prefWidthProperty().bind(width);
+        pane.prefHeightProperty().bind(height);
 
-       if (flexible) {
-           // В Split режиме позволяем сжиматься/растягиваться
-           pane.minWidthProperty().bind(width.multiply(0.5));
-           pane.minHeightProperty().bind(height.multiply(0.8));
-           pane.setMaxWidth(Double.MAX_VALUE);
-           pane.setMaxHeight(Double.MAX_VALUE);
-       } else {
-           // В PiP маленькая камера — фиксированный размер
-           pane.minWidthProperty().bind(width);
-           pane.minHeightProperty().bind(height);
-           pane.maxWidthProperty().bind(width);
-           pane.maxHeightProperty().bind(height);
-       }
-   }
+        if (flexible) {
+            // В Split режиме позволяем сжиматься/растягиваться
+            pane.minWidthProperty().bind(width.multiply(0.5));
+            pane.minHeightProperty().bind(height.multiply(0.8));
+            pane.setMaxWidth(Double.MAX_VALUE);
+            pane.setMaxHeight(Double.MAX_VALUE);
+        } else {
+            // В PiP маленькая камера — фиксированный размер
+            pane.minWidthProperty().bind(width);
+            pane.minHeightProperty().bind(height);
+            pane.maxWidthProperty().bind(width);
+            pane.maxHeightProperty().bind(height);
+        }
+    }
 
     /**
      * Настраивает переключение режима по клику
@@ -440,7 +460,6 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
         event.consume();
     }
 
-
     public void loadCallChatHistory(List<Message> messages) {
         callChatHistory.getItems().setAll(messages);
         // Прокрутка в конец после загрузки
@@ -470,7 +489,6 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
 
         chatContainer.getStyleClass().add("message-container");
     }
-
 
     /**
      * send message to call chat
@@ -525,9 +543,7 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
 
     private void openGameChooser() {
 
-
         //that how i think we might choose themes (example with putting theme and listen to changes)
-
         //scene.getStylesheets().add(getClass().getResource("dark".equals(settings.getTheme()) ?
         //                    "css/chat_main_dark.css"
         //                    : "css/chat_main.css").toExternalForm());
@@ -538,25 +554,24 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
         //                    "css/chat_main_dark.css"
         //                    : "css/chat_main.css").toExternalForm());
         //            });
-
         if (WebRTCManager.getInstance().isGameChannelReady()) {
-        GameMenuApp.getInstance().showGameSelection();
-    } else {
-        // Ждём открытия канала
-        WebRTCManager.getInstance().setOnGameChannelReady(() -> {
             GameMenuApp.getInstance().showGameSelection();
-        });
+        } else {
+            // Ждём открытия канала
+            WebRTCManager.getInstance().setOnGameChannelReady(() -> {
+                GameMenuApp.getInstance().showGameSelection();
+            });
 
-    }
+        }
     }
 
     private void setupCloseInterceptor(Stage stage) {
         stage.setOnCloseRequest(event -> {
-                        WebRTCManager.getInstance().cleanup();
-                        closeWindow();
-                        WebRTCManager.getInstance().cleanup();
-                        event.consume();
-                    });
+            WebRTCManager.getInstance().cleanup();
+            closeWindow();
+            WebRTCManager.getInstance().cleanup();
+            event.consume();
+        });
     }
 
     private void closeWindow() {
@@ -569,8 +584,8 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
     }
 
     /**
-     * Простая генерация уникального ID (заглушка)
-     * В реальном приложении — использовать базу данных или UUID
+     * Простая генерация уникального ID (заглушка) В реальном приложении —
+     * использовать базу данных или UUID
      */
     private int generateMessageId() {
         return (int) (System.currentTimeMillis() % Integer.MAX_VALUE);
@@ -618,4 +633,3 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
         });
     }
 }
-

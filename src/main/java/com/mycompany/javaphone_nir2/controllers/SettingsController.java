@@ -24,48 +24,89 @@ import javafx.stage.Window;
 
 public class SettingsController {
 
-    @FXML private Label audioBitrateLabel;
-    @FXML private TextField audioBitrateField;
+    @FXML
+    private Label audioBitrateLabel;
+    @FXML
+    private TextField audioBitrateField;
 //    @FXML private ImageView avatarView;
-    @FXML private Label avatarView;
-    @FXML private Label cameraLabel;
-    @FXML private ComboBox<String> cameraComboBox;
-    @FXML private Button discardButton;
-    @FXML private TextField keyField;
-    @FXML private Label keyLabel;
-    @FXML private VBox mainContainer;
-    @FXML private StackPane gradientBackgroundContainer;
-    @FXML private Label microphoneLabel;
-    @FXML private ComboBox<String> microphoneComboBox;
-    @FXML private Label microphoneVolumeLabel;
-    @FXML private Slider microphoneVolumeSlider;
-    @FXML private TextField nicknameField;
-    @FXML private Label nicknameLabel;
-    @FXML private Label notificationsLabel;
-    @FXML private HBox notificationsSliderContainer;
-    @FXML private Label onNotificationsLabel;
-    @FXML private Label offNotificationsLabel;
-    @FXML private ToggleButton notificationsToggleButtonSelector;
-    @FXML private Circle notificationsToggleButtonSelectorCircle;
-    @FXML private Button regenerateKeyButton;
-    @FXML private Button saveButton;
-    @FXML private Label speakerLabel;
-    @FXML private ComboBox<String> speakerComboBox;
-    @FXML private Label speakerVolumeLabel;
-    @FXML private Slider speakerVolumeSlider;
-    @FXML private Label themeLabel;
-    @FXML private HBox themeSliderContainer;
-    @FXML private Label darkThemeLabel;
-    @FXML private Label lightThemeLabel;
-    @FXML private ToggleButton themeToggleButtonSelector;
-    @FXML private Circle themeToggleButtonSelectorCircle;
-    @FXML private Button uploadAvatarButton;
-    @FXML private Label uploadedLabel;
-    @FXML private Label uploadInfoLabel;
-    @FXML private TextField urlField;
-    @FXML private Label urlLabel;
-    @FXML private Label videoBitrateLabel;
-    @FXML private TextField videoBitrateField;
+    @FXML
+    private Label avatarView;
+    @FXML
+    private Label cameraLabel;
+    @FXML
+    private ComboBox<String> cameraComboBox;
+    @FXML
+    private Button discardButton;
+    @FXML
+    private TextField keyField;
+    @FXML
+    private Label keyLabel;
+    @FXML
+    private VBox mainContainer;
+    @FXML
+    private StackPane gradientBackgroundContainer;
+    @FXML
+    private Label microphoneLabel;
+    @FXML
+    private ComboBox<String> microphoneComboBox;
+    @FXML
+    private Label microphoneVolumeLabel;
+    @FXML
+    private Slider microphoneVolumeSlider;
+    @FXML
+    private TextField nicknameField;
+    @FXML
+    private Label nicknameLabel;
+    @FXML
+    private Label notificationsLabel;
+    @FXML
+    private HBox notificationsSliderContainer;
+    @FXML
+    private Label onNotificationsLabel;
+    @FXML
+    private Label offNotificationsLabel;
+    @FXML
+    private ToggleButton notificationsToggleButtonSelector;
+    @FXML
+    private Circle notificationsToggleButtonSelectorCircle;
+    @FXML
+    private Button regenerateKeyButton;
+    @FXML
+    private Button saveButton;
+    @FXML
+    private Label speakerLabel;
+    @FXML
+    private ComboBox<String> speakerComboBox;
+    @FXML
+    private Label speakerVolumeLabel;
+    @FXML
+    private Slider speakerVolumeSlider;
+    @FXML
+    private Label themeLabel;
+    @FXML
+    private HBox themeSliderContainer;
+    @FXML
+    private Label darkThemeLabel;
+    @FXML
+    private Label lightThemeLabel;
+    @FXML
+    private ToggleButton themeToggleButtonSelector;
+    @FXML
+    private Circle themeToggleButtonSelectorCircle;
+    @FXML
+    private Button uploadAvatarButton;
+    @FXML
+    private Label uploadedLabel;
+    @FXML
+    private Label uploadInfoLabel;
+    @FXML
+    private TextField urlField;
+    @FXML
+    private Label urlLabel;
+    @FXML
+    private Label videoBitrateLabel;
+    @FXML
+    private TextField videoBitrateField;
 
     private SettingsManager settings;
 
@@ -152,9 +193,9 @@ public class SettingsController {
 
     private void setupCloseInterceptor(Stage stage) {
         stage.setOnCloseRequest(event -> {
-                        onDiscardButtonClicked();
-                        event.consume();
-                    });
+            onDiscardButtonClicked();
+            event.consume();
+        });
     }
 
     // === 2. 🔥 РЕАКТИВНАЯ ПРИВЯЗКА (заменяет setSettingsValues) ===
@@ -313,7 +354,7 @@ public class SettingsController {
         urlField.setText(settings.getSignalingUrl());
 
         // 3. Слушатель: поле → модель (при потере фокуса)
-            urlField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
+        urlField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
             if (!isNowFocused) { // Только когда пользователь закончил ввод
                 String url = urlField.getText().trim();
                 Optional<String> error = settings.validateSignalingUrl(url);

@@ -12,7 +12,6 @@ public class Contact {
     /**
      * HEX
      */
-
     private String avatarColor;
 
     public Contact(String name, String status, String avatarColor, String key) {
@@ -40,7 +39,7 @@ public class Contact {
     public String getAvatarColor() {
         return avatarColor;
     }
-    
+
     public String getKey() {
         return key;
     }
@@ -56,7 +55,7 @@ public class Contact {
     public void setAvatarColor(String avatarColor) {
         this.avatarColor = avatarColor;
     }
-    
+
     public void setKey(String key) {
         this.key = key;
     }

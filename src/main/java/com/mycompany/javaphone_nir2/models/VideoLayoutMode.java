@@ -12,7 +12,7 @@ package com.mycompany.javaphone_nir2.models;
  * Режимы отображения видео-панелей в звонке
  */
 public enum VideoLayoutMode {
-    PIP_PRIMARY_FIRST,   // Большая: камера 1, маленькая в углу: камера 2
-    PIP_PRIMARY_SECOND,  // Большая: камера 2, маленькая в углу: камера 1
+    PIP_PRIMARY_FIRST, // Большая: камера 1, маленькая в углу: камера 2
+    PIP_PRIMARY_SECOND, // Большая: камера 2, маленькая в углу: камера 1
     SPLIT                // Обе камеры одинакового размера
 }

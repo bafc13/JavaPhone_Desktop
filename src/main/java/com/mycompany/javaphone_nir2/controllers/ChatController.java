@@ -47,18 +47,31 @@ import javafx.util.Duration;
  * buttons (Exit, Settings)
  */
 public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManager {
-    @FXML private ListView<Contact> contactsList;
-    @FXML private HBox headerContainer;
-    @FXML private VBox contactsContainer;
-    @FXML private HBox messageContainer;
-    @FXML private ListView<Message> chatHistory;
-    @FXML private TextField messageInput;
-    @FXML private Button sendButton;
-    @FXML private Button callButton;
-    @FXML private Button settingsButton;
-    @FXML private Button exitButton;
-    @FXML private Label chatTitleLabel;
-    @FXML private SplitPane mainSplitPane;
+
+    @FXML
+    private ListView<Contact> contactsList;
+    @FXML
+    private HBox headerContainer;
+    @FXML
+    private VBox contactsContainer;
+    @FXML
+    private HBox messageContainer;
+    @FXML
+    private ListView<Message> chatHistory;
+    @FXML
+    private TextField messageInput;
+    @FXML
+    private Button sendButton;
+    @FXML
+    private Button callButton;
+    @FXML
+    private Button settingsButton;
+    @FXML
+    private Button exitButton;
+    @FXML
+    private Label chatTitleLabel;
+    @FXML
+    private SplitPane mainSplitPane;
 
     private ObservableMap<String, Contact> contacts;
     private List<ChangeListener<Number>> popupWindowListeners = new ArrayList<>();
@@ -74,7 +87,7 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
     private final SettingsManager settings = SettingsManager.getInstance();
 
     private final WebRTCManager webRtcManager = WebRTCManager.getInstance();
-    
+
     private SignalingClient signalingClient = null;
 
     public Offer offer;
@@ -88,10 +101,11 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
         checkRegistration();
         initSignalingClient();
 
-        
+        webRtcManager.setCallManager(this);
+        webRtcManager.addChatHandler(this);
     }
 
-    private void initSignalingClient(){
+    private void initSignalingClient() {
 
         SignalingClient.initialize(settings.getSignalingUrl());
 
@@ -104,20 +118,20 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
 
     private void setupCloseInterceptor(Stage stage) {
         stage.setOnCloseRequest(event -> {
-                        if(webRtcManager != null) {
-                            webRtcManager.cleanup();
-                        }
-                        if (SignalingClient.getInstance() != null){
-                            try {
-                                SignalingClient.getInstance().disconnect();
-                            } catch (IOException ex) {
-                                Logger.getLogger(ChatController.class.getName()).log(Level.SEVERE, null, ex);
-                            }
-                        }
+            if (webRtcManager != null) {
+                webRtcManager.cleanup();
+            }
+            if (SignalingClient.getInstance() != null) {
+                try {
+                    SignalingClient.getInstance().disconnect();
+                } catch (IOException ex) {
+                    Logger.getLogger(ChatController.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
 
-                        closeWindow();
-                        event.consume();
-                    });
+            closeWindow();
+            event.consume();
+        });
     }
 
     private void setupGlobalKeyboardNavigation(Stage stage) {
@@ -133,17 +147,22 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
     }
 
     /**
-    * Переключает выделение в списке чатов с циклической прокруткой
-    */
+     * Переключает выделение в списке чатов с циклической прокруткой
+     */
     private void switchChat(int direction) {
         int currentIndex = contactsList.getSelectionModel().getSelectedIndex();
         int size = contactsList.getItems().size();
-        if (size == 0) return;
+        if (size == 0) {
+            return;
+        }
 
         // Циклическая навигация: внизу → наверх, вверху → вниз
         int nextIndex = currentIndex + direction;
-        if (nextIndex < 0) nextIndex = size - 1;
-        else if (nextIndex >= size) nextIndex = 0;
+        if (nextIndex < 0) {
+            nextIndex = size - 1;
+        } else if (nextIndex >= size) {
+            nextIndex = 0;
+        }
 
         // Выделяем новый чат → сработает твой существующий слушатель выделения
         contactsList.getSelectionModel().select(nextIndex);
@@ -241,8 +260,8 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
     }
 
     /**
-    * notificaion pos update func
-    */
+     * notificaion pos update func
+     */
     private void updateCallPopupPosition() {
 //        if (incomingCallPopup == null || !incomingCallPopup.isShowing()) {
 //            return;
@@ -262,9 +281,9 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
 
             if (bounds != null && incomingCallPopup != null) {
                 incomingCallPopup.show(
-                    callButton.getScene().getWindow(),
-                    bounds.getCenterX() - 140,
-                    bounds.getCenterY() + 26
+                        callButton.getScene().getWindow(),
+                        bounds.getCenterX() - 140,
+                        bounds.getCenterY() + 26
                 );
             }
         });
@@ -297,15 +316,14 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
                 window.showingProperty().removeListener(popupWindowShowingListener);
                 popupWindowShowingListener = null;
 
-
-            //deleting focus listener
-            if (popupWindowFocusListener != null) {
-                window.focusedProperty().removeListener(popupWindowFocusListener);
-                popupWindowFocusListener = null;
+                //deleting focus listener
+                if (popupWindowFocusListener != null) {
+                    window.focusedProperty().removeListener(popupWindowFocusListener);
+                    popupWindowFocusListener = null;
+                }
             }
-        }
 
-        incomingCallPopup.hide();
+            incomingCallPopup.hide();
 
         }
     }
@@ -333,6 +351,7 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
 
     /**
      * starting video call with contact
+     *
      * @param contact contact to start call with
      */
     private void startVideoCallWithContact(Contact contact) {
@@ -340,22 +359,21 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
             //здесь уже вызываем sendAnswer с sdp и клиент id
 
 //            SignalingClient.getInstance().sendAccept(offer.getSdp(), offer.getSender());
-
             FXMLLoader loader = new FXMLLoader(
                     getClass().getResource("/com/mycompany/javaphone_nir2/fxml/video_call.fxml") //the path is searched from the classpath
             );
 
             Scene scene = new Scene(loader.load(), 1200, 700);
-            scene.getStylesheets().add(getClass().getResource("dark".equals(settings.getTheme()) ?
-                                "/com/mycompany/javaphone_nir2/css/video_call_dark.css"
-                                : "/com/mycompany/javaphone_nir2/css/video_call.css").toExternalForm());
+            scene.getStylesheets().add(getClass().getResource("dark".equals(settings.getTheme())
+                    ? "/com/mycompany/javaphone_nir2/css/video_call_dark.css"
+                    : "/com/mycompany/javaphone_nir2/css/video_call.css").toExternalForm());
 
             settings.themeProperty().addListener((obs, oldTheme, newTheme) -> {
                 scene.getStylesheets().removeIf(s -> s.contains("/com/mycompany/javaphone_nir2/css/video_call_dark.css")
                         || s.contains("/com/mycompany/javaphone_nir2/css/video_call.css"));
-                scene.getStylesheets().add(getClass().getResource("dark".equals(newTheme) ?
-                           "/com/mycompany/javaphone_nir2/css/video_call_dark.css"
-                                : "/com/mycompany/javaphone_nir2/css/video_call.css").toExternalForm());
+                scene.getStylesheets().add(getClass().getResource("dark".equals(newTheme)
+                        ? "/com/mycompany/javaphone_nir2/css/video_call_dark.css"
+                        : "/com/mycompany/javaphone_nir2/css/video_call.css").toExternalForm());
             });
 
             Stage videoStage = new Stage();
@@ -385,7 +403,7 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
     }
 
     private void checkRegistration() {
-        if(settings.isRegistered()) {
+        if (settings.isRegistered()) {
             //starting timer to demonstrate popup
 //            scheduleIncomingCallTimer();
         } else {
@@ -436,18 +454,18 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
         callButton.getStyleClass().add("header-button");
 
         exitButton.setOnAction(e -> {
-            if(webRtcManager != null) {
-                            webRtcManager.cleanup();
-                        }
-                        if (SignalingClient.getInstance() != null){
-                            try {
-                                SignalingClient.getInstance().disconnect();
-                            } catch (IOException ex) {
-                                Logger.getLogger(ChatController.class.getName()).log(Level.SEVERE, null, ex);
-                            }
-                        }
+            if (webRtcManager != null) {
+                webRtcManager.cleanup();
+            }
+            if (SignalingClient.getInstance() != null) {
+                try {
+                    SignalingClient.getInstance().disconnect();
+                } catch (IOException ex) {
+                    Logger.getLogger(ChatController.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
             closeWindow();
-                });
+        });
         exitButton.getStyleClass().add("header-button");
     }
 
@@ -653,31 +671,31 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
 //        startVideoCallWithContact(selectedContact);
     }
 
-   /**
-    * Простая генерация уникального ID (заглушка)
-    * В реальном приложении — использовать базу данных или UUID
-    */
-   private int generateMessageId() {
-       return (int) (System.currentTimeMillis() % Integer.MAX_VALUE);
-   }
+    /**
+     * Простая генерация уникального ID (заглушка) В реальном приложении —
+     * использовать базу данных или UUID
+     */
+    private int generateMessageId() {
+        return (int) (System.currentTimeMillis() % Integer.MAX_VALUE);
+    }
 
     private void openSettings() {
-         try {
+        try {
             FXMLLoader loader = new FXMLLoader(
                     getClass().getResource("/com/mycompany/javaphone_nir2/fxml/settings.fxml") //the path is searched from the classpath
             );
 
             Scene scene = new Scene(loader.load(), 500, 465);
-            scene.getStylesheets().add(getClass().getResource("dark".equals(settings.getTheme()) ?
-                                "/com/mycompany/javaphone_nir2/css/settings_dark.css"
-                                : "/com/mycompany/javaphone_nir2/css/settings.css").toExternalForm());
+            scene.getStylesheets().add(getClass().getResource("dark".equals(settings.getTheme())
+                    ? "/com/mycompany/javaphone_nir2/css/settings_dark.css"
+                    : "/com/mycompany/javaphone_nir2/css/settings.css").toExternalForm());
 
             settings.themeProperty().addListener((obs, oldTheme, newTheme) -> {
                 scene.getStylesheets().removeIf(s -> s.contains("/com/mycompany/javaphone_nir2/css/settings_dark.css")
                         || s.contains("/com/mycompany/javaphone_nir2/css/settings.css"));
-                scene.getStylesheets().add(getClass().getResource("dark".equals(newTheme) ?
-                           "/com/mycompany/javaphone_nir2/css/settings_dark.css"
-                                : "/com/mycompany/javaphone_nir2/css/settings.css").toExternalForm());
+                scene.getStylesheets().add(getClass().getResource("dark".equals(newTheme)
+                        ? "/com/mycompany/javaphone_nir2/css/settings_dark.css"
+                        : "/com/mycompany/javaphone_nir2/css/settings.css").toExternalForm());
             });
 
             Stage settingsStage = new Stage();
@@ -720,15 +738,15 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
     @Override
     public void handleMessage(Message message) {
         // Добавляем в конец списка
-       chatHistory.getItems().add(message);
+        chatHistory.getItems().add(message);
 
-       // 🔥 Прокрутка вниз к новому сообщению
-       Platform.runLater(() -> {
-           int lastIndex = chatHistory.getItems().size() - 1;
-           if (lastIndex >= 0) {
-               chatHistory.scrollTo(lastIndex);
-           }
-       });
+        // 🔥 Прокрутка вниз к новому сообщению
+        Platform.runLater(() -> {
+            int lastIndex = chatHistory.getItems().size() - 1;
+            if (lastIndex >= 0) {
+                chatHistory.scrollTo(lastIndex);
+            }
+        });
     }
 
     @Override
@@ -748,7 +766,7 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
 
         incomingCallContact = contacts.getOrDefault(callerKey, null);
         if (incomingCallContact != null) {
-            Platform.runLater( () -> {
+            Platform.runLater(() -> {
                 initIncomingCallNotification();
                 showIncomingCallNotification();
             });
@@ -759,13 +777,13 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
     public void handleIncomingCall(String callerKey) {
         incomingCallContact = contacts.getOrDefault(callerKey, null);
         if (incomingCallContact != null) {
-            Platform.runLater( () -> {
+            Platform.runLater(() -> {
                 initIncomingCallNotification();
                 showIncomingCallNotification();
             });
         }
     }
-    
+
     @Override
     public void handleCallAccepted() {
         Platform.runLater(() -> {
@@ -773,4 +791,3 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
         });
     }
 }
-

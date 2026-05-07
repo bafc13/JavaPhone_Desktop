@@ -11,6 +11,8 @@ import com.mycompany.javaphone_nir2.models.Message;
  * @author Andrey
  */
 public interface JavaPhoneChatHandler {
+
     public void handleStringMessage(String sender, String content);
+
     public void handleMessage(Message message);
 }

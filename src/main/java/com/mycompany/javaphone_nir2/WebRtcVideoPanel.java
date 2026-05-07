@@ -33,15 +33,23 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
     private int frameWidth = -1;
     private int frameHeight = -1;
 
-        // 0 = без фильтра, 100 = максимум «желтизны»
+    // 0 = без фильтра, 100 = максимум «желтизны»
     private final IntegerProperty warmthLevel = new SimpleIntegerProperty(this, "warmthLevel", 0);
-    public final int getWarmthLevel() { return warmthLevel.get(); }
-    public final void setWarmthLevel(int value) { warmthLevel.set(value); }
-    public IntegerProperty warmthLevelProperty() { return warmthLevel; }
+
+    public final int getWarmthLevel() {
+        return warmthLevel.get();
+    }
+
+    public final void setWarmthLevel(int value) {
+        warmthLevel.set(value);
+    }
+
+    public IntegerProperty warmthLevelProperty() {
+        return warmthLevel;
+    }
 
     // Чтобы не забивать FX-очередь, держим флаг «кадр в обработке»
     private final AtomicBoolean frameInQueue = new AtomicBoolean(false);
-
 
     public WebRtcVideoPanel() {
         getChildren().add(canvas);
@@ -144,17 +152,19 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
         int pixelCount = width * height;
         int bytes = pixelCount * 4;
 
-        boolean recreate =
-                pixelBuffer == null ||
-                videoImage == null ||
-                argbNativeBuffer == null ||
-                fxArgbBuffer == null ||
-                frameWidth != width ||
-                frameHeight != height ||
-                argbNativeBuffer.capacity() < bytes ||
-                fxArgbBuffer.capacity() < pixelCount;
+        boolean recreate
+                = pixelBuffer == null
+                || videoImage == null
+                || argbNativeBuffer == null
+                || fxArgbBuffer == null
+                || frameWidth != width
+                || frameHeight != height
+                || argbNativeBuffer.capacity() < bytes
+                || fxArgbBuffer.capacity() < pixelCount;
 
-        if (!recreate) return;
+        if (!recreate) {
+            return;
+        }
 
         frameWidth = width;
         frameHeight = height;
@@ -176,8 +186,7 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
      * libyuv/WebRTC для FOURCC_ARGB на little-endian хранит байты в памяти как:
      * [B, G, R, A]
      *
-     * JavaFX IntArgbPre ожидает int вида:
-     * 0xAARRGGBB
+     * JavaFX IntArgbPre ожидает int вида: 0xAARRGGBB
      */
     private void convertNativeArgbToFxArgb(ByteBuffer src, IntBuffer dst, int width, int height) {
         int pixels = width * height;
@@ -201,9 +210,9 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
         int warmth = Math.max(0, Math.min(100, getWarmthLevel()));
 
         // Коэффициенты влияния (подбираются «на глаз»)
-        float redBoost   = 0.3f * warmth / 100f;   // до +30% к красному
+        float redBoost = 0.3f * warmth / 100f;   // до +30% к красному
         float greenBoost = 0.15f * warmth / 100f;  // до +15% к зелёному
-        float blueCut    = 0.4f * warmth / 100f;   // до −40% синего
+        float blueCut = 0.4f * warmth / 100f;   // до −40% синего
 
         for (int i = 0; i < pixels; i++) {
             int b = src.get() & 0xFF;

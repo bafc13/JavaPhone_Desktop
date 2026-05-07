@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Scanner;
 
 public class DatabaseManager {
+
     private final String url;
 
     public DatabaseManager(String dbFilePath) {
@@ -27,7 +28,7 @@ public class DatabaseManager {
         }
         return conn;
     }
-    
+
     public void createTables() {
         String sql;
         try (InputStream is = getClass().getResourceAsStream("/0000_javaphone_create_db.sql")) {
@@ -45,14 +46,13 @@ public class DatabaseManager {
             throw new DatabaseException("Schema resource is empty");
         }
 
-        try (Connection conn = connect();
-             Statement stmt = conn.createStatement()) {
+        try (Connection conn = connect(); Statement stmt = conn.createStatement()) {
             stmt.executeUpdate(sql);
         } catch (SQLException e) {
             throw new DatabaseException("Failed to create tables", e);
         }
     }
-    
+
     public void deleteAllData() {
         String[] tables = {"attachments", "messages", "chats_users", "chats", "media", "users"};
         try (Connection conn = connect()) {
@@ -75,8 +75,7 @@ public class DatabaseManager {
 
     public boolean checkUserExists(String publicKey) {
         String sql = "SELECT 1 FROM users WHERE public_key = ?";
-        try (Connection conn = connect();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, publicKey);
             try (ResultSet rs = pstmt.executeQuery()) {
                 return rs.next();
@@ -88,8 +87,7 @@ public class DatabaseManager {
 
     public void updateUserName(String publicKey, String newName) {
         String sql = "UPDATE users SET name = ? WHERE public_key = ?";
-        try (Connection conn = connect();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, newName);
             pstmt.setString(2, publicKey);
             int affected = pstmt.executeUpdate();
@@ -103,8 +101,7 @@ public class DatabaseManager {
 
     public void addUser(User user) {
         String sql = "INSERT INTO users (public_key, name, email, ip, avatar_id) VALUES (?, ?, ?, ?, ?)";
-        try (Connection conn = connect();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, user.getPublicKey());
             pstmt.setString(2, user.getName());
             pstmt.setString(3, user.getEmail());
@@ -122,8 +119,7 @@ public class DatabaseManager {
 
     public User findUserByPublicKey(String publicKey) {
         String sql = "SELECT public_key, name, email, ip, avatar_id FROM users WHERE public_key = ?";
-        try (Connection conn = connect();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, publicKey);
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
@@ -148,8 +144,7 @@ public class DatabaseManager {
     public List<User> findUserByName(String name) {
         String sql = "SELECT public_key, name, email, ip, avatar_id FROM users WHERE name = ?";
         List<User> users = new ArrayList<>();
-        try (Connection conn = connect();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, name);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
@@ -174,9 +169,7 @@ public class DatabaseManager {
     public List<User> getAllUsers() {
         String sql = "SELECT public_key, name, email, ip, avatar_id FROM users";
         List<User> users = new ArrayList<>();
-        try (Connection conn = connect();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
+        try (Connection conn = connect(); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 User user = new User();
                 user.setPublicKey(rs.getString("public_key"));
@@ -197,18 +190,18 @@ public class DatabaseManager {
 
     /**
      * Get or create a direct message (dm) chat between two users.
+     *
      * @param userPublicKey1 first participant
      * @param userPublicKey2 second participant
      * @return chat id
      */
     public int getOrCreateDmChat(String userPublicKey) {
         // Check if a dm chat already exists with exactly these two participants
-        String findSql = "SELECT c.id FROM chats c " +
-                "INNER JOIN chats_users cu ON c.id = cu.chat_id " +
-                "WHERE c.type = 'dm' ";
+        String findSql = "SELECT c.id FROM chats c "
+                + "INNER JOIN chats_users cu ON c.id = cu.chat_id "
+                + "WHERE c.type = 'dm' ";
 
-        try (Connection conn = connect();
-             PreparedStatement pstmt = conn.prepareStatement(findSql)) {
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(findSql)) {
             pstmt.setString(1, userPublicKey);
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
@@ -262,13 +255,12 @@ public class DatabaseManager {
     }
 
     public List<User> getChatParticipants(int chatId) {
-        String sql = "SELECT u.public_key, u.name, u.email, u.ip, u.avatar_id " +
-                "FROM users u " +
-                "INNER JOIN chats_users cu ON u.public_key = cu.user_public_key " +
-                "WHERE cu.chat_id = ?";
+        String sql = "SELECT u.public_key, u.name, u.email, u.ip, u.avatar_id "
+                + "FROM users u "
+                + "INNER JOIN chats_users cu ON u.public_key = cu.user_public_key "
+                + "WHERE cu.chat_id = ?";
         List<User> users = new ArrayList<>();
-        try (Connection conn = connect();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, chatId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
@@ -292,8 +284,7 @@ public class DatabaseManager {
 
     public int addMessage(int chatId, String senderPublicKey, String content, long time) {
         String sql = "INSERT INTO messages (chat_id, sender_public_key, content, time) VALUES (?, ?, ?, ?)";
-        try (Connection conn = connect();
-             PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             pstmt.setInt(1, chatId);
             pstmt.setString(2, senderPublicKey);
             pstmt.setString(3, content);
@@ -312,10 +303,9 @@ public class DatabaseManager {
     }
 
     public Message getLastMessage(int chatId) {
-        String sql = "SELECT id, chat_id, sender_public_key, content, time FROM messages " +
-                "WHERE chat_id = ? ORDER BY time DESC LIMIT 1";
-        try (Connection conn = connect();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        String sql = "SELECT id, chat_id, sender_public_key, content, time FROM messages "
+                + "WHERE chat_id = ? ORDER BY time DESC LIMIT 1";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, chatId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
@@ -335,11 +325,10 @@ public class DatabaseManager {
     }
 
     public List<Message> getChatHistory(int chatId) {
-        String sql = "SELECT id, chat_id, sender_public_key, content, time FROM messages " +
-                "WHERE chat_id = ? ORDER BY time ASC";
+        String sql = "SELECT id, chat_id, sender_public_key, content, time FROM messages "
+                + "WHERE chat_id = ? ORDER BY time ASC";
         List<Message> messages = new ArrayList<>();
-        try (Connection conn = connect();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, chatId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
@@ -360,8 +349,7 @@ public class DatabaseManager {
 
     public int addMedia(String path, String checksum) {
         String sql = "INSERT INTO media (path, checksum) VALUES (?, ?)";
-        try (Connection conn = connect();
-             PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             pstmt.setString(1, path);
             pstmt.setString(2, checksum);
             pstmt.executeUpdate();
@@ -379,8 +367,7 @@ public class DatabaseManager {
 
     public Media findMediaByChecksum(String checksum) {
         String sql = "SELECT id, path, checksum FROM media WHERE checksum = ?";
-        try (Connection conn = connect();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, checksum);
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
@@ -399,8 +386,7 @@ public class DatabaseManager {
 
     public void attachMediaToMessage(int messageId, int mediaId) {
         String sql = "INSERT INTO attachments (message_id, media_id) VALUES (?, ?)";
-        try (Connection conn = connect();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, messageId);
             pstmt.setInt(2, mediaId);
             pstmt.executeUpdate();
@@ -412,9 +398,11 @@ public class DatabaseManager {
     public static class DatabaseException extends RuntimeException {
 
         private static final long serialVersionUID = 1L;
+
         public DatabaseException(String message, Throwable cause) {
             super(message, cause);
         }
+
         public DatabaseException(String message) {
             super(message);
         }

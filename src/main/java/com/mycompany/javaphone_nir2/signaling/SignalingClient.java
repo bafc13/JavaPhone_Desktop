@@ -27,6 +27,7 @@ import javafx.beans.property.SimpleObjectProperty;
 
 @ClientEndpoint
 public class SignalingClient {
+
     private Session session;
     private final String serverUrl;
 
@@ -35,9 +36,9 @@ public class SignalingClient {
     private final ObjectMapper mapper = new ObjectMapper();
 
     private final ObjectProperty<Offer> offer = new SimpleObjectProperty<>();
-    
+
     private final Set<JavaPhoneChatHandler> chatHandlers = new HashSet<>();
-    
+
     private JavaPhoneCallManager callManager = null;
 
     private static SignalingClient instance = null;
@@ -70,7 +71,7 @@ public class SignalingClient {
     }
 
     @OnMessage
-    public void onMessage(String message) throws IOException{
+    public void onMessage(String message) throws IOException {
         JsonNode json = mapper.readTree(message);
         String type = json.get("type").asText();
 
@@ -299,15 +300,15 @@ public class SignalingClient {
     public String getClientId() {
         return clientId;
     }
-    
+
     public void setCallManager(JavaPhoneCallManager callManager) {
         this.callManager = callManager;
     }
-    
+
     public boolean addChatHandler(JavaPhoneChatHandler chatHandler) {
         return this.chatHandlers.add(chatHandler);
     }
-    
+
     public boolean removeChatHandler(JavaPhoneChatHandler chatHandler) {
         return this.chatHandlers.remove(chatHandler);
     }

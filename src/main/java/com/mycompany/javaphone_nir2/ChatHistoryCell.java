@@ -13,15 +13,16 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import javafx.scene.layout.Region;
+
 /**
- * Кастомная ячейка для отображения сообщения в истории чата.
- * Реализует современный дизайн: "пузырь" сообщения с временем.
+ * Кастомная ячейка для отображения сообщения в истории чата. Реализует
+ * современный дизайн: "пузырь" сообщения с временем.
  */
 public class ChatHistoryCell extends ListCell<Message> {
 
-    private static final DateTimeFormatter TIME_FORMATTER =
-        DateTimeFormatter.ofPattern("HH:mm")
-            .withZone(ZoneId.systemDefault());
+    private static final DateTimeFormatter TIME_FORMATTER
+            = DateTimeFormatter.ofPattern("HH:mm")
+                    .withZone(ZoneId.systemDefault());
 
     // Корневой контейнер ячейки
     private final HBox root;
@@ -108,11 +109,11 @@ public class ChatHistoryCell extends ListCell<Message> {
     }
 
     /**
-     * Определяет, является ли сообщение "своим".
-     * Можно кастомизировать: сравнивать с публичным ключом текущего пользователя.
+     * Определяет, является ли сообщение "своим". Можно кастомизировать:
+     * сравнивать с публичным ключом текущего пользователя.
      */
     private boolean isOwnMessage(Message message) {
-        if(message.getSenderPublicKey() == "Вы") {
+        if (message.getSenderPublicKey() == "Вы") {
             return true;
         }
         // TODO: заменить на реальную проверку
