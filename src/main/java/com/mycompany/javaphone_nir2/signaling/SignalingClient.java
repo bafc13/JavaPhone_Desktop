@@ -10,12 +10,16 @@ import com.mycompany.javaphone_nir2.models.Offer;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
 import com.mycompany.javaphone_nir2.models.User;
 import com.mycompany.javaphone_nir2.models.UserStatus;
+import com.mycompany.javaphone_nir2.webrtc.JavaPhoneCallManager;
+import com.mycompany.javaphone_nir2.webrtc.JavaPhoneChatHandler;
 import com.mycompany.javaphone_nir2.webrtc.WebRTCManager;
 
 import jakarta.websocket.*;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.beans.property.ObjectProperty;
@@ -28,10 +32,13 @@ public class SignalingClient {
 
     private String clientId;
 
-
     private final ObjectMapper mapper = new ObjectMapper();
 
     private final ObjectProperty<Offer> offer = new SimpleObjectProperty<>();
+    
+    private final Set<JavaPhoneChatHandler> chatHandlers = new HashSet<>();
+    
+    private JavaPhoneCallManager callManager = null;
 
     private static SignalingClient instance = null;
 
@@ -41,11 +48,6 @@ public class SignalingClient {
 
     public static SignalingClient getInstance() {
         return instance;
-    }
-
-
-    public ObjectProperty<Offer> offerProperty() {
-        return offer;
     }
 
     public SignalingClient(String serverUrl) {
@@ -141,8 +143,9 @@ public class SignalingClient {
             String toPrint = userNode.asText();
 
             Contact contact = new Contact(user.getName(), status.toString(), user.getPublicKey());
-            ChatController cc = ChatController.getInstance();
-            cc.addContact(contact);
+            if (callManager != null) {
+                callManager.handleContact(contact);
+            }
 
             System.out.println("GOT CONTACT");
             System.out.println(toPrint);
@@ -179,8 +182,9 @@ public class SignalingClient {
 //        tell webrtc manager to handle offer
 
         // this.offer.set(new Offer(sdp, sender));
-        ChatController cc = ChatController.getInstance();
-        cc.initIncomingCall(new Offer(sdp, sender));
+        if (callManager != null) {
+            callManager.handleIncomingCall(new Offer(sdp, sender));
+        }
     }
 
     private void handleAccept(JsonNode json) {
@@ -213,8 +217,11 @@ public class SignalingClient {
         String sender = json.get("sender").asText();
         String content = json.get("content").asText();
         System.out.println(content);
-        ChatController cc = ChatController.getInstance();
-        cc.handleMessage(sender, content);
+        for (JavaPhoneChatHandler chatHandler : chatHandlers) {
+            if (chatHandler != null) {
+                chatHandler.handleStringMessage(sender, content);
+            }
+        }
     }
 
     private void handleError(JsonNode json) {
@@ -291,5 +298,17 @@ public class SignalingClient {
 
     public String getClientId() {
         return clientId;
+    }
+    
+    public void setCallManager(JavaPhoneCallManager callManager) {
+        this.callManager = callManager;
+    }
+    
+    public boolean addChatHandler(JavaPhoneChatHandler chatHandler) {
+        return this.chatHandlers.add(chatHandler);
+    }
+    
+    public boolean removeChatHandler(JavaPhoneChatHandler chatHandler) {
+        return this.chatHandlers.remove(chatHandler);
     }
 }

@@ -7,6 +7,8 @@ import com.mycompany.javaphone_nir2.models.Message;
 import com.mycompany.javaphone_nir2.models.Offer;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
 import com.mycompany.javaphone_nir2.signaling.SignalingClient;
+import com.mycompany.javaphone_nir2.webrtc.JavaPhoneCallManager;
+import com.mycompany.javaphone_nir2.webrtc.JavaPhoneChatHandler;
 import com.mycompany.javaphone_nir2.webrtc.WebRTCManager;
 import java.awt.event.InputEvent;
 import javafx.collections.ObservableList;
@@ -44,7 +46,7 @@ import javafx.util.Duration;
  * 3. Sending new messages 4. Switching to the video call window 5. Handling nav
  * buttons (Exit, Settings)
  */
-public class ChatController {
+public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManager {
     @FXML private ListView<Contact> contactsList;
     @FXML private HBox headerContainer;
     @FXML private VBox contactsContainer;
@@ -72,14 +74,10 @@ public class ChatController {
     private final SettingsManager settings = SettingsManager.getInstance();
 
     private final WebRTCManager webRtcManager = WebRTCManager.getInstance();
+    
+    private SignalingClient signalingClient = null;
 
     public Offer offer;
-
-    private static ChatController instance;
-
-    public static ChatController getInstance() {
-        return instance;
-    }
 
     @FXML
     public void initialize() {
@@ -90,28 +88,18 @@ public class ChatController {
         checkRegistration();
         initSignalingClient();
 
-        Platform.runLater(() -> {
-//            appendToChat("Alice", "Привет! Это тестовое сообщение.");
-//            appendToChat("Bob", "Отлично, работает! 🎉");
-//            appendToChat("You", "Да, интерфейс стал намного лучше.");
-        });
-
-        instance = this;
+        
     }
 
     private void initSignalingClient(){
 
-        SettingsManager settings = SettingsManager.getInstance();
         SignalingClient.initialize(settings.getSignalingUrl());
-
-
 
         Platform.runLater(() -> connectToSignaling());
 
-        SignalingClient.getInstance().offerProperty().addListener((obs, oldVal, newVal) -> {
-            offer = new Offer(newVal.getSdp(), newVal.getSender());
-            initIncomingCall(offer.getSender());
-        });
+        signalingClient = SignalingClient.getInstance();
+        signalingClient.setCallManager(this);
+        signalingClient.addChatHandler(this);
     }
 
     private void setupCloseInterceptor(Stage stage) {
@@ -249,7 +237,7 @@ public class ChatController {
             updateCallPopupPosition();
         }
 
-        appendToChat("System", "🔔 Входящий звонок от " + incomingCallContact.getName());
+        handleStringMessage("System", "🔔 Входящий звонок от " + incomingCallContact.getName());
     }
 
     /**
@@ -333,12 +321,6 @@ public class ChatController {
         startVideoCallWithContact(incomingCallContact);
     }
 
-    public void handleCallAccepted() {
-        Platform.runLater(() -> {
-            startVideoCallWithContact(selectedContact);
-        });
-    }
-
     /**
      * handle call rejected
      *
@@ -388,7 +370,7 @@ public class ChatController {
 
             videoStage.show();
 
-            appendToChat("System", "📞 Видеозвонок с " + contact.getName() + " начат");
+            handleStringMessage("System", "📞 Видеозвонок с " + contact.getName() + " начат");
 
         } catch (IOException e) {
             System.err.println("Ошибка при загрузке окна видеозвонка: " + e.getMessage());
@@ -432,15 +414,6 @@ public class ChatController {
         });
 
         contactsList.getStyleClass().add("contacts-list");
-    }
-
-    public void addContact(Contact contact) {
-        System.out.println("GOT CONTACT TO UI");
-        System.out.println(contact.getKey());
-
-        contacts.put(contact.getKey(), contact);
-        contactsList.setItems(FXCollections.observableArrayList(contacts.values()));
-        contactsList.refresh();
     }
 
     /**
@@ -513,29 +486,6 @@ public class ChatController {
         sendButton.getStyleClass().add("send-button");
 
         messageContainer.getStyleClass().add("message-container");
-    }
-
-    public void initIncomingCall(Offer offer) {
-        this.offer = offer;
-        String callerKey = offer.getSender();
-
-        incomingCallContact = contacts.getOrDefault(callerKey, null);
-        if (incomingCallContact != null) {
-            Platform.runLater( () -> {
-                initIncomingCallNotification();
-                showIncomingCallNotification();
-            });
-        }
-    }
-
-    public void initIncomingCall(String callerKey) {
-        incomingCallContact = contacts.getOrDefault(callerKey, null);
-        if (incomingCallContact != null) {
-            Platform.runLater( () -> {
-                initIncomingCallNotification();
-                showIncomingCallNotification();
-            });
-        }
     }
 
     /**
@@ -629,7 +579,7 @@ public class ChatController {
         SignalingClient sc = SignalingClient.getInstance();
         try {
             sc.sendDM(selectedContact.getKey(), message);
-            appendToChat("Вы", message);
+            handleStringMessage("Вы", message);
             messageInput.clear();
         } catch (IOException ex) {
             System.getLogger(ChatController.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
@@ -638,11 +588,6 @@ public class ChatController {
         // simulateResponse();
     }
 
-    public void handleMessage(String sender, String content) {
-        Platform.runLater(() -> {
-            appendToChat(sender, content);
-        });
-    }
     /**
      * response simulation
      */
@@ -663,7 +608,7 @@ public class ChatController {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            appendToChat(selectedContact.getName(), response);
+            handleStringMessage(selectedContact.getName(), response);
         });
     }
 
@@ -707,36 +652,6 @@ public class ChatController {
         webRtcManager.startCall(selectedContact.getKey());
 //        startVideoCallWithContact(selectedContact);
     }
-
-    /**
-    * Добавляет сообщение в историю чата (обратная совместимость со старым кодом)
-    */
-   public void appendToChat(String sender, String content) {
-       Message msg = new Message();
-       msg.setId(generateMessageId()); // Простая генерация ID
-       msg.setChatId(1); // Или динамически
-       msg.setSenderPublicKey(sender);
-       msg.setContent(content);
-       msg.setTime(System.currentTimeMillis() / 1000); // Unix timestamp в секундах
-
-       appendToChat(msg);
-   }
-
-   /**
-    * Добавляет готовое сообщение в историю
-    */
-   public void appendToChat(Message message) {
-       // Добавляем в конец списка
-       chatHistory.getItems().add(message);
-
-       // 🔥 Прокрутка вниз к новому сообщению
-       Platform.runLater(() -> {
-           int lastIndex = chatHistory.getItems().size() - 1;
-           if (lastIndex >= 0) {
-               chatHistory.scrollTo(lastIndex);
-           }
-       });
-   }
 
    /**
     * Простая генерация уникального ID (заглушка)
@@ -788,6 +703,74 @@ public class ChatController {
             alert.setContentText(e.getMessage());
             alert.showAndWait();
         }
+    }
+
+    @Override
+    public void handleStringMessage(String sender, String content) {
+        Message msg = new Message();
+        msg.setId(generateMessageId()); // Простая генерация ID
+        msg.setChatId(1); // Или динамически
+        msg.setSenderPublicKey(sender);
+        msg.setContent(content);
+        msg.setTime(System.currentTimeMillis() / 1000); // Unix timestamp в секундах
+
+        handleMessage(msg);
+    }
+
+    @Override
+    public void handleMessage(Message message) {
+        // Добавляем в конец списка
+       chatHistory.getItems().add(message);
+
+       // 🔥 Прокрутка вниз к новому сообщению
+       Platform.runLater(() -> {
+           int lastIndex = chatHistory.getItems().size() - 1;
+           if (lastIndex >= 0) {
+               chatHistory.scrollTo(lastIndex);
+           }
+       });
+    }
+
+    @Override
+    public void handleContact(Contact contact) {
+        System.out.println("GOT CONTACT TO UI");
+        System.out.println(contact.getKey());
+
+        contacts.put(contact.getKey(), contact);
+        contactsList.setItems(FXCollections.observableArrayList(contacts.values()));
+        contactsList.refresh();
+    }
+
+    @Override
+    public void handleIncomingCall(Offer offer) {
+        this.offer = offer;
+        String callerKey = offer.getSender();
+
+        incomingCallContact = contacts.getOrDefault(callerKey, null);
+        if (incomingCallContact != null) {
+            Platform.runLater( () -> {
+                initIncomingCallNotification();
+                showIncomingCallNotification();
+            });
+        }
+    }
+
+    @Override
+    public void handleIncomingCall(String callerKey) {
+        incomingCallContact = contacts.getOrDefault(callerKey, null);
+        if (incomingCallContact != null) {
+            Platform.runLater( () -> {
+                initIncomingCallNotification();
+                showIncomingCallNotification();
+            });
+        }
+    }
+    
+    @Override
+    public void handleCallAccepted() {
+        Platform.runLater(() -> {
+            startVideoCallWithContact(selectedContact);
+        });
     }
 }
 

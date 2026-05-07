@@ -6,6 +6,8 @@ import com.mycompany.javaphone_nir2.games.GameMenuApp;
 import com.mycompany.javaphone_nir2.models.Message;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
 import com.mycompany.javaphone_nir2.models.VideoLayoutMode;
+import com.mycompany.javaphone_nir2.webrtc.JavaPhoneChatHandler;
+import com.mycompany.javaphone_nir2.webrtc.JavaPhoneVideoHandler;
 import com.mycompany.javaphone_nir2.webrtc.WebRTCManager;
 import dev.onvoid.webrtc.media.video.VideoTrack;
 import javafx.fxml.FXML;
@@ -41,7 +43,7 @@ import javafx.util.Duration;
  * Button management (microphone, camera, filter) 3. Displaying messages during
  * a call. 4. Ending the call and returning to the main window
  */
-public class VideoCallController {
+public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideoHandler {
 
     @FXML private StackPane remoteVideoContainer;
     @FXML private HBox headerContainer;
@@ -78,30 +80,20 @@ public class VideoCallController {
     private final SettingsManager settings = SettingsManager.getInstance();
     private VideoLayoutMode currentMode = VideoLayoutMode.PIP_PRIMARY_FIRST;
 
-    private static VideoCallController instance = null;
-
-    public static VideoCallController getInstance() {
-        return instance;
-    }
-
     @FXML
     public void initialize() {
         setupCallUI();
 
-        appendToCallChat("System", "Соединение установлено");
-        appendToCallChat("System", "Звонок активен");
+        handleStringMessage("System", "Соединение установлено");
+        handleStringMessage("System", "Звонок активен");
 
         callChatHistory.setEditable(false);
-        instance = this;
+        
+        WebRTCManager.getInstance().setVideoHandler(this);
+        WebRTCManager.getInstance().addChatHandler(this);
     }
 
-    public void addLocalTrack(VideoTrack localTrack) {
-        localTrack.addSink(localVideo);
-    }
-
-    public void addRemoteTrack(VideoTrack remoteTrack) {
-        remoteTrack.addSink(remoteVideo);
-    }
+    
 
     /**
      * Initializes window resizing. Called from ChatController.startVideoCall()
@@ -509,7 +501,7 @@ public class VideoCallController {
         String response = responses[(int) (Math.random() * responses.length)];
 
         Platform.runLater(() -> {
-            appendToCallChat(contactName, response);
+            handleStringMessage(contactName, response);
         });
     }
 
@@ -517,7 +509,7 @@ public class VideoCallController {
      * ending call and closing window
      */
     private void endCall() {
-        appendToCallChat("System", "📞 Звонок завершен");
+        handleStringMessage("System", "📞 Звонок завершен");
 
         javafx.application.Platform.runLater(() -> {
             try {
@@ -577,9 +569,25 @@ public class VideoCallController {
     }
 
     /**
-    * Добавляет сообщение в историю чата (обратная совместимость со старым кодом)
-    */
-    public void appendToCallChat(String sender, String content) {
+     * Простая генерация уникального ID (заглушка)
+     * В реальном приложении — использовать базу данных или UUID
+     */
+    private int generateMessageId() {
+        return (int) (System.currentTimeMillis() % Integer.MAX_VALUE);
+    }
+
+    @Override
+    public void addLocalTrack(VideoTrack localTrack) {
+        localTrack.addSink(localVideo);
+    }
+
+    @Override
+    public void addRemoteTrack(VideoTrack remoteTrack) {
+        remoteTrack.addSink(remoteVideo);
+    }
+
+    @Override
+    public void handleStringMessage(String sender, String content) {
         Message msg = new Message();
         msg.setId(generateMessageId()); // Простая генерация ID
         msg.setChatId(1); // Или динамически
@@ -592,14 +600,12 @@ public class VideoCallController {
         msg.setTime(System.currentTimeMillis() / 1000); // Unix timestamp в секундах
 
         Platform.runLater(() -> {
-            appendToCallChat(msg);
+            this.handleMessage(msg);
         });
     }
 
-    /**
-     * Добавляет готовое сообщение в историю
-     */
-    public void appendToCallChat(Message message) {
+    @Override
+    public void handleMessage(Message message) {
         // Добавляем в конец списка
         callChatHistory.getItems().add(message);
 
@@ -610,14 +616,6 @@ public class VideoCallController {
                 callChatHistory.scrollTo(lastIndex);
             }
         });
-    }
-
-    /**
-     * Простая генерация уникального ID (заглушка)
-     * В реальном приложении — использовать базу данных или UUID
-     */
-    private int generateMessageId() {
-        return (int) (System.currentTimeMillis() % Integer.MAX_VALUE);
     }
 }
 

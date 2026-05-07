@@ -27,10 +27,20 @@ public class PeerConnectionObserverImpl implements PeerConnectionObserver {
     WebRTCManager webRTCManager;    
     String remoteClientId;
     int candidates = 0;
+    JavaPhoneVideoHandler videoHandler = null;
     
     public PeerConnectionObserverImpl (WebRTCManager webRTCManager, String remoteClientId) {
         this.webRTCManager = webRTCManager;
         this.remoteClientId = remoteClientId;
+    }
+    
+    public void setVideoHandler(JavaPhoneVideoHandler videoHandler) {
+        this.videoHandler = videoHandler;
+        if (videoHandler != null) {
+            if (webRTCManager.getRemoteVideoTrack() != null) {
+                this.videoHandler.addRemoteTrack(webRTCManager.getRemoteVideoTrack());
+            }
+        }
     }
     
     @Override
@@ -113,9 +123,8 @@ public class PeerConnectionObserverImpl implements PeerConnectionObserver {
             VideoTrack videoTrack = (VideoTrack) track;
             webRTCManager.setRemoteTrack(videoTrack);
             
-            VideoCallController vcc = VideoCallController.getInstance();
-            if (vcc != null) {
-                vcc.addRemoteTrack(videoTrack);
+            if (videoHandler != null) {
+                videoHandler.addRemoteTrack(videoTrack);
             }
         } else if (kind.equals(MediaStreamTrack.AUDIO_TRACK_KIND)) {
             System.out.println("GOT AUDIO TRACK");
