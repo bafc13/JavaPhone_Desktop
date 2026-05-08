@@ -16,6 +16,7 @@ public abstract class FXGLGame {
     
     public FXGLGame() {
         this.themeHelper = GameThemeHelper.getInstance();
+        this.themeHelper.init();
     }
     
     public void setGameType(String gameType) {
@@ -34,17 +35,20 @@ public abstract class FXGLGame {
         this.onCloseCallback = callback;
     }
     
+    // Абстрактные методы
     public abstract void onOpponentMove(String moveData);
     public abstract void startBattle();
     public abstract void cleanup();
     public abstract void showUI();
     
+    // Вспомогательный метод для отправки хода
     protected void sendMove(String moveData) {
         if (controller != null) {
             controller.sendMove(moveData);
         }
     }
     
+    // Запуск игры
     public void launchGame() {
         showUI();
         if (gameStage != null) {
@@ -57,33 +61,17 @@ public abstract class FXGLGame {
         }
     }
     
+    // Применить тему к сцене (использует CSS чата)
     protected void applyThemeToScene(javafx.scene.Scene scene) {
         if (themeHelper != null && scene != null) {
             themeHelper.applyThemeToScene(scene);
         }
     }
     
-    protected String getBackgroundColor() {
-        return themeHelper != null ? themeHelper.getBackgroundColor() : "#f5f5f5";
-    }
-    
-    protected String getTextColor() {
-        return themeHelper != null ? themeHelper.getTextColor() : "#000000";
-    }
-    
-    protected String getBoardColor() {
-        return themeHelper != null ? themeHelper.getBoardColor() : "#ffffff";
-    }
-    
-    protected String getGridColor() {
-        return themeHelper != null ? themeHelper.getGridColor() : "#333333";
-    }
-    
-    protected String getXColor() {
-        return themeHelper != null ? themeHelper.getXColor() : "#e74c3c";
-    }
-    
-    protected String getOColor() {
-        return themeHelper != null ? themeHelper.getOColor() : "#3498db";
+    // Подписаться на изменения темы
+    protected void listenToThemeChanges(Runnable onThemeChanged) {
+        if (themeHelper != null) {
+            themeHelper.addThemeListener(onThemeChanged);
+        }
     }
 }

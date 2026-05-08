@@ -1,5 +1,7 @@
 package com.mycompany.javaphone_nir2.games;
 
+import com.mycompany.javaphone_nir2.models.SettingsManager;
+import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -19,14 +21,15 @@ public class GameController {
     private boolean amIHost = false;
     private GameThemeHelper themeHelper;
     
-    private long myHandshakeTimestamp = 0;      // когда я отправил handshake
-    private long opponentHandshakeTimestamp = 0; // когда соперник отправил handshake (из сообщения)
-    private boolean conflictResolved = false;    // флаг, что конфликт уже разрешён
-    
-    private ThemeApplier themeApplier = new ThemeApplier();
+    private long myHandshakeTimestamp = 0;
+    private long opponentHandshakeTimestamp = 0;
+    private boolean conflictResolved = false;
     
     private GameController() {
         System.out.println("🎮 GameController is created");
+        // Инициализация хелпера тем
+        themeHelper = GameThemeHelper.getInstance();
+        themeHelper.init();
     }
     
     public static GameController getInstance() {
@@ -234,72 +237,72 @@ public class GameController {
     }
     
     private void showGameProposal(String gameType) {
-    String displayName = getGameDisplayName(gameType);
+        String displayName = getGameDisplayName(gameType);
+        
+        Stage proposalStage = new Stage();
+        proposalStage.setTitle("Приглашение");
+        
+        VBox root = new VBox(15);
+        root.setAlignment(Pos.CENTER);
+        themeHelper.applyToContainer(root);
+        
+        Text title = new Text("Приглашение на игру");
+        themeHelper.styleText(title, true);
+        
+        Text info = new Text("Соперник хочет играть в " + displayName);
+        themeHelper.styleText(info, false);
+        
+        Button acceptButton = new Button("Принять и играть");
+        themeHelper.styleButton(acceptButton);
+        acceptButton.setOnAction(e -> {
+            sendHandshake();
+            proposalStage.close();
+        });
+        
+        Button rejectButton = new Button("Отказаться");
+        rejectButton.setStyle(
+            "-fx-font-size: 14px; -fx-padding: 10 20; " +
+            "-fx-background-color: #ef4444; -fx-text-fill: white; " +
+            "-fx-background-radius: 5; -fx-cursor: hand;"
+        );
+        rejectButton.setOnAction(e -> {
+            proposalStage.close();
+            resetState();
+        });
+        
+        root.getChildren().addAll(title, info, acceptButton, rejectButton);
+        Scene scene = new Scene(root, 350, 250);
+        themeHelper.applyThemeToScene(scene);
+        proposalStage.setScene(scene);
+        proposalStage.show();
+    }
     
-    Stage proposalStage = new Stage();
-    proposalStage.setTitle("Приглашение");
-    
-    VBox root = new VBox(15);
-    root.setAlignment(Pos.CENTER);
-    themeHelper.applyToContainer(root);
-    
-    Text title = new Text("Приглашение на игру");
-    themeHelper.styleText(title, true);
-    
-    Text info = new Text("Соперник хочет играть в " + displayName);
-    themeHelper.styleText(info, false);
-    
-    Button acceptButton = new Button("Принять и играть");
-    themeHelper.styleButton(acceptButton);
-    acceptButton.setOnAction(e -> {
-        sendHandshake();
-        proposalStage.close();
-    });
-    
-    Button rejectButton = new Button("Отказаться");
-    rejectButton.setStyle(
-        "-fx-font-size: 14px; -fx-padding: 10 20; " +
-        "-fx-background-color: #ef4444; -fx-text-fill: white; " +
-        "-fx-background-radius: 5; -fx-cursor: hand;"
-    );
-    rejectButton.setOnAction(e -> {
-        proposalStage.close();
-        resetState();
-    });
-    
-    root.getChildren().addAll(title, info, acceptButton, rejectButton);
-    Scene scene = new Scene(root, 350, 250);
-    themeHelper.applyThemeToScene(scene);
-    proposalStage.setScene(scene);
-    proposalStage.show();
-}
-
-private void showError(String message) {
-    Stage errorStage = new Stage();
-    errorStage.setTitle("Ошибка");
-    
-    VBox root = new VBox(15);
-    root.setAlignment(Pos.CENTER);
-    themeHelper.applyToContainer(root);
-    
-    Text title = new Text("Ошибка");
-    title.setStyle(String.format(
-        "-fx-font-size: 20px; -fx-font-weight: bold; -fx-fill: #ef4444;"
-    ));
-    
-    Text info = new Text(message);
-    themeHelper.styleText(info, false);
-    
-    Button okButton = new Button("Понятно");
-    themeHelper.styleButton(okButton);
-    okButton.setOnAction(e -> errorStage.close());
-    
-    root.getChildren().addAll(title, info, okButton);
-    Scene scene = new Scene(root, 400, 250);
-    themeHelper.applyThemeToScene(scene);
-    errorStage.setScene(scene);
-    errorStage.show();
-}
+    private void showError(String message) {
+        Stage errorStage = new Stage();
+        errorStage.setTitle("Ошибка");
+        
+        VBox root = new VBox(15);
+        root.setAlignment(Pos.CENTER);
+        themeHelper.applyToContainer(root);
+        
+        Text title = new Text("Ошибка");
+        title.setStyle(String.format(
+            "-fx-font-size: 20px; -fx-font-weight: bold; -fx-fill: #ef4444;"
+        ));
+        
+        Text info = new Text(message);
+        themeHelper.styleText(info, false);
+        
+        Button okButton = new Button("Понятно");
+        themeHelper.styleButton(okButton);
+        okButton.setOnAction(e -> errorStage.close());
+        
+        root.getChildren().addAll(title, info, okButton);
+        Scene scene = new Scene(root, 400, 250);
+        themeHelper.applyThemeToScene(scene);
+        errorStage.setScene(scene);
+        errorStage.show();
+    }
     
     private void startGame() {
         if (gameActive) {
@@ -335,13 +338,13 @@ private void showError(String message) {
         
         currentGame.launchGame();
         
-        javafx.application.Platform.runLater(() -> {
+        Platform.runLater(() -> {
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            javafx.application.Platform.runLater(() -> {
+            Platform.runLater(() -> {
                 currentGame.startBattle();
             });
         });

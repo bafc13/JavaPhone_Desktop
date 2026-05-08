@@ -76,24 +76,15 @@ public class TicTacToeModule extends FXGLGame {
                 final int col = j;
                 button.setOnMouseEntered(e -> {
                     if (button.getText().equals(" ") && !gameOver && isMyTurn && !waitingForOpponent) {
-                        String hoverColor = themeHelper.isDarkTheme() ? "#4a4a5a" : "#3498db";
-                        button.setStyle(
-                            String.format("-fx-background-color: %s; " +
-                            "-fx-text-fill: %s; " +
-                            "-fx-font-size: 48px; " +
-                            "-fx-font-weight: bold; " +
-                            "-fx-border-radius: 12; " +
-                            "-fx-background-radius: 12; " +
-                            "-fx-cursor: hand; " +
-                            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0.5, 0, 2);",
-                            hoverColor, themeHelper.getTextColor())
-                        );
+                     // Добавляем временный класс для hover-эффекта
+                    button.getStyleClass().add("tic-tac-toe-cell-hover");
                     }
                 });
                 
                 button.setOnMouseExited(e -> {
-                    if (button.getText().equals(" ")) {
-                        updateCellStyle(button, " ", false);
+                if (button.getText().equals(" ")) {
+                // Убираем hover-класс
+                button.getStyleClass().remove("tic-tac-toe-cell-hover");
                     }
                 });
                 
@@ -107,47 +98,10 @@ public class TicTacToeModule extends FXGLGame {
     }
     
     private void updateCellStyle(Button button, String symbol, boolean isWinning) {
-        String bgColor;
-        String textColor;
-        String borderColor = themeHelper.getGridColor();
-        int borderWidth = isWinning ? 3 : 2;
-        
-        if (isWinning) {
-            bgColor = themeHelper.isDarkTheme() ? "#f1c40f" : "#f39c12";
-            textColor = "#ffffff";
-            borderColor = "#f1c40f";
-        } else if (symbol.equals("X")) {
-            bgColor = themeHelper.isDarkTheme() ? "#4ecdc4" : "#3498db";
-            textColor = "#ffffff";
-        } else if (symbol.equals("O")) {
-            bgColor = themeHelper.isDarkTheme() ? "#ffe66d" : "#e74c3c";
-            textColor = "#ffffff";
-        } else {
-            // Пустая клетка
-            bgColor = themeHelper.getBoardColor();
-            textColor = themeHelper.getTextColor();
-        }
-        
-        String effect = isWinning ? 
-            "-fx-effect: dropshadow(gaussian, #f1c40f, 20, 0.8, 0, 0);" : 
-            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0.5, 0, 2);";
-        
-        button.setStyle(String.format(
-            "-fx-background-color: %s; " +
-            "-fx-text-fill: %s; " +
-            "-fx-font-size: 48px; " +
-            "-fx-font-weight: bold; " +
-            "-fx-border-color: %s; " +
-            "-fx-border-width: %d; " +
-            "-fx-border-radius: 12; " +
-            "-fx-background-radius: 12; " +
-            "-fx-cursor: %s; " +
-            "%s",
-            bgColor, textColor, borderColor, borderWidth,
-            symbol.equals(" ") ? "hand" : "default",
-            effect
-        ));
-    }
+    themeHelper.styleTicTacToeCell(button, symbol, isWinning);
+}
+
+
     
     private void updateTheme() {
         // Обновляем фон контейнера
