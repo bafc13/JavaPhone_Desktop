@@ -27,6 +27,7 @@ import javafx.collections.ObservableMap;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -59,9 +60,9 @@ public class ChatController {
     @FXML private Button exitButton;
     @FXML private Label chatTitleLabel;
     @FXML private SplitPane mainSplitPane;
+    @FXML private Label typingIndicator;
 
-
-    /** ObservableMap, that stores contacts, which connected to the signal server  */
+   /** ObservableMap, that stores contacts, which connected to the signal server  */
     private ObservableMap<String, Contact> contacts;
     private Contact selectedContact;
     private Contact incomingCallContact;
@@ -128,6 +129,49 @@ public class ChatController {
         contactsList.getStyleClass().add("contacts-list");
     }
 
+    public void removeContactFromList(Contact contact) {
+        contactsList.getItems().removeIf(e -> {
+            if(e.getName().equals(contact.getName())) {
+                return true;
+            }
+            return false;
+        });
+
+        contactsList.refresh();
+    }
+
+    public void setTypingContactIndicator(Contact contact, boolean isTyping) {
+        if(selectedContact != null){
+            if(selectedContact.equals(contact)){
+                if (isTyping) {
+                    typingIndicator.setText("печатает...");
+                    typingIndicator.setVisible(true);
+                    typingIndicator.setManaged(true);
+                    typingIndicator.setOpacity(1.0);
+                } else {
+                    typingIndicator.setVisible(false);
+                    typingIndicator.setManaged(true);
+                }
+            }
+        }
+
+        if(contactsList.getItems() != null) {
+            int indexOfContact = contactsList.getItems().indexOf(contact);
+            if (indexOfContact >= 0) {
+                Platform.runLater(() -> {
+                    for (Node node : contactsList.lookupAll(".list-cell")) {
+                        if (node instanceof ContactListCell cell) {
+                            if (cell.getIndex() == indexOfContact) {
+                                cell.setTypingIndicator(isTyping);
+                                break;
+                            }
+                        }
+                    }
+                });
+            }
+        }
+    }
+
     /** This method set styles for nav bar and contacts and set onClick handlers for nav buttons */
     private void setupChatUI() {
         logger.log("Chat window: setupping chatUI");
@@ -145,7 +189,7 @@ public class ChatController {
         settingsButton.getStyleClass().add("header-button");
 
 //        callButton.setOnAction(e -> startVideoCall());
-        callButton.setOnAction(e -> startVideoCallWithContact(new Contact("BaFC13", "ONLINE", "1333")));
+        callButton.setOnAction(e -> startVideoCallWithContact(new Contact("bafc13", "ONLINE", "1333")));
         callButton.getStyleClass().add("header-button");
 
         exitButton.getStyleClass().add("header-button");
@@ -247,6 +291,8 @@ public class ChatController {
         sendButton.getStyleClass().add("send-button");
 
         messageContainer.getStyleClass().add("message-container");
+
+        typingIndicator.getStyleClass().add("typing-indicator");
     }
 
     /**
@@ -325,16 +371,20 @@ public class ChatController {
 
     /** This method demonstrate notification about call  */
     private void scheduleIncomingCallTimer() {
-        if (contacts != null && !contacts.isEmpty()) {
+//        if (contacts != null && !contacts.isEmpty()) {
             // rand delay
-            int delaySeconds = 2 + (int) (Math.random() * 6);
+            int delaySeconds = 8 + (int) (Math.random() * 6);
 
             PauseTransition pause = new PauseTransition(Duration.seconds(delaySeconds));
             pause.setOnFinished(e -> {
-                Platform.runLater(this::showIncomingCallNotification);
+//                Platform.runLater(this::showIncomingCallNotification);
+                Platform.runLater(() -> {
+                    setTypingContactIndicator(new Contact("bafc13", "ONLINE", "1333"), true);
+                });
+
             });
             pause.play();
-        }
+//        }
     }
 
     /** This method shows notification via popup */

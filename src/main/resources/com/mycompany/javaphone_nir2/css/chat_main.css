@@ -179,6 +179,20 @@
     -fx-background-color: #dadef7;
 }
 
+.contacts-list-typing-status-label {
+    -fx-font-size: 12;
+    -fx-text-fill: #7f8c8d;
+    -fx-wrap-text: true;
+}
+
+.typing-indicator {
+    -fx-text-fill: black;
+    -fx-font-size: 12px;
+    -fx-background-color: transparent;
+    -fx-margin: 0; 
+    -fx-alignment: center-left;
+}
+
 .chat-history {
     -fx-background-color: #dadef7; 
     -fx-padding: 10px;

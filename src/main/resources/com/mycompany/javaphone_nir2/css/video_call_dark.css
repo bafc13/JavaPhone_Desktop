@@ -34,6 +34,14 @@
     -fx-translate-y: 1px; 
 }
 
+.typing-indicator {
+    -fx-text-fill: whitesmoke;
+    -fx-font-size: 12px;
+    -fx-background-color: transparent;
+    -fx-margin: 0; 
+    -fx-alignment: center-left;
+}
+
 .message-input {
     -fx-padding: 8;
     -fx-font-size: 14;

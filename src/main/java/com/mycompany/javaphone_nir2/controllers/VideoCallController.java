@@ -15,6 +15,7 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.DoubleBinding;
@@ -27,6 +28,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 
 /**
  * Controller for video call
@@ -60,6 +62,7 @@ public class VideoCallController {
     @FXML private WebRtcVideoPanel localVideo;
     @FXML private Label remoteVideoLabel;
     @FXML private Label localVideoLabel;
+    @FXML private Label typingIndicator;
 
     private HBox splitModeContainer;
 
@@ -100,6 +103,8 @@ public class VideoCallController {
 
         callChatHistory.setEditable(false);
         instance = this;
+
+        setTypingIndicator(true);
     }
 
     /** This method responsible for add local video track
@@ -151,6 +156,8 @@ public class VideoCallController {
         localVideoContainer.getStyleClass().add("video-pane");
         remoteVideoLabel.getStyleClass().add("video-label");
         localVideoLabel.getStyleClass().add("video-label");
+
+        typingIndicator.getStyleClass().add("typing-indicator");
 
         applyLayoutMode(currentMode);
         setupClickHandlers();
@@ -537,6 +544,18 @@ public class VideoCallController {
         Platform.runLater(() -> {
             appendToCallChat(contactName, response);
         });
+    }
+
+    public void setTypingIndicator(boolean isTyping) {
+        if (isTyping) {
+            typingIndicator.setText("печатает...");
+            typingIndicator.setVisible(true);
+            typingIndicator.setManaged(true);
+            typingIndicator.setOpacity(1.0);
+        } else {
+            typingIndicator.setVisible(false);
+            typingIndicator.setManaged(true);
+        }
     }
 
     /** This method responsible for ending call and closing window */

@@ -170,6 +170,12 @@
     -fx-wrap-text: true;
 }
 
+.contacts-list-typing-status-label {
+    -fx-font-size: 12;
+    -fx-text-fill: #7f8c8d;
+    -fx-wrap-text: true;
+}
+
 .split-pane {
     -fx-background-color: #545769;
 }
@@ -177,6 +183,14 @@
 .message-container {
     -fx-padding: 10;
     -fx-background-color: #545769;
+}
+
+.typing-indicator {
+    -fx-text-fill: whitesmoke;
+    -fx-font-size: 12px;
+    -fx-background-color: transparent;
+    -fx-margin: 0; 
+    -fx-alignment: center-left;
 }
 
 .chat-history {

@@ -6,6 +6,7 @@ import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.layout.HBox;
@@ -28,6 +29,8 @@ public class ContactListCell extends ListCell<Contact> {
     /** first letter in name */
     private Label avatarLabel;
     private VBox textContainer;
+    private VBox typingStatusContainer;
+    private Label typingLabel;
     private Label nameLabel;
     private Label statusLabel;
 
@@ -47,6 +50,8 @@ public class ContactListCell extends ListCell<Contact> {
 
         createTextContainer();
 
+        createTypingStatusContainer();
+
         root = new HBox(15);
         root.getStyleClass().add("contact-list-cell-item");
         root.setOpacity(0);
@@ -63,8 +68,9 @@ public class ContactListCell extends ListCell<Contact> {
             )
         );
 
-        root.getChildren().addAll(avatarContainer, textContainer);
+        root.getChildren().addAll(avatarContainer, textContainer, typingStatusContainer);
         HBox.setHgrow(textContainer, Priority.ALWAYS);
+        HBox.setHgrow(typingStatusContainer, Priority.ALWAYS);
     }
 
     /** This method responsible for generating avatar */
@@ -93,6 +99,28 @@ public class ContactListCell extends ListCell<Contact> {
         textContainer.getChildren().addAll(nameLabel, statusLabel);
 
         VBox.setVgrow(statusLabel, Priority.ALWAYS);
+    }
+
+    private void createTypingStatusContainer(){
+        typingLabel = new Label();
+        typingLabel.getStyleClass().add("contacts-list-typing-status-label");
+
+        typingLabel.setVisible(false);
+
+        typingStatusContainer = new VBox(5);
+        typingStatusContainer.setAlignment(Pos.BOTTOM_CENTER);
+        typingStatusContainer.getChildren().add(typingLabel);
+
+        VBox.setVgrow(typingLabel, Priority.ALWAYS);
+    }
+
+    public void setTypingIndicator(boolean isTyping) {
+        if (isTyping) {
+            typingLabel.setText("печатает...");
+            typingLabel.setVisible(true);
+        } else {
+            typingLabel.setVisible(false);
+        }
     }
 
     /**

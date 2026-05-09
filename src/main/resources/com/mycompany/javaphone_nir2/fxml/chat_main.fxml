@@ -43,20 +43,28 @@
         </HBox>
     </top>
     <center>
-        <SplitPane fx:id="mainSplitPane" orientation="HORIZONTAL" dividerPositions="0.25">
+        <SplitPane fx:id="mainSplitPane" dividerPositions="0.25" orientation="HORIZONTAL">
                 <VBox fx:id="contactsContainer" minWidth="190" prefWidth="250">
                     <children>
                         <ListView fx:id="contactsList" prefHeight="401.0" prefWidth="256.0" VBox.vgrow="ALWAYS" />
                     </children>
                 </VBox>
-                <VBox spacing="0" HBox.hgrow="ALWAYS" minWidth="460">
+                <VBox minWidth="460" spacing="0" HBox.hgrow="ALWAYS">
                     <children>
                         <ListView fx:id="chatHistory" minWidth="460" VBox.vgrow="ALWAYS">
                         </ListView>
-                        <HBox fx:id="messageContainer" spacing="5">
+                        <HBox fx:id="messageContainer" alignment="BOTTOM_CENTER" spacing="5">
                             <children>
-                                <TextField fx:id="messageInput" promptText="Введите сообщение..." HBox.hgrow="ALWAYS" />
-                                <Button fx:id="sendButton" prefWidth="110.0" text="Отправить" />
+                     <VBox HBox.hgrow="ALWAYS">
+                        <children>
+                                    <Label fx:id="typingIndicator" managed="false" visible="false">
+                              <padding>
+                                 <Insets left="10.0" />
+                              </padding></Label>
+                                      <TextField fx:id="messageInput" promptText="Введите сообщение..." />
+                        </children>
+                     </VBox>
+                                <Button fx:id="sendButton" alignment="BOTTOM_CENTER" prefWidth="110.0" text="Отправить" />
                             </children>
                         </HBox>
                     </children>

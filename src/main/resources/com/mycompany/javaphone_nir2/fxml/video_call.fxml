@@ -70,9 +70,17 @@
                 <children>
                     <ListView fx:id="callChatHistory" editable="false" minWidth="100" prefHeight="406.0" prefWidth="286.0" VBox.vgrow="ALWAYS">
                  </ListView>
-                   <HBox fx:id="messageContainer" prefHeight="0.0" prefWidth="478.0" spacing="5">
+                   <HBox fx:id="messageContainer" alignment="BOTTOM_CENTER" prefHeight="0.0" prefWidth="478.0" spacing="5">
                       <children>
-                         <TextField fx:id="callMessageInput" promptText="Введите сообщение..." HBox.hgrow="ALWAYS" />
+                          <VBox HBox.hgrow="ALWAYS">
+                              <children>
+                                  <Label fx:id="typingIndicator" managed="false" visible="false">
+                              <padding>
+                                 <Insets left="10.0" />
+                              </padding></Label>
+                                  <TextField fx:id="callMessageInput" promptText="Введите сообщение..." />
+                              </children>
+                          </VBox>
                          <Button fx:id="sendCallMessageButton" prefWidth="100" text="Отправить" HBox.hgrow="ALWAYS" />
                       </children>
                    </HBox>
