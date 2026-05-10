@@ -129,6 +129,10 @@ public class ChatController {
         contactsList.setCellFactory(param -> new ContactListCell());
         contactsList.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
+                if (selectedContact != null) {
+                    settings.saveDraft(selectedContact.getName(), messageInput.getText());
+                }
+
                 selectedContact = newVal;
                 messageInput.requestFocus();
                 updateChatPanel();
@@ -428,6 +432,8 @@ public class ChatController {
                 }
                 if (event.getCode() == KeyCode.ESCAPE &&
                         (messageInput.isFocused() || chatHistory.isFocused())) {
+                    settings.saveDraft(selectedContact.getName(), messageInput.getText());
+
                     chatHistory.getItems().clear();
                     messageInput.clear();
 
@@ -449,7 +455,9 @@ public class ChatController {
     private void switchChat(int direction) {
         logger.log("Chat window: switch chat via alt + arrow in direction: " + direction);
 
-        System.out.println(contactsList.getItems().size());
+        if(selectedContact != null) {
+            settings.saveDraft(selectedContact.getName(), messageInput.getText());
+        }
 
         int currentIndex = contactsList.getSelectionModel().getSelectedIndex();
         int size = contactsList.getItems().size();
@@ -463,6 +471,9 @@ public class ChatController {
         // selecting new picked chat in contactsList
         contactsList.getSelectionModel().select(nextIndex);
         contactsList.scrollTo(nextIndex);
+        messageInput.clear();
+
+        messageInput.setText(settings.getDraft(selectedContact.getName()));
         messageInput.requestFocus();
     }
 
@@ -788,6 +799,8 @@ public class ChatController {
 
         if (selectedContact != null) {
             chatTitleLabel.setText("Чат с " + selectedContact.getName());
+
+            messageInput.setText(settings.getDraft(selectedContact.getName()));
         } else {
             chatTitleLabel.setText("Выберите чат для общения!");
         }
@@ -870,6 +883,9 @@ public class ChatController {
     private void closeWindow() {
         logger.log("Chat window: user requested closing window, closing application");
 
+        if (selectedContact != null) {
+            settings.saveDraft(selectedContact.getName(), messageInput.getText());
+        }
         settings.save();
 
         Platform.runLater(() -> {
