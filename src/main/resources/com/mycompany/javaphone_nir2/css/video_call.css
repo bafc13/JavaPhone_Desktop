@@ -34,6 +34,18 @@
     -fx-translate-y: 1px; 
 }
 
+.chat-status {
+    -fx-text-fill: black;
+    -fx-font-size: 12px;
+    -fx-background-color: transparent;
+}
+
+.call-duration-label {
+    -fx-text-fill: black;
+    -fx-font-size: 12px;
+    -fx-background-color: transparent;
+}
+
 .typing-indicator {
     -fx-text-fill: black;
     -fx-font-size: 12px;

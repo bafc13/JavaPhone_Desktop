@@ -15,7 +15,10 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
 import javafx.animation.PauseTransition;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.DoubleBinding;
@@ -43,6 +46,7 @@ public class VideoCallController {
     @FXML private StackPane remoteVideoContainer;
     @FXML private HBox headerContainer;
     @FXML private StackPane localVideoContainer;
+    @FXML private StackPane callChatHistoryContainer;
     @FXML private SplitPane videoSplitPane;
     @FXML private ListView<Message> callChatHistory;
     @FXML private TextField callMessageInput;
@@ -54,6 +58,8 @@ public class VideoCallController {
     @FXML private Button cameraButton;
     @FXML private Button endCallButton;
     @FXML private Label callStatusLabel;
+    @FXML private Label chatStatus;
+    @FXML private Label callDurationLabel;
     @FXML private HBox messageContainer;
     @FXML private HBox footerContainer;
     @FXML private VBox chatContainer;
@@ -72,6 +78,9 @@ public class VideoCallController {
     private boolean isCameraEnabled = true;
     private boolean isFilterEnabled = false;
     private String contactName = "Собеседник";
+
+    private Timeline callTimer;
+    private long callStartTimeMillis;
 
     /** SettingsManager stores and saves settings */
     private final SettingsManager settings = SettingsManager.getInstance();
@@ -97,12 +106,60 @@ public class VideoCallController {
         logger.log("Video call window initializing");
 
         setupCallUI();
+        setupCallTimer();
+        startCallTimer();
 
-        appendToCallChat("System", "Соединение установлено");
-        appendToCallChat("System", "Звонок активен");
+        setChatStatus("Соединение установлено");
 
         callChatHistory.setEditable(false);
         instance = this;
+    }
+
+    public void setChatStatus(String status) {
+        chatStatus.setText(status);
+    }
+
+    public void removeChatStatus(){
+        chatStatus.setText("");
+    }
+
+    private void setupCallTimer() {
+        callTimer = new Timeline(
+            new KeyFrame(Duration.seconds(1), event -> {
+                long elapsed = System.currentTimeMillis() - callStartTimeMillis;
+                long totalSeconds = elapsed / 1000;
+
+                long minutes = totalSeconds / 60;
+                long seconds = totalSeconds % 60;
+                long hours = minutes / 60;
+                minutes %= 60;
+
+                // Формат HH:MM:SS если >1 часа, иначе MM:SS
+                String timeStr = hours > 0
+                    ? String.format("- %02d:%02d:%02d", hours, minutes, seconds)
+                    : String.format("- %02d:%02d", minutes, seconds);
+
+                callDurationLabel.setText(timeStr);
+            })
+        );
+        // Бесконечный цикл до явной остановки
+        callTimer.setCycleCount(Animation.INDEFINITE);
+    }
+
+    /**
+     * Запуск таймера. Вызывать при успешном соединении.
+     */
+    public void startCallTimer() {
+        callStartTimeMillis = System.currentTimeMillis();
+        callTimer.playFromStart();
+        callDurationLabel.setText("- 00:00");
+    }
+
+    /**
+     * Остановка таймера. Вызывать при завершении звонка.
+     */
+    public void stopCallTimer() {
+        callTimer.stop();
     }
 
     /** This method responsible for add local video track
@@ -156,6 +213,8 @@ public class VideoCallController {
         localVideoLabel.getStyleClass().add("video-label");
 
         typingIndicator.getStyleClass().add("typing-indicator");
+        chatStatus.getStyleClass().add("chat-status");
+        callDurationLabel.getStyleClass().add("call-duration-label");
 
         applyLayoutMode(currentMode);
         setupClickHandlers();
@@ -560,7 +619,8 @@ public class VideoCallController {
     private void endCall() {
         logger.log("Video call window: ending call");
 
-        appendToCallChat("System", "📞 Звонок завершен");
+        setChatStatus("Звонок завершён");
+        stopCallTimer();
 
         javafx.application.Platform.runLater(() -> {
             closeWindow();
