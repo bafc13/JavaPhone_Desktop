@@ -101,6 +101,15 @@ public class ChatHistoryCell extends ListCell<Message> {
 
         senderLabel.setVisible(false);
 
+        String text = message.getContent();
+        contentLabel.setText(text);
+
+        if (text.matches(".*[A-ZА-Я].*") && text.equals(text.toUpperCase())) {
+            contentLabel.getStyleClass().add("uppercase-message");
+        } else {
+            contentLabel.getStyleClass().remove("uppercase-message");
+        }
+
         // local - right align, remote - left align
         if (isOwnMessage(message)) {
             root.setAlignment(Pos.CENTER_RIGHT);

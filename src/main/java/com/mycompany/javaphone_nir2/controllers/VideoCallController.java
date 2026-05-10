@@ -103,8 +103,6 @@ public class VideoCallController {
 
         callChatHistory.setEditable(false);
         instance = this;
-
-        setTypingIndicator(true);
     }
 
     /** This method responsible for add local video track

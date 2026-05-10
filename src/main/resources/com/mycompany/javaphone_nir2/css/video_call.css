@@ -117,6 +117,12 @@
     -fx-font-weight: bold;
 }
 
+.uppercase-message {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-letter-spacing: 0.5px;
+}
+
 .chat-history .list-cell {
     -fx-background-color: transparent;
     -fx-padding: 2px 0;

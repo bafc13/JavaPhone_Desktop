@@ -23,6 +23,7 @@ import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.collections.ObservableMap;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
@@ -32,6 +33,7 @@ import javafx.scene.Parent;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
 import javafx.stage.Window;
@@ -61,6 +63,11 @@ public class ChatController {
     @FXML private Label chatTitleLabel;
     @FXML private SplitPane mainSplitPane;
     @FXML private Label typingIndicator;
+    @FXML private StackPane chatRootContainer;
+
+    private VBox searchOverlay;
+    private TextField searchField;
+    private int searchIndex = 0;
 
    /** ObservableMap, that stores contacts, which connected to the signal server  */
     private ObservableMap<String, Contact> contacts;
@@ -107,6 +114,7 @@ public class ChatController {
         setupChatUI();
         checkRegistration();
         initSignalingClient();
+        setupMessageSearch();
 
         instance = this;
     }
@@ -122,6 +130,7 @@ public class ChatController {
         contactsList.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
                 selectedContact = newVal;
+                messageInput.requestFocus();
                 updateChatPanel();
             }
         });
@@ -295,6 +304,80 @@ public class ChatController {
         typingIndicator.getStyleClass().add("typing-indicator");
     }
 
+    private void setupMessageSearch() {
+        searchField = new TextField();
+        searchField.setPromptText("Поиск по сообщениям...");
+
+        Button closeBtn = new Button("✕");
+        closeBtn.getStyleClass().add("search-close-btn");
+        closeBtn.setOnAction(e -> hideSearch());
+
+        searchOverlay = new VBox(8, searchField, closeBtn);
+        searchOverlay.getStyleClass().add("search-overlay");
+        searchOverlay.setVisible(false);
+
+        searchField.textProperty().addListener((obs, old, newVal) -> {
+            if (newVal.trim().isEmpty()) return;
+            searchAndHighlight(newVal.trim().toLowerCase());
+        });
+
+        chatRootContainer.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) {
+                newScene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+                    if (event.getCode() == KeyCode.F && event.isControlDown()) {
+                        showSearch();
+                        event.consume();
+                    }
+                });
+            }
+        });
+
+        chatRootContainer.getChildren().add(searchOverlay);
+
+        setupSearchHide();
+    }
+
+    private void showSearch() {
+        searchOverlay.setVisible(true);
+        searchField.requestFocus();
+        searchField.selectAll();
+    }
+
+    private void hideSearch() {
+        searchOverlay.setVisible(false);
+        chatHistory.getSelectionModel().clearSelection();
+
+        messageInput.requestFocus();
+    }
+
+    private void searchAndHighlight(String query) {
+        ObservableList<Message> messages = chatHistory.getItems();
+        for (int i = 0; i < messages.size(); i++) {
+            String content = messages.get(i).getContent().toLowerCase();
+            if (content.contains(query)) {
+                chatHistory.scrollTo(i);
+                chatHistory.getSelectionModel().select(i);
+                return;
+            }
+        }
+    }
+
+    private void setupSearchHide() {
+        chatRootContainer.setOnMouseClicked(e -> {
+            if (searchOverlay.isVisible() && !searchOverlay.contains(e.getX(), e.getY())) {
+                hideSearch();
+            }
+        });
+        chatRootContainer.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ESCAPE && searchOverlay.isVisible()) {
+                hideSearch();
+            }
+            if (event.getCode() == KeyCode.ENTER && searchOverlay.isVisible()) {
+                hideSearch();
+            }
+        });
+    }
+
     /**
      * This method helps init responsive layout
      * @param stage helps to accurately set the event handler on the initialized object
@@ -343,6 +426,18 @@ public class ChatController {
                     switchChat(event.getCode() == KeyCode.UP ? -1 : 1);
                     event.consume();
                 }
+                if (event.getCode() == KeyCode.ESCAPE &&
+                        (messageInput.isFocused() || chatHistory.isFocused())) {
+                    chatHistory.getItems().clear();
+                    messageInput.clear();
+
+                    selectedContact = null;
+                    updateChatPanel();
+
+                    contactsList.getFocusModel().focus(-1);
+                    contactsList.getSelectionModel().clearSelection();
+                    contactsList.requestFocus();
+                }
             });
         }
     }
@@ -353,6 +448,8 @@ public class ChatController {
     */
     private void switchChat(int direction) {
         logger.log("Chat window: switch chat via alt + arrow in direction: " + direction);
+
+        System.out.println(contactsList.getItems().size());
 
         int currentIndex = contactsList.getSelectionModel().getSelectedIndex();
         int size = contactsList.getItems().size();
@@ -687,10 +784,12 @@ public class ChatController {
     private void updateChatPanel() {
         logger.log("Chat window: updating chatTitleLabel with contact: " + selectedContact);
 
+        //TO DO: load chat with selected contact via method loadChatHistory(...);
+
         if (selectedContact != null) {
             chatTitleLabel.setText("Чат с " + selectedContact.getName());
         } else {
-            chatTitleLabel.setText("");
+            chatTitleLabel.setText("Выберите чат для общения!");
         }
     }
 
