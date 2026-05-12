@@ -203,14 +203,12 @@ public class SettingsController {
     private void setupGlobalKeyboardNavigation(Stage stage) {
         logger.log("Settings window: setupping keyboard navigation");
 
-        if (stage.getScene() != null && stage.isShowing()) {
+        if (stage.getScene() != null) {
             Parent root = stage.getScene().getRoot();
             root.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
                 if (event.getCode() == KeyCode.ESCAPE) {
                     onDiscardButtonClicked();
-                }
-                if (event.getCode() == KeyCode.ENTER) {
-                    saveSettings();
+                    event.consume();
                 }
             });
         }

@@ -3,11 +3,14 @@ package com.mycompany.javaphone_nir2.controllers;
 import com.mycompany.javaphone_nir2.ChatHistoryCell;
 import com.mycompany.javaphone_nir2.WebRtcVideoPanel;
 import com.mycompany.javaphone_nir2.logging.SessionLogger;
+import com.mycompany.javaphone_nir2.models.Media;
 import com.mycompany.javaphone_nir2.models.Message;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
 import com.mycompany.javaphone_nir2.models.VideoLayoutMode;
 import com.mycompany.javaphone_nir2.webrtc.WebRTCManager;
 import dev.onvoid.webrtc.media.video.VideoTrack;
+import java.io.File;
+import java.nio.file.Files;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -17,7 +20,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
-import javafx.animation.PauseTransition;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -26,11 +28,15 @@ import javafx.geometry.Pos;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import javafx.util.Duration;
 
 /**
@@ -69,6 +75,7 @@ public class VideoCallController {
     @FXML private Label remoteVideoLabel;
     @FXML private Label localVideoLabel;
     @FXML private Label typingIndicator;
+    @FXML private Button attachButton;
 
     private HBox splitModeContainer;
 
@@ -108,6 +115,7 @@ public class VideoCallController {
         setupCallUI();
         setupCallTimer();
         startCallTimer();
+        setupFileHandling();
 
         setChatStatus("Соединение установлено");
 
@@ -283,6 +291,14 @@ public class VideoCallController {
         videoContainer.layout();
 
         initVideoNet();
+
+        ImageView imageView = new ImageView(new Image(getClass()
+                .getResourceAsStream("/com/mycompany/javaphone_nir2/images/attachment.png")));
+        imageView.setFitWidth(25);
+        imageView.setFitHeight(25);
+        imageView.setPreserveRatio(true);
+
+        attachButton.setGraphic(imageView);
     }
 
     /** This method responsible for initialize video net */
@@ -493,6 +509,65 @@ public class VideoCallController {
         localVideoContainer.setOnMouseClicked(this::handleCameraClick);
     }
 
+    private void setupFileHandling() {
+        callChatHistoryContainer.setOnDragOver(event -> {
+            if (event.getDragboard().hasFiles()) {
+                event.acceptTransferModes(TransferMode.COPY);
+            }
+            event.consume();
+        });
+
+        chatContainer.setOnMouseClicked(e ->
+            System.out.println("VBox clicked at: " + e.getX() + ", " + e.getY())
+        );
+        callChatHistoryContainer.setOnMouseClicked(e ->
+            System.out.println("call chat history cont clicked at: " + e.getX() + ", " + e.getY())
+        );
+        callChatHistory.setOnMouseClicked(e ->
+            System.out.println("call chat list view clicked at: " + e.getX() + ", " + e.getY())
+        );
+
+
+        callChatHistoryContainer.setOnDragDropped(event -> {
+            List<File> files = event.getDragboard().getFiles();
+            if (files != null && !files.isEmpty()) {
+                handleSelectedFiles(files);
+                event.setDropCompleted(true);
+//                event.consume();
+            }
+
+        });
+
+        attachButton.setOnAction(e -> {
+            FileChooser fc = new FileChooser();
+            fc.setTitle("Выберите файлы для отправки");
+            fc.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Изображения", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.webp"),
+                new FileChooser.ExtensionFilter("Все файлы", "*.*")
+            );
+            List<File> files = fc.showOpenMultipleDialog(attachButton.getScene().getWindow());
+            if (files != null && !files.isEmpty()) {
+                handleSelectedFiles(files);
+            }
+        });
+    }
+
+    private void handleSelectedFiles(List<File> files) {
+        for (File f : files) {
+            appendFileToChat(f, "Вы");
+
+            // webRTCManager.sendFile(msg, media);
+        }
+    }
+
+    private String computeChecksum(File f) {
+        try {
+            return Integer.toHexString(Files.readAllBytes(f.toPath()).hashCode());
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
     /** This method responsible for switch camera modes by clic
      * @param event mouse event
      */
@@ -669,6 +744,21 @@ public class VideoCallController {
             Stage stage = (Stage) endCallButton.getScene().getWindow();
             stage.close();
         });
+    }
+
+    public void appendFileToChat(File file, String sender){
+        Media media = new Media();
+        media.setPath(file.getAbsolutePath());
+        media.setChecksum(computeChecksum(file));
+
+        Message msg = new Message();
+        msg.setChatId(1);
+        msg.setSenderPublicKey(sender);
+        msg.setContent("");
+        msg.setTime(System.currentTimeMillis() / 1000);
+        msg.setAttachments(List.of(media));
+
+        appendToCallChat(msg);
     }
 
     /** This method responsible for add message to chat

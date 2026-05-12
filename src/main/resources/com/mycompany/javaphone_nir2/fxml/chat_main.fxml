@@ -52,7 +52,7 @@
                 </VBox>
          <StackPane fx:id="chatRootContainer" HBox.hgrow="ALWAYS">
             <children>
-                      <VBox minWidth="460" spacing="0">
+                      <VBox alignment="CENTER" minWidth="460" spacing="0">
                           <children>
                               <ListView fx:id="chatHistory" minWidth="460" VBox.vgrow="ALWAYS">
                         </ListView>
@@ -68,6 +68,7 @@
                                             <TextField fx:id="messageInput" promptText="Введите сообщение..." />
                               </children>
                            </VBox>
+                           <Button fx:id="attachButton" mnemonicParsing="false" />
                                       <Button fx:id="sendButton" alignment="BOTTOM_CENTER" prefWidth="110.0" text="Отправить" />
                                   </children>
                               </HBox>

@@ -4,17 +4,20 @@ import com.mycompany.javaphone_nir2.ChatHistoryCell;
 import com.mycompany.javaphone_nir2.ContactListCell;
 import com.mycompany.javaphone_nir2.logging.SessionLogger;
 import com.mycompany.javaphone_nir2.models.Contact;
+import com.mycompany.javaphone_nir2.models.Media;
 import com.mycompany.javaphone_nir2.models.Message;
 import com.mycompany.javaphone_nir2.models.Offer;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
 import com.mycompany.javaphone_nir2.signaling.SignalingClient;
 import com.mycompany.javaphone_nir2.webrtc.WebRTCManager;
+import java.io.File;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -30,11 +33,15 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import javafx.stage.Popup;
 import javafx.stage.Window;
 import javafx.util.Duration;
@@ -64,6 +71,7 @@ public class ChatController {
     @FXML private SplitPane mainSplitPane;
     @FXML private Label typingIndicator;
     @FXML private StackPane chatRootContainer;
+    @FXML private Button attachButton;
 
     private VBox searchOverlay;
     private TextField searchField;
@@ -115,6 +123,9 @@ public class ChatController {
         checkRegistration();
         initSignalingClient();
         setupMessageSearch();
+        setupFileHandling();
+
+        scheduleIncomingCallTimer();
 
         instance = this;
     }
@@ -224,6 +235,14 @@ public class ChatController {
                 }
             closeWindow();
         });
+
+        ImageView imageView = new ImageView(new Image(getClass()
+                .getResourceAsStream("/com/mycompany/javaphone_nir2/images/attachment.png")));
+        imageView.setFitWidth(25);
+        imageView.setFitHeight(25);
+        imageView.setPreserveRatio(true);
+
+        attachButton.setGraphic(imageView);
     }
 
     /** This method open settings window when user is not registered */
@@ -380,6 +399,53 @@ public class ChatController {
                 hideSearch();
             }
         });
+    }
+
+    private void setupFileHandling() {
+        chatRootContainer.setOnDragOver(event -> {
+            if (event.getDragboard().hasFiles()) {
+                event.acceptTransferModes(TransferMode.COPY);
+            }
+            event.consume();
+        });
+
+        chatRootContainer.setOnDragDropped(event -> {
+            List<File> files = event.getDragboard().getFiles();
+            if (files != null && !files.isEmpty()) {
+                handleSelectedFiles(files);
+                event.setDropCompleted(true);
+            }
+            event.consume();
+        });
+
+        attachButton.setOnAction(e -> {
+            FileChooser fc = new FileChooser();
+            fc.setTitle("Выберите файлы для отправки");
+            fc.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Изображения", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.webp"),
+                new FileChooser.ExtensionFilter("Все файлы", "*.*")
+            );
+            List<File> files = fc.showOpenMultipleDialog(attachButton.getScene().getWindow());
+            if (files != null && !files.isEmpty()) {
+                handleSelectedFiles(files);
+            }
+        });
+    }
+
+    private void handleSelectedFiles(List<File> files) {
+        for (File f : files) {
+            appendFileToChat(f, "Вы");
+
+            // webRTCManager.sendFile(msg, media);
+        }
+    }
+
+    private String computeChecksum(File f) {
+        try {
+            return Integer.toHexString(Files.readAllBytes(f.toPath()).hashCode());
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     /**
@@ -615,6 +681,7 @@ public class ChatController {
     private void acceptCall() {
         logger.log("Chat window: accepting call with: " + incomingCallContact.getName() + ", key: " + incomingCallContact.getKey());
 
+        webRtcManager.handleOffer(offer.getSdp(), offer.getSender());
         hideIncomingCallNotification();
         startVideoCallWithContact(incomingCallContact);
     }
@@ -912,6 +979,21 @@ public class ChatController {
         webRtcManager.startCall(selectedContact.getKey());
     }
 
+    public void appendFileToChat(File file, String sender){
+        Media media = new Media();
+        media.setPath(file.getAbsolutePath());
+        media.setChecksum(computeChecksum(file));
+
+        Message msg = new Message();
+        msg.setChatId(1);
+        msg.setSenderPublicKey(sender);
+        msg.setContent("");
+        msg.setTime(System.currentTimeMillis() / 1000);
+        msg.setAttachments(List.of(media));
+
+        appendToChat(msg);
+    }
+
     /** This method responsible for add message to chat
      * @param sender
      * @param content message
@@ -1003,4 +1085,3 @@ public class ChatController {
         }
     }
 }
-

@@ -66,13 +66,13 @@
                 </HBox>
             </VBox>
             
-                        <VBox fx:id="chatContainer" minWidth="285" prefHeight="450.0" prefWidth="286.0">
+                        <VBox fx:id="chatContainer" alignment="CENTER" minWidth="285" prefHeight="450.0" prefWidth="286.0">
                 <children>
                <StackPane fx:id="callChatHistoryContainer" VBox.vgrow="ALWAYS">
                   <children>
                           <ListView fx:id="callChatHistory" editable="false" minWidth="100" prefHeight="406.0" prefWidth="286.0">
                  </ListView>
-                     <HBox alignment="TOP_CENTER" prefHeight="100.0" prefWidth="200.0" StackPane.alignment="TOP_CENTER">
+                     <HBox alignment="TOP_CENTER" mouseTransparent="true" prefHeight="100.0" prefWidth="200.0" StackPane.alignment="TOP_CENTER">
                         <children>
                            <Label fx:id="chatStatus" alignment="TOP_CENTER" />
                            <Label fx:id="callDurationLabel" />
@@ -97,6 +97,7 @@
                                   <TextField fx:id="callMessageInput" promptText="Введите сообщение..." />
                               </children>
                           </VBox>
+                     <Button fx:id="attachButton" mnemonicParsing="false" />
                          <Button fx:id="sendCallMessageButton" prefWidth="100" text="Отправить" HBox.hgrow="ALWAYS" />
                       </children>
                    </HBox>

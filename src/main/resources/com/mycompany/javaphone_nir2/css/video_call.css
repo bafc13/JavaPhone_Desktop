@@ -212,3 +212,38 @@
     -fx-border-color: #3498db;
     -fx-effect: dropshadow(gaussian, rgba(52, 152, 219, 0.6), 15, 0, 0, 2);
 }
+
+.file-preview {
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-border-color: rgba(255, 255, 255, 0.2);
+    -fx-border-width: 1px;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 4, 0, 0, 1);
+}
+
+.file-preview:hover {
+    -fx-border-color: #3498db;
+}
+
+.file-name-link {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-underline: true;
+    -fx-cursor: hand;
+    -fx-font-size: 13px;
+}
+
+.file-name-link:hover {
+    -fx-text-fill: #2980b9;
+    -fx-underline: false;
+}
+
+.file-size {
+    -fx-text-fill: rgba(224, 224, 224, 0.7);
+    -fx-font-size: 11px;
+}
+
+.file-attachment-box {
+    -fx-padding: 4px 0;
+}
