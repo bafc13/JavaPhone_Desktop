@@ -122,8 +122,7 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
         setupMessageSearch();
         setupFileHandling();
 
-        scheduleIncomingCallTimer();
-
+        // scheduleIncomingCallTimer();
     }
 
     /** This method inits observableHashMap for contacts, sets cells for contacts ListView and styles */
