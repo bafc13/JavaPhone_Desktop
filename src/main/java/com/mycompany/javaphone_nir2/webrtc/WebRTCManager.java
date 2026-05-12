@@ -426,7 +426,7 @@ public class WebRTCManager implements PeerConnectionObserver {
                             PublicKey publicKey = MessageCryptographer.stringToPublicKey(remoteClientKey);
                             boolean isVerified = MC.confirmSign(content, signature, publicKey);
                             if (!isVerified) {
-                                System.out.println("Signature is false, skipping");
+                                System.out.println("Signature in chatMessage is false, skipping");
                                 return;
                             }
 
@@ -473,13 +473,23 @@ public class WebRTCManager implements PeerConnectionObserver {
                             data.get(textBytes);
                         }
 
-                        String text = new String(textBytes, StandardCharsets.UTF_8);
+                        String textEncrypted = new String(textBytes, StandardCharsets.UTF_8);
+                        String text = MC.decryptMessage(textEncrypted);
+                        
                         try {
                             System.out.println("🎮 [GAME] Получено сообщение:");
                             System.out.println(text);
                             JsonNode message = mapper.readTree(text);
                             String sender = message.get("sender").asText();
                             String content = message.get("content").asText();
+                            String signature = message.get("signature").asText();
+                            
+                            PublicKey publicKey = MessageCryptographer.stringToPublicKey(remoteClientKey);
+                            boolean isVerified = MC.confirmSign(content, signature, publicKey);
+                            if (!isVerified) {
+                                System.out.println("Signature in gameMessage is false, skipping");
+                                return;
+                            }
 
                             // Игнорируем свои сообщения, чтобы не обрабатывать их дважды
                             javafx.application.Platform.runLater(() -> {
@@ -511,7 +521,7 @@ public class WebRTCManager implements PeerConnectionObserver {
     public String getMyUserId() {
         // Получаем clientId из SignalingClient
         try {
-            return SignalingClient.getInstance().getClientId();
+            return MC.getPublicKeyString();
         } catch (Exception e) {
             // Fallback на nickname
             return SettingsManager.getInstance().getNickname();
@@ -558,11 +568,16 @@ public class WebRTCManager implements PeerConnectionObserver {
             try {
                 ObjectNode message = mapper.createObjectNode();
                 String sender = getMyUserId(); // Теперь используем clientId
+                String signature = MC.signMessage(content);
                 message.put("sender", sender);
                 message.put("content", content);
+                message.put("signature", signature);
 
                 String textMessage = mapper.writeValueAsString(message);
-                ByteBuffer textBuffer = ByteBuffer.wrap(textMessage.getBytes(StandardCharsets.UTF_8));
+                PublicKey publicKey = MessageCryptographer.stringToPublicKey(remoteClientKey);
+                String textEncrypted = MC.encryptMessage(textMessage, publicKey);
+                
+                ByteBuffer textBuffer = ByteBuffer.wrap(textEncrypted.getBytes(StandardCharsets.UTF_8));
                 RTCDataChannelBuffer textChannelBuffer = new RTCDataChannelBuffer(textBuffer, false);
 
                 gameDataChannel.send(textChannelBuffer);
