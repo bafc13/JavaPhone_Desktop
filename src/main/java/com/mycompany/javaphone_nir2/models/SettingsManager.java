@@ -137,6 +137,8 @@ public class SettingsManager {
     public String getNickname() { return data.nickname; }
     public void setNickname(String nickname) { nicknameProperty.set(nickname); }
     public StringProperty nicknameProperty() { return nicknameProperty; }
+    
+    public String getEmail() { return data.nickname + "@example.com"; }
 
     public String getSignalingUrl() { return data.signalingUrl; }
     public void setSignalingUrl(String url) { signalingUrlProperty.set(url); }

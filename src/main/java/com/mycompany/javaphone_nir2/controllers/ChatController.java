@@ -140,8 +140,8 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
         settingsButton.setOnAction(e -> openSettings());
         settingsButton.getStyleClass().add("header-button");
 
-//        callButton.setOnAction(e -> startVideoCall());
-        callButton.setOnAction(e -> startVideoCallWithContact(new Contact("BaFC13", "ONLINE", "1333")));
+        callButton.setOnAction(e -> startVideoCall());
+  //      callButton.setOnAction(e -> startVideoCallWithContact(selectedContact));
         callButton.getStyleClass().add("header-button");
 
         exitButton.getStyleClass().add("header-button");
@@ -187,6 +187,8 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
         signalingClient = SignalingClient.getInstance();
         signalingClient.setCallManager(this);
         signalingClient.addChatHandler(this);
+        
+        webRtcManager.setCallManager(this);
     }
 
     /** This method connect to signaling client */
@@ -450,7 +452,8 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
     /** This method responsible for accept the call */
     private void acceptCall() {
         logger.log("Chat window: accepting call with: " + incomingCallContact.getName() + ", key: " + incomingCallContact.getKey());
-
+        
+        webRtcManager.handleOffer(offer.getSdp(), offer.getSender());
         hideIncomingCallNotification();
         startVideoCallWithContact(incomingCallContact);
     }
@@ -755,10 +758,11 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
     @Override
     public void handleMessage(Message message) {
         // Добавляем в конец списка
-       chatHistory.getItems().add(message);
+       
 
        // 🔥 Прокрутка вниз к новому сообщению
        Platform.runLater(() -> {
+           chatHistory.getItems().add(message);
            int lastIndex = chatHistory.getItems().size() - 1;
            if (lastIndex >= 0) {
                chatHistory.scrollTo(lastIndex);

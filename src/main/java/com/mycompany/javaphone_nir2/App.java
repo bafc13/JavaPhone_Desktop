@@ -1,6 +1,7 @@
 package com.mycompany.javaphone_nir2;
 
 import com.mycompany.javaphone_nir2.controllers.ChatController;
+import com.mycompany.javaphone_nir2.cryptography.MessageCryptographer;
 import com.mycompany.javaphone_nir2.logging.SessionLogger;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
 import javafx.application.Application;
@@ -26,6 +27,8 @@ public class App extends Application {
     public void start(Stage primaryStage) {
         SettingsManager settings = SettingsManager.getInstance();
         SessionLogger logger = SessionLogger.getInstance();
+        MessageCryptographer MC = MessageCryptographer.getInstance();
+        
         logger.log("Application started. Initializing UI...");
 
         try {
