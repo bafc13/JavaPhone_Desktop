@@ -517,25 +517,12 @@ public class VideoCallController {
             event.consume();
         });
 
-        chatContainer.setOnMouseClicked(e ->
-            System.out.println("VBox clicked at: " + e.getX() + ", " + e.getY())
-        );
-        callChatHistoryContainer.setOnMouseClicked(e ->
-            System.out.println("call chat history cont clicked at: " + e.getX() + ", " + e.getY())
-        );
-        callChatHistory.setOnMouseClicked(e ->
-            System.out.println("call chat list view clicked at: " + e.getX() + ", " + e.getY())
-        );
-
-
         callChatHistoryContainer.setOnDragDropped(event -> {
             List<File> files = event.getDragboard().getFiles();
             if (files != null && !files.isEmpty()) {
                 handleSelectedFiles(files);
                 event.setDropCompleted(true);
-//                event.consume();
             }
-
         });
 
         attachButton.setOnAction(e -> {
