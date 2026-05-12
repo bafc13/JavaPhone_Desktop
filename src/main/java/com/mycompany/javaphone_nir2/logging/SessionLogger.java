@@ -4,6 +4,7 @@ import java.io.*;
 import java.nio.file.*;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+
 /**
  *
  *
@@ -15,10 +16,10 @@ public class SessionLogger {
     private final long sessionStartTime;
     private final Path logDir;
 
-    private static final DateTimeFormatter FILE_TS =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss").withZone(ZoneId.systemDefault());
-    private static final DateTimeFormatter LOG_TS =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").withZone(ZoneId.systemDefault());
+    private static final DateTimeFormatter FILE_TS
+            = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss").withZone(ZoneId.systemDefault());
+    private static final DateTimeFormatter LOG_TS
+            = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").withZone(ZoneId.systemDefault());
 
     private SessionLogger() {
         this.sessionStartTime = System.currentTimeMillis();
@@ -49,7 +50,7 @@ public class SessionLogger {
         String absTime = LOG_TS.format(Instant.now());
         long elapsed = System.currentTimeMillis() - sessionStartTime;
         String relTime = String.format("[+%02d:%02d:%02d.%03d]",
-            elapsed / 3600000, (elapsed % 3600000) / 60000, (elapsed % 60000) / 1000, elapsed % 1000);
+                elapsed / 3600000, (elapsed % 3600000) / 60000, (elapsed % 60000) / 1000, elapsed % 1000);
 
         String threadName = Thread.currentThread().getName();
         writer.printf("[%s] %s [%s] %s%n", absTime, relTime, threadName, message);

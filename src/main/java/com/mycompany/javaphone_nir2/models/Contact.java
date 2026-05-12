@@ -12,7 +12,6 @@ public class Contact {
     /**
      * HEX
      */
-
     private String avatarColor;
 
     public Contact(String name, String status, String avatarColor, String key) {
@@ -68,12 +67,16 @@ public class Contact {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Contact)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Contact)) {
+            return false;
+        }
         Contact contact = (Contact) o;
-        if(key.equals(contact.key) &&
-                name.equals(contact.name) &&
-                status.equals(contact.status)) {
+        if (key.equals(contact.key)
+                && name.equals(contact.name)
+                && status.equals(contact.status)) {
             return true;
         }
         return false;

@@ -27,14 +27,16 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Region;
 import javafx.util.Duration;
+
 /**
- * A custom cell for displaying messages in the chat history.
- * Implements a modern design: a message "bubble" with a time stamp.
+ * A custom cell for displaying messages in the chat history. Implements a
+ * modern design: a message "bubble" with a time stamp.
  */
 public class ChatHistoryCell extends ListCell<Message> {
-    private static final DateTimeFormatter TIME_FORMATTER =
-        DateTimeFormatter.ofPattern("HH:mm")
-            .withZone(ZoneId.systemDefault());
+
+    private static final DateTimeFormatter TIME_FORMATTER
+            = DateTimeFormatter.ofPattern("HH:mm")
+                    .withZone(ZoneId.systemDefault());
 
     private final HBox root;
     private final VBox bubbleContainer;
@@ -50,7 +52,9 @@ public class ChatHistoryCell extends ListCell<Message> {
     private Timeline appearAnimation;
     private boolean isAnimated = false;
 
-    /** Ctor that set components, styles */
+    /**
+     * Ctor that set components, styles
+     */
     public ChatHistoryCell() {
         root = new HBox(8);
         root.setAlignment(Pos.CENTER_LEFT);
@@ -97,20 +101,22 @@ public class ChatHistoryCell extends ListCell<Message> {
         root.setTranslateY(15);
 
         appearAnimation = new Timeline(
-            new KeyFrame(Duration.ZERO,
-                new KeyValue(root.opacityProperty(), 0),
-                new KeyValue(root.translateYProperty(), 15, Interpolator.EASE_OUT)
-            ),
-            new KeyFrame(Duration.millis(200),
-                new KeyValue(root.opacityProperty(), 1),
-                new KeyValue(root.translateYProperty(), 0)
-            )
+                new KeyFrame(Duration.ZERO,
+                        new KeyValue(root.opacityProperty(), 0),
+                        new KeyValue(root.translateYProperty(), 15, Interpolator.EASE_OUT)
+                ),
+                new KeyFrame(Duration.millis(200),
+                        new KeyValue(root.opacityProperty(), 1),
+                        new KeyValue(root.translateYProperty(), 0)
+                )
         );
 
         setGraphic(root);
     }
 
-    /** This method responsible for updating item */
+    /**
+     * This method responsible for updating item
+     */
     @Override
     protected void updateItem(Message message, boolean empty) {
         super.updateItem(message, empty);
@@ -176,7 +182,9 @@ public class ChatHistoryCell extends ListCell<Message> {
     }
 
     private void renderAttachments(List<Media> attachments) {
-        if (attachments.isEmpty()) return;
+        if (attachments.isEmpty()) {
+            return;
+        }
 
         Media att = attachments.get(0);
         String fileName = MediaUtils.extractFileName(att.getPath());
@@ -190,7 +198,7 @@ public class ChatHistoryCell extends ListCell<Message> {
             filePreview.setManaged(true);
             fileAttachmentBox.setManaged(false);
             Image img = new Image(new File(att.getPath()).toURI().toString(),
-                                  380, 380, true, true);
+                    380, 380, true, true);
             filePreview.setImage(img);
             filePreview.setVisible(true);
         } else {
@@ -215,17 +223,19 @@ public class ChatHistoryCell extends ListCell<Message> {
         }
     }
 
-    /** This method formats Unix-timestamp */
+    /**
+     * This method formats Unix-timestamp
+     */
     private String formatTime(long timestamp) {
         return TIME_FORMATTER.format(Instant.ofEpochSecond(timestamp));
     }
 
     /**
-    * Determines whether the message is "one's own."
-    * Can be customized: compare with the current user's public key.
+     * Determines whether the message is "one's own." Can be customized: compare
+     * with the current user's public key.
      */
     private boolean isOwnMessage(Message message) {
-        if(message.getSenderPublicKey() == "Вы") {
+        if (message.getSenderPublicKey() == "Вы") {
             return true;
         }
         // TODO: replace with a real check

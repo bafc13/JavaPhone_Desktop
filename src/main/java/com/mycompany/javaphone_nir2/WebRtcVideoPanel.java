@@ -21,11 +21,11 @@ import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 
 /**
- * Pane for camera showing
- * implements VideoTrackSink to render frames that came via WebRTC
+ * Pane for camera showing implements VideoTrackSink to render frames that came
+ * via WebRTC
  *
- * Responsible for: 1. Show camera 2. Render (draw) frames
- * 3. Apply camera filter
+ * Responsible for: 1. Show camera 2. Render (draw) frames 3. Apply camera
+ * filter
  */
 public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
 
@@ -41,16 +41,28 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
     private int frameHeight = -1;
     // 0 = without filter, 100 = maximum filter value (yellow color)
     private final IntegerProperty warmthLevel = new SimpleIntegerProperty(this, "warmthLevel", 0);
-    public final int getWarmthLevel() { return warmthLevel.get(); }
-    public final void setWarmthLevel(int value) { warmthLevel.set(value); }
 
-    /** Property for warmth level (filter value) */
-    public IntegerProperty warmthLevelProperty() { return warmthLevel; }
+    public final int getWarmthLevel() {
+        return warmthLevel.get();
+    }
+
+    public final void setWarmthLevel(int value) {
+        warmthLevel.set(value);
+    }
+
+    /**
+     * Property for warmth level (filter value)
+     */
+    public IntegerProperty warmthLevelProperty() {
+        return warmthLevel;
+    }
 
     // flag frame in processing
     private final AtomicBoolean frameInQueue = new AtomicBoolean(false);
 
-    /** Ctor that adds canvas into pane and init listeners for size */
+    /**
+     * Ctor that adds canvas into pane and init listeners for size
+     */
     public WebRtcVideoPanel() {
         getChildren().add(canvas);
 
@@ -58,7 +70,9 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
         heightProperty().addListener((obs, oldVal, newVal) -> requestLayout());
     }
 
-    /** Method responsible for redraw children with actual size */
+    /**
+     * Method responsible for redraw children with actual size
+     */
     @Override
     protected void layoutChildren() {
         double w = getWidth();
@@ -72,6 +86,7 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
 
     /**
      * Method responsible for dram videoFrame that came from WebRTC
+     *
      * @param vf video frame to draw
      */
     @Override
@@ -88,7 +103,8 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
             } catch (Throwable ignore) {
                 try {
                     vf.buffer.release();
-                } catch (Throwable ignored2) {}
+                } catch (Throwable ignored2) {
+                }
             }
             return;
         }
@@ -96,7 +112,8 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
         // retain frame
         try {
             vf.retain();
-        } catch (Throwable ignore) {}
+        } catch (Throwable ignore) {
+        }
 
         Platform.runLater(() -> {
             try {
@@ -133,29 +150,34 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
                 } catch (Throwable ignore) {
                     try {
                         vf.buffer.release();
-                    } catch (Throwable ignored2) {}
+                    } catch (Throwable ignored2) {
+                    }
                 }
                 frameInQueue.set(false);
             }
         });
     }
 
-    /** This method responsible for ensure buffers with necessary size */
+    /**
+     * This method responsible for ensure buffers with necessary size
+     */
     private void ensureBuffers(int width, int height) {
         int pixelCount = width * height;
         int bytes = pixelCount * 4;
 
-        boolean recreate =
-                pixelBuffer == null ||
-                videoImage == null ||
-                argbNativeBuffer == null ||
-                fxArgbBuffer == null ||
-                frameWidth != width ||
-                frameHeight != height ||
-                argbNativeBuffer.capacity() < bytes ||
-                fxArgbBuffer.capacity() < pixelCount;
+        boolean recreate
+                = pixelBuffer == null
+                || videoImage == null
+                || argbNativeBuffer == null
+                || fxArgbBuffer == null
+                || frameWidth != width
+                || frameHeight != height
+                || argbNativeBuffer.capacity() < bytes
+                || fxArgbBuffer.capacity() < pixelCount;
 
-        if (!recreate) return;
+        if (!recreate) {
+            return;
+        }
 
         frameWidth = width;
         frameHeight = height;
@@ -177,8 +199,7 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
      * libyuv/WebRTC for FOURCC_ARGB on little-endian have bytes in heap like:
      * [B, G, R, A]
      *
-     * JavaFX IntArgbPre waiting int like:
-     * 0xAARRGGBB
+     * JavaFX IntArgbPre waiting int like: 0xAARRGGBB
      */
     private void convertNativeArgbToFxArgb(ByteBuffer src, IntBuffer dst, int width, int height) {
         int pixels = width * height;
@@ -201,9 +222,9 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
         int warmth = Math.max(0, Math.min(100, getWarmthLevel()));
 
         // warmth influence coefficients
-        float redBoost   = 0.3f * warmth / 100f;   // +30% on red
+        float redBoost = 0.3f * warmth / 100f;   // +30% on red
         float greenBoost = 0.15f * warmth / 100f;  // +15% on green
-        float blueCut    = 0.4f * warmth / 100f;   // −40% on blue
+        float blueCut = 0.4f * warmth / 100f;   // −40% on blue
 
         for (int i = 0; i < pixels; i++) {
             int b = src.get() & 0xFF;
@@ -223,13 +244,17 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
         dst.flip();
     }
 
-    /** This method responsible for forced limitation of a pixel
-     * value (or color component) to the range from 0 to 255 */
+    /**
+     * This method responsible for forced limitation of a pixel value (or color
+     * component) to the range from 0 to 255
+     */
     private static int clamp255(int v) {
         return (v < 0) ? 0 : (v > 255 ? 255 : v);
     }
 
-    /** This method responsible for redraw canvas */
+    /**
+     * This method responsible for redraw canvas
+     */
     private void redraw() {
         GraphicsContext gc = canvas.getGraphicsContext2D();
 
@@ -267,13 +292,17 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
         gc.drawImage(videoImage, drawX, drawY, drawW, drawH);
     }
 
-    /** This method responsible for return default pref width */
+    /**
+     * This method responsible for return default pref width
+     */
     @Override
     protected double computePrefWidth(double height) {
         return 640;
     }
 
-    /** This method responsible for return default pref height */
+    /**
+     * This method responsible for return default pref height
+     */
     @Override
     protected double computePrefHeight(double width) {
         return 480;

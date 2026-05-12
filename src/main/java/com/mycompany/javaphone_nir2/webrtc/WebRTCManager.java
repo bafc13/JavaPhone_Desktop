@@ -34,8 +34,9 @@ import java.util.logging.Logger;
 import javafx.application.Platform;
 
 public class WebRTCManager implements PeerConnectionObserver {
+
     private static MessageCryptographer MC = MessageCryptographer.getInstance();
-    
+
     private PeerConnectionFactory factory;
 
     private RTCConfiguration config;
@@ -76,7 +77,7 @@ public class WebRTCManager implements PeerConnectionObserver {
 
     private Integer microphoneVolume = 0;
     private Integer speakerVolume = 0;
-    
+
     //game channel check
     private boolean isGameChannelReady = false;
     private Runnable onGameChannelReadyCallback;
@@ -89,12 +90,12 @@ public class WebRTCManager implements PeerConnectionObserver {
     private static RTCIceServer ICE_SERVERS = null;
 
     private static WebRTCManager instance = null;
-    
+
     private JavaPhoneCallManager callManager = null;
-    
+
     private JavaPhoneVideoHandler videoHandler = null;
     private final Set<JavaPhoneChatHandler> chatHandlers = new HashSet<>();
-    
+
     private PeerConnectionObserverImpl peerConnectionObserver = null;
 
     public static WebRTCManager getInstance() {
@@ -219,7 +220,7 @@ public class WebRTCManager implements PeerConnectionObserver {
     }
 
     public void startCall(String targetClientKey) {
-        initializeMedia();  
+        initializeMedia();
         initializeCapture();
 
         remoteClientKey = targetClientKey;
@@ -228,7 +229,7 @@ public class WebRTCManager implements PeerConnectionObserver {
         if (videoHandler != null) {
             peerConnectionObserver.setVideoHandler(videoHandler);
         }
-        
+
         peerConnection = factory.createPeerConnection(config, peerConnectionObserver);
 
         List<String> streamIds = new ArrayList<>();
@@ -252,7 +253,6 @@ public class WebRTCManager implements PeerConnectionObserver {
         RTCDataChannel dataChannel2 = peerConnection.createDataChannel("game", init);
         setupDataChannel(dataChannel2);
 
-
 //        Create offer
 //        RTCMediaConstraints constraints = new MediaConstraints();
 //        constraints.mandatory.add(new MediaConstraints.KeyValuePair("OfferToReceiveVideo", "true"));
@@ -271,13 +271,15 @@ public class WebRTCManager implements PeerConnectionObserver {
                     }
 
                     @Override
-                    public void onFailure(String error) { }
+                    public void onFailure(String error) {
+                    }
 
                 });
             }
 
             @Override
-            public void onFailure(String error) { }
+            public void onFailure(String error) {
+            }
         });
 
         // Start statistics collection
@@ -294,7 +296,7 @@ public class WebRTCManager implements PeerConnectionObserver {
         if (videoHandler != null) {
             peerConnectionObserver.setVideoHandler(videoHandler);
         }
-        
+
         peerConnection = factory.createPeerConnection(config, peerConnectionObserver);
         for (RTCIceCandidate candidate : candidates) {
             peerConnection.addIceCandidate(candidate);
@@ -315,7 +317,7 @@ public class WebRTCManager implements PeerConnectionObserver {
 
         // Set remote description
         RTCSessionDescription remoteSdp = new RTCSessionDescription(
-            RTCSdpType.OFFER, sdp
+                RTCSdpType.OFFER, sdp
         );
 
         peerConnection.setRemoteDescription(remoteSdp, new SetSessionDescriptionObserver() {
@@ -336,17 +338,20 @@ public class WebRTCManager implements PeerConnectionObserver {
                             }
 
                             @Override
-                            public void onFailure(String error) { }
+                            public void onFailure(String error) {
+                            }
                         });
                     }
 
                     @Override
-                    public void onFailure(String error) { }
+                    public void onFailure(String error) {
+                    }
                 });
             }
 
             @Override
-            public void onFailure(String error) { }
+            public void onFailure(String error) {
+            }
         });
 
         // Start statistics collection
@@ -355,7 +360,7 @@ public class WebRTCManager implements PeerConnectionObserver {
 
     public void handleAccept(String sdp) {
         RTCSessionDescription remoteSdp = new RTCSessionDescription(
-            RTCSdpType.ANSWER, sdp
+                RTCSdpType.ANSWER, sdp
         );
 
         peerConnection.setRemoteDescription(remoteSdp, new SetSessionDescriptionObserver() {
@@ -367,7 +372,8 @@ public class WebRTCManager implements PeerConnectionObserver {
             }
 
             @Override
-            public void onFailure(String error) { }
+            public void onFailure(String error) {
+            }
         });
     }
 
@@ -386,10 +392,12 @@ public class WebRTCManager implements PeerConnectionObserver {
                 chatDataChannel = dataChannel;
                 dataChannel.registerObserver(new RTCDataChannelObserver() {
                     @Override
-                    public void onBufferedAmountChange(long amount) {}
+                    public void onBufferedAmountChange(long amount) {
+                    }
 
                     @Override
-                    public void onStateChange() {}
+                    public void onStateChange() {
+                    }
 
                     @Override
                     public void onMessage(RTCDataChannelBuffer buffer) {
@@ -405,24 +413,23 @@ public class WebRTCManager implements PeerConnectionObserver {
 
                         String textEncrypted = new String(textBytes, StandardCharsets.UTF_8);
                         String text = MC.decryptMessage(textEncrypted);
-                        
+
                         try {
                             System.out.println("GOT MESSAGE:");
                             System.out.println(text);
-                            
+
                             JsonNode message = mapper.readTree(text);
                             String signature = message.get("signature").asText();
                             String sender = message.get("sender").asText();
                             String content = message.get("content").asText();
-                            
-                            
+
                             PublicKey publicKey = MessageCryptographer.stringToPublicKey(remoteClientKey);
                             boolean isVerified = MC.confirmSign(content, signature, publicKey);
                             if (!isVerified) {
                                 System.out.println("Signature is false, skipping");
                                 return;
                             }
-                            
+
                             for (JavaPhoneChatHandler chatHandler : chatHandlers) {
                                 if (chatHandler != null) {
                                     chatHandler.handleStringMessage(sender, content);
@@ -435,79 +442,82 @@ public class WebRTCManager implements PeerConnectionObserver {
                     }
                 });
                 break;
-           
+
             case "game":
                 System.out.println("GOT GAME DATA CHANNEL");
                 gameDataChannel = dataChannel;
                 dataChannel.registerObserver(new RTCDataChannelObserver() {
                     @Override
-                    public void onBufferedAmountChange(long amount) {}
+                    public void onBufferedAmountChange(long amount) {
+                    }
 
                     @Override
-                public void onStateChange() {
-                    System.out.println("🎮 GAME CHANNEL IS OPEN!");
-    isGameChannelReady = true;
-    if (onGameChannelReadyCallback != null) {
-        onGameChannelReadyCallback.run();
-    }
-    GameMenuApp.getInstance().onGameChannelReady();}
+                    public void onStateChange() {
+                        System.out.println("🎮 GAME CHANNEL IS OPEN!");
+                        isGameChannelReady = true;
+                        if (onGameChannelReadyCallback != null) {
+                            onGameChannelReadyCallback.run();
+                        }
+                        GameMenuApp.getInstance().onGameChannelReady();
+                    }
 
                     @Override
-        public void onMessage(RTCDataChannelBuffer buffer) {
-            ByteBuffer data = buffer.data;
-            byte[] textBytes;
+                    public void onMessage(RTCDataChannelBuffer buffer) {
+                        ByteBuffer data = buffer.data;
+                        byte[] textBytes;
 
-            if (data.hasArray()) {
-                textBytes = data.array();
-            } else {
-                textBytes = new byte[data.remaining()];
-                data.get(textBytes);
-            }
+                        if (data.hasArray()) {
+                            textBytes = data.array();
+                        } else {
+                            textBytes = new byte[data.remaining()];
+                            data.get(textBytes);
+                        }
 
-            String text = new String(textBytes, StandardCharsets.UTF_8);
-            try {
-                System.out.println("🎮 [GAME] Получено сообщение:");
-                System.out.println(text);
-                JsonNode message = mapper.readTree(text);
-                String sender = message.get("sender").asText();
-                String content = message.get("content").asText();
-               
-                
-                // Игнорируем свои сообщения, чтобы не обрабатывать их дважды
-                javafx.application.Platform.runLater(() -> {
-            String myId = getMyUserId();
-            if (myId != null && !sender.equals(myId)) {
-                GameMenuApp.getInstance().onGameMessage(content);
-            } else if (myId == null) {
-                GameMenuApp.getInstance().onGameMessage(content);
-            }
-        });} catch (Exception ex) {
-                System.getLogger(WebRTCManager.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
-            }
-        }
-                
+                        String text = new String(textBytes, StandardCharsets.UTF_8);
+                        try {
+                            System.out.println("🎮 [GAME] Получено сообщение:");
+                            System.out.println(text);
+                            JsonNode message = mapper.readTree(text);
+                            String sender = message.get("sender").asText();
+                            String content = message.get("content").asText();
 
-        
-    });
-    break;
+                            // Игнорируем свои сообщения, чтобы не обрабатывать их дважды
+                            javafx.application.Platform.runLater(() -> {
+                                String myId = getMyUserId();
+                                if (myId != null && !sender.equals(myId)) {
+                                    GameMenuApp.getInstance().onGameMessage(content);
+                                } else if (myId == null) {
+                                    GameMenuApp.getInstance().onGameMessage(content);
+                                }
+                            });
+                        } catch (Exception ex) {
+                            System.getLogger(WebRTCManager.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+                        }
+                    }
+
+                });
+                break;
         }
     }
+
     public boolean isGameChannelReady() {
-    return gameDataChannel != null && gameDataChannel.getState() == RTCDataChannelState.OPEN;
-}
-
-public void setOnGameChannelReady(Runnable callback) {
-    this.onGameChannelReadyCallback = callback;
-}
-public String getMyUserId() {
-    // Получаем clientId из SignalingClient
-    try {
-        return SignalingClient.getInstance().getClientId();
-    } catch (Exception e) {
-        // Fallback на nickname
-        return SettingsManager.getInstance().getNickname();
+        return gameDataChannel != null && gameDataChannel.getState() == RTCDataChannelState.OPEN;
     }
-}
+
+    public void setOnGameChannelReady(Runnable callback) {
+        this.onGameChannelReadyCallback = callback;
+    }
+
+    public String getMyUserId() {
+        // Получаем clientId из SignalingClient
+        try {
+            return SignalingClient.getInstance().getClientId();
+        } catch (Exception e) {
+            // Fallback на nickname
+            return SettingsManager.getInstance().getNickname();
+        }
+    }
+
     public void sendChatMessage(String content) {
         if (chatDataChannel != null && chatDataChannel.getState() == RTCDataChannelState.OPEN) {
             try {
@@ -517,14 +527,14 @@ public String getMyUserId() {
                 message.put("sender", sender);
                 message.put("content", content);
                 message.put("signature", signature);
-                     
+
                 String textMessage = mapper.writeValueAsString(message);
                 System.out.println("SENDING MESSAGE");
                 System.out.println(textMessage);
-                
+
                 PublicKey publicKey = MessageCryptographer.stringToPublicKey(remoteClientKey);
                 String textEncrypted = MC.encryptMessage(textMessage, publicKey);
-                
+
                 ByteBuffer textBuffer = ByteBuffer.wrap(textEncrypted.getBytes(StandardCharsets.UTF_8));
                 RTCDataChannelBuffer textChannelBuffer = new RTCDataChannelBuffer(textBuffer, false);
 
@@ -543,31 +553,28 @@ public String getMyUserId() {
         }
     }
 
-
-
- 
     public void sendGameMessage(String content) {
-    if (gameDataChannel != null && gameDataChannel.getState() == RTCDataChannelState.OPEN) {
-        try {
-            ObjectNode message = mapper.createObjectNode();
-            String sender = getMyUserId(); // Теперь используем clientId
-            message.put("sender", sender);
-            message.put("content", content);
-            
-            String textMessage = mapper.writeValueAsString(message);
-            ByteBuffer textBuffer = ByteBuffer.wrap(textMessage.getBytes(StandardCharsets.UTF_8));
-            RTCDataChannelBuffer textChannelBuffer = new RTCDataChannelBuffer(textBuffer, false);
-            
-            gameDataChannel.send(textChannelBuffer);
-            System.out.println("📤 [GAME] Отправлено сообщение: " + content);
-        } catch (Exception ex) {
-            System.getLogger(WebRTCManager.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+        if (gameDataChannel != null && gameDataChannel.getState() == RTCDataChannelState.OPEN) {
+            try {
+                ObjectNode message = mapper.createObjectNode();
+                String sender = getMyUserId(); // Теперь используем clientId
+                message.put("sender", sender);
+                message.put("content", content);
+
+                String textMessage = mapper.writeValueAsString(message);
+                ByteBuffer textBuffer = ByteBuffer.wrap(textMessage.getBytes(StandardCharsets.UTF_8));
+                RTCDataChannelBuffer textChannelBuffer = new RTCDataChannelBuffer(textBuffer, false);
+
+                gameDataChannel.send(textChannelBuffer);
+                System.out.println("📤 [GAME] Отправлено сообщение: " + content);
+            } catch (Exception ex) {
+                System.getLogger(WebRTCManager.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+            }
+        } else {
+            System.out.println("❌ GAME CHANNEL NOT READY. State: "
+                    + (gameDataChannel != null ? gameDataChannel.getState() : "null"));
         }
-    } else {
-        System.out.println("❌ GAME CHANNEL NOT READY. State: " + 
-            (gameDataChannel != null ? gameDataChannel.getState() : "null"));
     }
-}
 
     private void startStatisticsCollection() {
         RTCStatsType[] types = {RTCStatsType.PEER_CONNECTION, RTCStatsType.SENDER, RTCStatsType.RECEIVER, RTCStatsType.TRACK, RTCStatsType.MEDIA_SOURCE, RTCStatsType.TRANSPORT};
@@ -577,7 +584,7 @@ public String getMyUserId() {
                     @Override
                     public void onStatsDelivered(RTCStatsReport report) {
                         StringBuilder stats = new StringBuilder();
-                        for (RTCStats stat : report.getStats().values()){
+                        for (RTCStats stat : report.getStats().values()) {
                             for (RTCStatsType type : types) {
                                 if (type == stat.getType()) {
                                     stats.append(stat.toString() + "\n");
@@ -650,7 +657,6 @@ public String getMyUserId() {
 //        if (localRenderer != null) {
 //            localRenderer.release();
 //        }
-
         if (videoSource != null) {
             videoSource.dispose();
         }
@@ -722,14 +728,14 @@ public String getMyUserId() {
     public Integer getSpeakerVolume() {
         return speakerVolume;
     }
-    
+
     public void setCallManager(JavaPhoneCallManager callManager) {
         this.callManager = callManager;
     }
-    
+
     public void setVideoHandler(JavaPhoneVideoHandler videoHandler) {
         this.videoHandler = videoHandler;
-        
+
         if (videoHandler != null) {
             if (localVideoTrack != null) {
                 this.videoHandler.addLocalTrack(localVideoTrack);
@@ -739,11 +745,11 @@ public String getMyUserId() {
             }
         }
     }
-    
+
     public boolean addChatHandler(JavaPhoneChatHandler chatHandler) {
         return this.chatHandlers.add(chatHandler);
     }
-    
+
     public boolean removeChatHandler(JavaPhoneChatHandler chatHandler) {
         return this.chatHandlers.remove(chatHandler);
     }

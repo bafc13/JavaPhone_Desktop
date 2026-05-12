@@ -92,39 +92,39 @@ public class MessageCryptographer {
     }
 
     /**
-    * Гибридное шифрование: сообщение шифруется симметричным ключом AES,
-    * а сам ключ шифруется публичным RSA-ключом получателя.
-    * Возвращает строку вида: {зашифрованный AES-ключ} + ":" + {IV} + ":" + {зашифрованное сообщение},
-    * где все компоненты закодированы в Base64.
-    */
-   public String encryptMessage(String message, PublicKey publicKey) {
-       try {
-           // 1. Генерация симметричного ключа AES (256 бит)
-           KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-           keyGen.init(256);
-           SecretKey aesKey = keyGen.generateKey();
+     * Гибридное шифрование: сообщение шифруется симметричным ключом AES, а сам
+     * ключ шифруется публичным RSA-ключом получателя. Возвращает строку вида:
+     * {зашифрованный AES-ключ} + ":" + {IV} + ":" + {зашифрованное сообщение},
+     * где все компоненты закодированы в Base64.
+     */
+    public String encryptMessage(String message, PublicKey publicKey) {
+        try {
+            // 1. Генерация симметричного ключа AES (256 бит)
+            KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+            keyGen.init(256);
+            SecretKey aesKey = keyGen.generateKey();
 
-           // 2. Шифрование сообщения алгоритмом AES/CBC/PKCS5Padding
-           Cipher aesCipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-           aesCipher.init(Cipher.ENCRYPT_MODE, aesKey);
-           byte[] iv = aesCipher.getIV();  // случайный вектор инициализации
-           byte[] encryptedMessage = aesCipher.doFinal(message.getBytes(StandardCharsets.UTF_8));
+            // 2. Шифрование сообщения алгоритмом AES/CBC/PKCS5Padding
+            Cipher aesCipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            aesCipher.init(Cipher.ENCRYPT_MODE, aesKey);
+            byte[] iv = aesCipher.getIV();  // случайный вектор инициализации
+            byte[] encryptedMessage = aesCipher.doFinal(message.getBytes(StandardCharsets.UTF_8));
 
-           // 3. Шифрование симметричного ключа публичным RSA-ключом
-           Cipher rsaCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-           rsaCipher.init(Cipher.ENCRYPT_MODE, publicKey);
-           byte[] encryptedAesKey = rsaCipher.doFinal(aesKey.getEncoded());
+            // 3. Шифрование симметричного ключа публичным RSA-ключом
+            Cipher rsaCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+            rsaCipher.init(Cipher.ENCRYPT_MODE, publicKey);
+            byte[] encryptedAesKey = rsaCipher.doFinal(aesKey.getEncoded());
 
-           // 4. Сборка результата: ключ:IV:сообщение (все в Base64)
-           String encKeyB64 = Base64.getEncoder().encodeToString(encryptedAesKey);
-           String ivB64 = Base64.getEncoder().encodeToString(iv);
-           String encMsgB64 = Base64.getEncoder().encodeToString(encryptedMessage);
+            // 4. Сборка результата: ключ:IV:сообщение (все в Base64)
+            String encKeyB64 = Base64.getEncoder().encodeToString(encryptedAesKey);
+            String ivB64 = Base64.getEncoder().encodeToString(iv);
+            String encMsgB64 = Base64.getEncoder().encodeToString(encryptedMessage);
 
-           return encKeyB64 + ":" + ivB64 + ":" + encMsgB64;
-       } catch (GeneralSecurityException e) {
-           throw new RuntimeException("Hybrid encryption failed", e);
-       }
-   }
+            return encKeyB64 + ":" + ivB64 + ":" + encMsgB64;
+        } catch (GeneralSecurityException e) {
+            throw new RuntimeException("Hybrid encryption failed", e);
+        }
+    }
 
     /**
      * Подписывает сообщение: вычисляет SHA-256 хеш и шифрует его приватным
@@ -146,37 +146,38 @@ public class MessageCryptographer {
     }
 
     /**
-    * Расшифровывает сообщение, зашифрованное гибридным методом encryptMessage.
-    * Ожидает строку формата: зашифрованныйAES-ключ:IV:зашифрованноеСообщение (Base64).
-    * Расшифровывает AES-ключ приватным RSA-ключом, затем расшифровывает сообщение.
-    */
-   public String decryptMessage(String encryptedData) {
-       try {
-           // 1. Разбор составной строки
-           String[] parts = encryptedData.split(":");
-           if (parts.length != 3) {
-               throw new IllegalArgumentException("Invalid encrypted data format");
-           }
-           byte[] encAesKey = Base64.getDecoder().decode(parts[0]);
-           byte[] iv = Base64.getDecoder().decode(parts[1]);
-           byte[] encMessage = Base64.getDecoder().decode(parts[2]);
+     * Расшифровывает сообщение, зашифрованное гибридным методом encryptMessage.
+     * Ожидает строку формата: зашифрованныйAES-ключ:IV:зашифрованноеСообщение
+     * (Base64). Расшифровывает AES-ключ приватным RSA-ключом, затем
+     * расшифровывает сообщение.
+     */
+    public String decryptMessage(String encryptedData) {
+        try {
+            // 1. Разбор составной строки
+            String[] parts = encryptedData.split(":");
+            if (parts.length != 3) {
+                throw new IllegalArgumentException("Invalid encrypted data format");
+            }
+            byte[] encAesKey = Base64.getDecoder().decode(parts[0]);
+            byte[] iv = Base64.getDecoder().decode(parts[1]);
+            byte[] encMessage = Base64.getDecoder().decode(parts[2]);
 
-           // 2. Расшифровка AES-ключа приватным RSA-ключом
-           Cipher rsaCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-           rsaCipher.init(Cipher.DECRYPT_MODE, this.privateKey);
-           byte[] aesKeyBytes = rsaCipher.doFinal(encAesKey);
-           SecretKey aesKey = new javax.crypto.spec.SecretKeySpec(aesKeyBytes, "AES");
+            // 2. Расшифровка AES-ключа приватным RSA-ключом
+            Cipher rsaCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+            rsaCipher.init(Cipher.DECRYPT_MODE, this.privateKey);
+            byte[] aesKeyBytes = rsaCipher.doFinal(encAesKey);
+            SecretKey aesKey = new javax.crypto.spec.SecretKeySpec(aesKeyBytes, "AES");
 
-           // 3. Расшифровка сообщения
-           Cipher aesCipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-           aesCipher.init(Cipher.DECRYPT_MODE, aesKey, new IvParameterSpec(iv));
-           byte[] decryptedMessage = aesCipher.doFinal(encMessage);
+            // 3. Расшифровка сообщения
+            Cipher aesCipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            aesCipher.init(Cipher.DECRYPT_MODE, aesKey, new IvParameterSpec(iv));
+            byte[] decryptedMessage = aesCipher.doFinal(encMessage);
 
-           return new String(decryptedMessage, StandardCharsets.UTF_8);
-       } catch (GeneralSecurityException e) {
-           throw new RuntimeException("Hybrid decryption failed", e);
-       }
-   }
+            return new String(decryptedMessage, StandardCharsets.UTF_8);
+        } catch (GeneralSecurityException e) {
+            throw new RuntimeException("Hybrid decryption failed", e);
+        }
+    }
 
     /**
      * Расшифровывает подпись (зашифрованный хеш) публичным ключом и возвращает

@@ -11,6 +11,8 @@ import dev.onvoid.webrtc.media.video.VideoTrack;
  * @author Andrey
  */
 public interface JavaPhoneVideoHandler {
+
     public void addLocalTrack(VideoTrack localTrack);
+
     public void addRemoteTrack(VideoTrack remoteTrack);
 }

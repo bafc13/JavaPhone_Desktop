@@ -12,7 +12,10 @@ import java.io.File;
  * @author Andrey
  */
 public interface JavaPhoneChatHandler {
+
     public void handleStringMessage(String sender, String content);
+
     public void handleMessage(Message message);
+
     public void handleFileMessage(File file, String sender);
 }

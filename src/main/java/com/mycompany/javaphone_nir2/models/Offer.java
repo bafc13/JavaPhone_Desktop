@@ -1,10 +1,10 @@
 package com.mycompany.javaphone_nir2.models;
 
 /**
- * Offer class
- * includes offer sender and sdp
+ * Offer class includes offer sender and sdp
  */
 public class Offer {
+
     private String sdp;
     private String sender;
 

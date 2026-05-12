@@ -30,30 +30,29 @@ import java.util.logging.Logger;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 
-
 @ClientEndpoint
 public class SignalingClient {
+
     private Session session;
     private final String serverUrl;
 
     private String clientId;
 
-
     private final ObjectMapper mapper = new ObjectMapper();
 
     private final ObjectProperty<Offer> offer = new SimpleObjectProperty<>();
-    
+
     private final Map<String, Contact> contacts = new HashMap<>();
-    
+
     private final Set<JavaPhoneChatHandler> chatHandlers = new HashSet<>();
-    
+
     private final MessageCryptographer MC = MessageCryptographer.getInstance();
     private final SettingsManager settings = SettingsManager.getInstance();
-    
+
     private JavaPhoneCallManager callManager = null;
 
     private PublicKey serverPublicKey;
-    
+
     private static SignalingClient instance = null;
 
     public static void initialize(String serverUrl) {
@@ -83,7 +82,7 @@ public class SignalingClient {
     }
 
     @OnMessage
-    public void onMessage(String messageEncrypted) throws IOException{
+    public void onMessage(String messageEncrypted) throws IOException {
         System.out.println(messageEncrypted);
         String message;
         if (serverPublicKey != null) {
@@ -91,7 +90,7 @@ public class SignalingClient {
         } else {
             message = messageEncrypted;
         }
-        
+
         JsonNode json = mapper.readTree(message);
         String type = json.get("type").asText();
 
@@ -180,10 +179,10 @@ public class SignalingClient {
 
     private void handleWelcome(JsonNode json) {
         System.out.println("GOT WELCOME!");
-        
+
         String serverPublicKeyString = json.get("serverKey").asText();
         serverPublicKey = MessageCryptographer.stringToPublicKey(serverPublicKeyString);
-        
+
         User me = new User();
         me.setName(settings.getNickname());
         me.setEmail(settings.getEmail());
@@ -237,9 +236,9 @@ public class SignalingClient {
         System.out.println("GOT MESSAGE");
         String sender = json.get("sender").asText();
         PublicKey senderPublicKey = MessageCryptographer.stringToPublicKey(sender);
-        
+
         String signature = json.get("signature").asText();
-        
+
         String contentEncrypted = json.get("content").asText();
         String content = MC.decryptMessage(contentEncrypted);
         System.out.println(content);
@@ -248,8 +247,7 @@ public class SignalingClient {
             System.out.println("Signature is false, skipping");
             return;
         }
-        
-        
+
         for (JavaPhoneChatHandler chatHandler : chatHandlers) {
             if (chatHandler != null) {
                 chatHandler.handleStringMessage(sender, content);
@@ -296,10 +294,10 @@ public class SignalingClient {
 
     public void sendDM(String targetClientId, String content) throws IOException {
         PublicKey targetKey = MessageCryptographer.stringToPublicKey(targetClientId);
-        
+
         String contentEncrypted = MC.encryptMessage(content, targetKey);
         String signature = MC.signMessage(content);
-        
+
         ObjectNode message = mapper.createObjectNode();
         message.put("type", "message");
         message.put("sender", clientId);
@@ -339,19 +337,19 @@ public class SignalingClient {
     public String getClientId() {
         return clientId;
     }
-    
+
     public void setCallManager(JavaPhoneCallManager callManager) {
         this.callManager = callManager;
     }
-    
+
     public boolean addChatHandler(JavaPhoneChatHandler chatHandler) {
         return this.chatHandlers.add(chatHandler);
     }
-    
+
     public boolean removeChatHandler(JavaPhoneChatHandler chatHandler) {
         return this.chatHandlers.remove(chatHandler);
     }
-    
+
     public Contact getContact(String key) {
         return contacts.get(key);
     }

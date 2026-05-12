@@ -3,10 +3,12 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package com.mycompany.javaphone_nir2.games.chess;
+
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
 
 public class ChessCell extends StackPane {
+
     private final ImageView pieceImageView;
     private final int row;
     private final int col;
@@ -32,6 +34,11 @@ public class ChessCell extends StackPane {
     }
 
     // Геттеры для получения координат клетки
-    public int getRow() { return row; }
-    public int getCol() { return col; }
+    public int getRow() {
+        return row;
+    }
+
+    public int getCol() {
+        return col;
+    }
 }

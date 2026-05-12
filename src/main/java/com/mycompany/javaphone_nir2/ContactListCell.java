@@ -26,7 +26,9 @@ public class ContactListCell extends ListCell<Contact> {
 
     private HBox root;
     private StackPane avatarContainer;
-    /** first letter in name */
+    /**
+     * first letter in name
+     */
     private Label avatarLabel;
     private VBox textContainer;
     private VBox typingStatusContainer;
@@ -34,7 +36,9 @@ public class ContactListCell extends ListCell<Contact> {
     private Label nameLabel;
     private Label statusLabel;
 
-    /** avatar size in px */
+    /**
+     * avatar size in px
+     */
     private static final double AVATAR_SIZE = 36;
 
     private Timeline appearAnimation;
@@ -44,7 +48,9 @@ public class ContactListCell extends ListCell<Contact> {
         initializeUI();
     }
 
-    /** This method responsible for create ui elements, avatar and set styles */
+    /**
+     * This method responsible for create ui elements, avatar and set styles
+     */
     private void initializeUI() {
         createAvatar();
 
@@ -58,14 +64,14 @@ public class ContactListCell extends ListCell<Contact> {
         root.setTranslateX(-20);
 
         appearAnimation = new Timeline(
-            new KeyFrame(Duration.ZERO,
-                new KeyValue(root.opacityProperty(), 0),
-                new KeyValue(root.translateXProperty(), -20, Interpolator.EASE_OUT)
-            ),
-            new KeyFrame(Duration.millis(180),
-                new KeyValue(root.opacityProperty(), 1),
-                new KeyValue(root.translateXProperty(), 0)
-            )
+                new KeyFrame(Duration.ZERO,
+                        new KeyValue(root.opacityProperty(), 0),
+                        new KeyValue(root.translateXProperty(), -20, Interpolator.EASE_OUT)
+                ),
+                new KeyFrame(Duration.millis(180),
+                        new KeyValue(root.opacityProperty(), 1),
+                        new KeyValue(root.translateXProperty(), 0)
+                )
         );
 
         root.getChildren().addAll(avatarContainer, textContainer, typingStatusContainer);
@@ -73,7 +79,9 @@ public class ContactListCell extends ListCell<Contact> {
         HBox.setHgrow(typingStatusContainer, Priority.ALWAYS);
     }
 
-    /** This method responsible for generating avatar */
+    /**
+     * This method responsible for generating avatar
+     */
     private void createAvatar() {
         avatarLabel = new Label();
         avatarLabel.setFont(Font.font("System", 20));
@@ -85,7 +93,9 @@ public class ContactListCell extends ListCell<Contact> {
         avatarContainer.getStyleClass().add("contacts-list-avatar-container");
     }
 
-    /** This method responsible for create text container elements, styles */
+    /**
+     * This method responsible for create text container elements, styles
+     */
     private void createTextContainer() {
         nameLabel = new Label();
         nameLabel.getStyleClass().add("contacts-list-name-label");
@@ -101,7 +111,7 @@ public class ContactListCell extends ListCell<Contact> {
         VBox.setVgrow(statusLabel, Priority.ALWAYS);
     }
 
-    private void createTypingStatusContainer(){
+    private void createTypingStatusContainer() {
         typingLabel = new Label();
         typingLabel.getStyleClass().add("contacts-list-typing-status-label");
 

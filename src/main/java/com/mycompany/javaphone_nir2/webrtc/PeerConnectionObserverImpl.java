@@ -24,16 +24,17 @@ import java.io.IOException;
  * @author Andrey
  */
 public class PeerConnectionObserverImpl implements PeerConnectionObserver {
-    WebRTCManager webRTCManager;    
+
+    WebRTCManager webRTCManager;
     String remoteClientId;
     int candidates = 0;
     JavaPhoneVideoHandler videoHandler = null;
-    
-    public PeerConnectionObserverImpl (WebRTCManager webRTCManager, String remoteClientId) {
+
+    public PeerConnectionObserverImpl(WebRTCManager webRTCManager, String remoteClientId) {
         this.webRTCManager = webRTCManager;
         this.remoteClientId = remoteClientId;
     }
-    
+
     public void setVideoHandler(JavaPhoneVideoHandler videoHandler) {
         this.videoHandler = videoHandler;
         if (videoHandler != null) {
@@ -42,11 +43,11 @@ public class PeerConnectionObserverImpl implements PeerConnectionObserver {
             }
         }
     }
-    
+
     @Override
     public void onIceCandidate(RTCIceCandidate iceCandidate) {
         System.out.println("Got candidate #" + String.valueOf(candidates++));
-        
+
         SignalingClient signalingClient = SignalingClient.getInstance();
         try {
             signalingClient.sendIceCandidate(
@@ -75,24 +76,24 @@ public class PeerConnectionObserverImpl implements PeerConnectionObserver {
 
     @Override
     public void onIceConnectionChange(RTCIceConnectionState iceConnectionState) {
-        
+
     }
 
     @Override
     public void onSignalingChange(RTCSignalingState signalingState) {
-        
+
     }
 
     @Override
     public void onConnectionChange(RTCPeerConnectionState newState) {
-        
+
     }
 
     @Override
     public void onRenegotiationNeeded() {
-        
+
     }
-    
+
     @Override
     public void onAddTrack(RTCRtpReceiver receiver, MediaStream[] mediaStreams) {
         if (mediaStreams == null) {
@@ -107,12 +108,12 @@ public class PeerConnectionObserverImpl implements PeerConnectionObserver {
             }
         }
     }
-    
+
     @Override
     public void onRemoveTrack(RTCRtpReceiver receiver) {
         // TODO: remove sink
     }
-    
+
     @Override
     public void onTrack(RTCRtpTransceiver transceiver) {
         MediaStreamTrack track = transceiver.getReceiver().getTrack();
@@ -122,12 +123,12 @@ public class PeerConnectionObserverImpl implements PeerConnectionObserver {
             System.out.println("GOT VIDEO TRACK");
             VideoTrack videoTrack = (VideoTrack) track;
             webRTCManager.setRemoteTrack(videoTrack);
-            
+
             if (videoHandler != null) {
                 videoHandler.addRemoteTrack(videoTrack);
             }
         } else if (kind.equals(MediaStreamTrack.AUDIO_TRACK_KIND)) {
             System.out.println("GOT AUDIO TRACK");
         }
-    } 
+    }
 }

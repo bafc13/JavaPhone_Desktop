@@ -31,25 +31,31 @@ import java.util.Optional;
  *
  * Responsible for saving, loading, validate
  */
-
 public class SettingsManager {
+
     private static SettingsManager instance;
 
     private static final String SETTINGS_FOLDER = ".javaphone";
     private static final String CONFIG_FILE = "app_settings.json";
     private static final String AVATARS_FOLDER = "avatars";
 
-    /** path to settings in system */
+    /**
+     * path to settings in system
+     */
     private final Path settingsPath;
     private final ObjectMapper objectMapper;
 
-    /** Logger saves session information into log */
+    /**
+     * Logger saves session information into log
+     */
     private final SessionLogger logger = SessionLogger.getInstance();
 
     private boolean registered;
     private SettingsData data;
 
-    /** rective properties that going to be serialized */
+    /**
+     * rective properties that going to be serialized
+     */
     private transient final StringProperty nicknameProperty = new SimpleStringProperty(this, "nickname");
     private transient final StringProperty signalingUrlProperty = new SimpleStringProperty(this, "signalingUrl", "ws://127.0.0.1:8080/javaphone/signaling");
     private transient final StringProperty userKeyProperty = new SimpleStringProperty(this, "userKey");
@@ -74,17 +80,35 @@ public class SettingsManager {
         this.settingsPath = Paths.get(System.getProperty("user.home"), SETTINGS_FOLDER, CONFIG_FILE);
         this.data = new SettingsData();
 
-        /** listeners registration */
+        /**
+         * listeners registration
+         */
         logger.log("Settings manager: listeners registration");
 
-        nicknameProperty.addListener((obs, old, newVal) -> { data.nickname = newVal; });
-        signalingUrlProperty.addListener((obs, old, newVal) -> { data.signalingUrl = newVal; });
-        userKeyProperty.addListener((obs, old, newVal) -> { data.userKey = newVal; });
-        themeProperty.addListener((obs, old, newVal) -> { data.theme = newVal; });
-        pathToAvatarProperty.addListener((obs, old, newVal) -> { data.pathToAvatar = newVal; });
-        notificationsEnabledProperty.addListener((obs, old, newVal) -> { data.notificationsEnabled = newVal; });
-        microphoneProperty.addListener((obs, old, newVal) -> { data.microphone = newVal; });
-        speakerProperty.addListener((obs, old, newVal) -> { data.speaker = newVal; });
+        nicknameProperty.addListener((obs, old, newVal) -> {
+            data.nickname = newVal;
+        });
+        signalingUrlProperty.addListener((obs, old, newVal) -> {
+            data.signalingUrl = newVal;
+        });
+        userKeyProperty.addListener((obs, old, newVal) -> {
+            data.userKey = newVal;
+        });
+        themeProperty.addListener((obs, old, newVal) -> {
+            data.theme = newVal;
+        });
+        pathToAvatarProperty.addListener((obs, old, newVal) -> {
+            data.pathToAvatar = newVal;
+        });
+        notificationsEnabledProperty.addListener((obs, old, newVal) -> {
+            data.notificationsEnabled = newVal;
+        });
+        microphoneProperty.addListener((obs, old, newVal) -> {
+            data.microphone = newVal;
+        });
+        speakerProperty.addListener((obs, old, newVal) -> {
+            data.speaker = newVal;
+        });
         mainSplitRatioProperty.addListener((obs, old, newVal) -> {
             data.mainSplitRatio = Math.max(0.15, Math.min(0.85, newVal.doubleValue())); // Валидация
         });
@@ -102,9 +126,15 @@ public class SettingsManager {
             WebRTCManager.getInstance().setMicrophoneVolume((Integer) newVal);
         });
 
-        audioBitrateProperty.addListener((obs, old, newVal) -> { data.audioBitrate = (int) newVal; });
-        cameraProperty.addListener((obs, old, newVal) -> { data.camera = newVal; });
-        cameraBitrateProperty.addListener((obs, old, newVal) -> { data.cameraBitrate = (int) newVal; });
+        audioBitrateProperty.addListener((obs, old, newVal) -> {
+            data.audioBitrate = (int) newVal;
+        });
+        cameraProperty.addListener((obs, old, newVal) -> {
+            data.camera = newVal;
+        });
+        cameraBitrateProperty.addListener((obs, old, newVal) -> {
+            data.cameraBitrate = (int) newVal;
+        });
 
         loadSettings();
     }
@@ -134,74 +164,206 @@ public class SettingsManager {
         cameraBitrateProperty.set(data.cameraBitrate);
     }
 
-    public boolean isRegistered() { return registered; }
+    public boolean isRegistered() {
+        return registered;
+    }
 
-    public String getNickname() { return data.nickname; }
-    public void setNickname(String nickname) { nicknameProperty.set(nickname); }
-    public StringProperty nicknameProperty() { return nicknameProperty; }
-    
-    public String getEmail() { return data.nickname + "@example.com"; }
+    public String getNickname() {
+        return data.nickname;
+    }
 
-    public String getSignalingUrl() { return data.signalingUrl; }
-    public void setSignalingUrl(String url) { signalingUrlProperty.set(url); }
-    public StringProperty signalingUrlProperty() { return signalingUrlProperty; }
-    public boolean isSignalingUrlValid(String url) { return validateSignalingUrl(url).isEmpty(); }
-    public Optional<String> getSignalingUrlError(String url) { return validateSignalingUrl(url); }
+    public void setNickname(String nickname) {
+        nicknameProperty.set(nickname);
+    }
 
-    public String getUserKey() { return data.userKey; }
-    public void setUserKey(String key) { userKeyProperty.set(key); }
-    public StringProperty userKeyProperty() { return userKeyProperty; }
+    public StringProperty nicknameProperty() {
+        return nicknameProperty;
+    }
 
-    public String getTheme() { return data.theme; }
-    public void setTheme(String theme) { themeProperty.set(theme); }
-    public StringProperty themeProperty() { return themeProperty; }
+    public String getEmail() {
+        return data.nickname + "@example.com";
+    }
 
-    public String getPathToAvatar() { return data.pathToAvatar; }
-    public void setPathToAvatar(String path) { pathToAvatarProperty.set(path); }
-    public StringProperty pathToAvatarProperty() { return pathToAvatarProperty; }
+    public String getSignalingUrl() {
+        return data.signalingUrl;
+    }
 
-    public boolean isNotificationsEnabled() { return data.notificationsEnabled; }
-    public void setNotificationsEnabled(boolean enabled) { notificationsEnabledProperty.set(enabled); }
-    public BooleanProperty notificationsEnabledProperty() { return notificationsEnabledProperty; }
+    public void setSignalingUrl(String url) {
+        signalingUrlProperty.set(url);
+    }
 
-    public String getMicrophone() { return data.microphone; }
-    public void setMicrophone(String mic) { microphoneProperty.set(mic); }
-    public StringProperty microphoneProperty() { return microphoneProperty; }
+    public StringProperty signalingUrlProperty() {
+        return signalingUrlProperty;
+    }
 
-    public String getSpeaker() { return data.speaker; }
-    public void setSpeaker(String speaker) { speakerProperty.set(speaker); }
-    public StringProperty speakerProperty() { return speakerProperty; }
+    public boolean isSignalingUrlValid(String url) {
+        return validateSignalingUrl(url).isEmpty();
+    }
 
-    public int getMicrophoneVolume() { return data.microphoneVolume; }
-    public void setMicrophoneVolume(int vol) { microphoneVolumeProperty.set(vol); }
-    public IntegerProperty microphoneVolumeProperty() { return microphoneVolumeProperty; }
+    public Optional<String> getSignalingUrlError(String url) {
+        return validateSignalingUrl(url);
+    }
 
-    public int getSpeakerVolume() { return data.speakerVolume; }
-    public void setSpeakerVolume(int vol) { speakerVolumeProperty.set(vol); }
-    public IntegerProperty speakerVolumeProperty() { return speakerVolumeProperty; }
+    public String getUserKey() {
+        return data.userKey;
+    }
 
-    public int getAudioBitrate() { return data.audioBitrate; }
-    public void setAudioBitrate(int bitrate) { audioBitrateProperty.set(bitrate); }
-    public IntegerProperty audioBitrateProperty() { return audioBitrateProperty; }
+    public void setUserKey(String key) {
+        userKeyProperty.set(key);
+    }
 
-    public String getCamera() { return data.camera; }
-    public void setCamera(String cam) { cameraProperty.set(cam); }
-    public StringProperty cameraProperty() { return cameraProperty; }
+    public StringProperty userKeyProperty() {
+        return userKeyProperty;
+    }
 
-    public int getCameraBitrate() { return data.cameraBitrate; }
-    public void setCameraBitrate(int bitrate) { cameraBitrateProperty.set(bitrate); }
-    public IntegerProperty cameraBitrateProperty() { return cameraBitrateProperty; }
+    public String getTheme() {
+        return data.theme;
+    }
 
-    public double getMainSplitRatio() { return data.mainSplitRatio; }
-    public void setMainSplitRatio(double ratio) { mainSplitRatioProperty.set(ratio); }
-    public DoubleProperty mainSplitRatioProperty() { return mainSplitRatioProperty; }
+    public void setTheme(String theme) {
+        themeProperty.set(theme);
+    }
 
-    public double getVideoSplitRatio() { return data.videoSplitRatio; }
-    public void setVideoSplitRatio(double ratio) { videoSplitRatioProperty.set(ratio); }
-    public DoubleProperty videoSplitRatioProperty() { return videoSplitRatioProperty; }
+    public StringProperty themeProperty() {
+        return themeProperty;
+    }
 
+    public String getPathToAvatar() {
+        return data.pathToAvatar;
+    }
 
-    public String getDraft(String chatId) { return data.drafts.getOrDefault(chatId, ""); }
+    public void setPathToAvatar(String path) {
+        pathToAvatarProperty.set(path);
+    }
+
+    public StringProperty pathToAvatarProperty() {
+        return pathToAvatarProperty;
+    }
+
+    public boolean isNotificationsEnabled() {
+        return data.notificationsEnabled;
+    }
+
+    public void setNotificationsEnabled(boolean enabled) {
+        notificationsEnabledProperty.set(enabled);
+    }
+
+    public BooleanProperty notificationsEnabledProperty() {
+        return notificationsEnabledProperty;
+    }
+
+    public String getMicrophone() {
+        return data.microphone;
+    }
+
+    public void setMicrophone(String mic) {
+        microphoneProperty.set(mic);
+    }
+
+    public StringProperty microphoneProperty() {
+        return microphoneProperty;
+    }
+
+    public String getSpeaker() {
+        return data.speaker;
+    }
+
+    public void setSpeaker(String speaker) {
+        speakerProperty.set(speaker);
+    }
+
+    public StringProperty speakerProperty() {
+        return speakerProperty;
+    }
+
+    public int getMicrophoneVolume() {
+        return data.microphoneVolume;
+    }
+
+    public void setMicrophoneVolume(int vol) {
+        microphoneVolumeProperty.set(vol);
+    }
+
+    public IntegerProperty microphoneVolumeProperty() {
+        return microphoneVolumeProperty;
+    }
+
+    public int getSpeakerVolume() {
+        return data.speakerVolume;
+    }
+
+    public void setSpeakerVolume(int vol) {
+        speakerVolumeProperty.set(vol);
+    }
+
+    public IntegerProperty speakerVolumeProperty() {
+        return speakerVolumeProperty;
+    }
+
+    public int getAudioBitrate() {
+        return data.audioBitrate;
+    }
+
+    public void setAudioBitrate(int bitrate) {
+        audioBitrateProperty.set(bitrate);
+    }
+
+    public IntegerProperty audioBitrateProperty() {
+        return audioBitrateProperty;
+    }
+
+    public String getCamera() {
+        return data.camera;
+    }
+
+    public void setCamera(String cam) {
+        cameraProperty.set(cam);
+    }
+
+    public StringProperty cameraProperty() {
+        return cameraProperty;
+    }
+
+    public int getCameraBitrate() {
+        return data.cameraBitrate;
+    }
+
+    public void setCameraBitrate(int bitrate) {
+        cameraBitrateProperty.set(bitrate);
+    }
+
+    public IntegerProperty cameraBitrateProperty() {
+        return cameraBitrateProperty;
+    }
+
+    public double getMainSplitRatio() {
+        return data.mainSplitRatio;
+    }
+
+    public void setMainSplitRatio(double ratio) {
+        mainSplitRatioProperty.set(ratio);
+    }
+
+    public DoubleProperty mainSplitRatioProperty() {
+        return mainSplitRatioProperty;
+    }
+
+    public double getVideoSplitRatio() {
+        return data.videoSplitRatio;
+    }
+
+    public void setVideoSplitRatio(double ratio) {
+        videoSplitRatioProperty.set(ratio);
+    }
+
+    public DoubleProperty videoSplitRatioProperty() {
+        return videoSplitRatioProperty;
+    }
+
+    public String getDraft(String chatId) {
+        return data.drafts.getOrDefault(chatId, "");
+    }
+
     public void saveDraft(String chatId, String text) {
         if (text == null || text.trim().isEmpty()) {
             data.drafts.remove(chatId);
@@ -209,7 +371,10 @@ public class SettingsManager {
             data.drafts.put(chatId, text.trim());
         }
     }
-    public void clearDraft(String chatId) { data.drafts.remove(chatId); }
+
+    public void clearDraft(String chatId) {
+        data.drafts.remove(chatId);
+    }
 
     public void save() {
         logger.log("Settings manager: saving settings");
@@ -286,11 +451,11 @@ public class SettingsManager {
         devices.add("Default");
         try {
             List<AudioDevice> microphones = WebRTCManager.getInstance().getMicrophones();
-            for(AudioDevice microphone : microphones) {
+            for (AudioDevice microphone : microphones) {
                 String name = microphone.getName();
-                if (name != null && !name.isEmpty() &&
-                        !name.contains("Primary") && !name.contains("Default") &&
-                        !devices.contains(name)) {
+                if (name != null && !name.isEmpty()
+                        && !name.contains("Primary") && !name.contains("Default")
+                        && !devices.contains(name)) {
                     devices.add(name);
                 }
             }
@@ -307,11 +472,11 @@ public class SettingsManager {
         devices.add("Default");
         try {
             List<AudioDevice> speakers = WebRTCManager.getInstance().getSpeakers();
-            for(AudioDevice speaker : speakers) {
+            for (AudioDevice speaker : speakers) {
                 String name = speaker.getName();
-                if (name != null && !name.isEmpty() &&
-                        !name.contains("Primary") && !name.contains("Default") &&
-                        !devices.contains(name)) {
+                if (name != null && !name.isEmpty()
+                        && !name.contains("Primary") && !name.contains("Default")
+                        && !devices.contains(name)) {
                     devices.add(name);
                 }
             }
@@ -328,11 +493,11 @@ public class SettingsManager {
         devices.add("Default");
         try {
             List<VideoDevice> cameras = WebRTCManager.getInstance().getCameras();
-            for(VideoDevice camera : cameras) {
+            for (VideoDevice camera : cameras) {
                 String name = camera.getName();
-                if (name != null && !name.isEmpty() &&
-                        !name.contains("Primary") && !name.contains("Default") &&
-                        !devices.contains(name)) {
+                if (name != null && !name.isEmpty()
+                        && !name.contains("Primary") && !name.contains("Default")
+                        && !devices.contains(name)) {
                     devices.add(name);
                 }
             }
@@ -385,7 +550,8 @@ public class SettingsManager {
             if (port != -1 && (port < 1 || port > 65535)) {
                 return Optional.of("Порт должен быть в диапазоне 1–65535");
             }
-            if (port == -1) {}
+            if (port == -1) {
+            }
         } catch (URISyntaxException e) {
             return Optional.of("Неверный синтаксис URL: " + e.getReason());
         }
@@ -399,11 +565,17 @@ public class SettingsManager {
     public Optional<String> validateNickname(String nickname) {
         logger.log("Settings manager: validating nickname");
 
-        if (nickname == null || nickname.isBlank()) return Optional.of("Никнейм не может быть пустым");
+        if (nickname == null || nickname.isBlank()) {
+            return Optional.of("Никнейм не может быть пустым");
+        }
         String trimmed = nickname.trim();
-        if (trimmed.length() < 3) return Optional.of("Минимальная длина: 3 символа");
-        if (trimmed.length() > 20) return Optional.of("Максимальная длина: 20 символов");
-        if (!trimmed.matches("^[a-zA-Z0-9_\\s\\u0400-\\u04FF]+$")){
+        if (trimmed.length() < 3) {
+            return Optional.of("Минимальная длина: 3 символа");
+        }
+        if (trimmed.length() > 20) {
+            return Optional.of("Максимальная длина: 20 символов");
+        }
+        if (!trimmed.matches("^[a-zA-Z0-9_\\s\\u0400-\\u04FF]+$")) {
             return Optional.of("Только буквы, цифры, пробелы и подчёркивания");
         }
         return Optional.empty();
@@ -412,60 +584,105 @@ public class SettingsManager {
     public Optional<String> validateUserKey(String key) {
         logger.log("Settings manager: validating user key");
 
-        if (key == null) return Optional.empty();
-        if (key.length() > 128) return Optional.of("Максимальная длина ключа: 128 символов");
+        if (key == null) {
+            return Optional.empty();
+        }
+        if (key.length() > 128) {
+            return Optional.of("Максимальная длина ключа: 128 символов");
+        }
         return Optional.empty();
     }
 
     public Optional<String> validateAudioBitrate(int bitrate) {
         logger.log("Settings manager: validating audio bitrate");
 
-        if (bitrate < 32) return Optional.of("Мин. битрейт аудио: 32 кбит/с");
-        if (bitrate > 320) return Optional.of("Макс. битрейт аудио: 320 кбит/с");
+        if (bitrate < 32) {
+            return Optional.of("Мин. битрейт аудио: 32 кбит/с");
+        }
+        if (bitrate > 320) {
+            return Optional.of("Макс. битрейт аудио: 320 кбит/с");
+        }
         return Optional.empty();
     }
 
     public Optional<String> validateCameraBitrate(int bitrate) {
         logger.log("Settings manager: validating camera bitrate");
 
-        if (bitrate < 100) return Optional.of("Мин. битрейт видео: 100 кбит/с");
-        if (bitrate > 10000) return Optional.of("Макс. битрейт видео: 10000 кбит/с");
+        if (bitrate < 100) {
+            return Optional.of("Мин. битрейт видео: 100 кбит/с");
+        }
+        if (bitrate > 10000) {
+            return Optional.of("Макс. битрейт видео: 10000 кбит/с");
+        }
         return Optional.empty();
     }
 
-    public boolean isNicknameValid(String nickname) { return validateNickname(nickname).isEmpty(); }
-    public boolean isUserKeyValid(String key) { return validateUserKey(key).isEmpty(); }
-    public boolean isAudioBitrateValid(int bitrate) { return validateAudioBitrate(bitrate).isEmpty(); }
-    public boolean isCameraBitrateValid(int bitrate) { return validateCameraBitrate(bitrate).isEmpty(); }
+    public boolean isNicknameValid(String nickname) {
+        return validateNickname(nickname).isEmpty();
+    }
+
+    public boolean isUserKeyValid(String key) {
+        return validateUserKey(key).isEmpty();
+    }
+
+    public boolean isAudioBitrateValid(int bitrate) {
+        return validateAudioBitrate(bitrate).isEmpty();
+    }
+
+    public boolean isCameraBitrateValid(int bitrate) {
+        return validateCameraBitrate(bitrate).isEmpty();
+    }
 
     public Optional<String> getValidationError(String field, Object value) {
         logger.log("Settings manager: getting validation error of field: " + field);
 
         return switch (field) {
-            case "nickname" -> validateNickname((String) value);
-            case "key" -> validateUserKey((String) value);
-            case "audioBitrate" -> validateAudioBitrate((Integer) value);
-            case "cameraBitrate" -> validateCameraBitrate((Integer) value);
-            default -> Optional.empty();
+            case "nickname" ->
+                validateNickname((String) value);
+            case "key" ->
+                validateUserKey((String) value);
+            case "audioBitrate" ->
+                validateAudioBitrate((Integer) value);
+            case "cameraBitrate" ->
+                validateCameraBitrate((Integer) value);
+            default ->
+                Optional.empty();
         };
     }
 
     private static class SettingsData {
-        @JsonProperty("path_to_avatar") private String pathToAvatar;
-        @JsonProperty("nickname") private String nickname;
-        @JsonProperty("signaling_url") private String signalingUrl = "ws://127.0.0.1:8080/javaphone/signaling";
-        @JsonProperty("user_key") private String userKey;
-        @JsonProperty("theme") private String theme;
-        @JsonProperty("notifications_enabled") private boolean notificationsEnabled;
-        @JsonProperty("microphone") private String microphone;
-        @JsonProperty("speaker") private String speaker;
-        @JsonProperty("microphone_volume") private int microphoneVolume;
-        @JsonProperty("speaker_volume") private int speakerVolume;
-        @JsonProperty("audio_bitrate") private int audioBitrate;
-        @JsonProperty("camera") private String camera;
-        @JsonProperty("camera_bitrate") private int cameraBitrate;
-        @JsonProperty("main_split_ratio") private double mainSplitRatio = 0.25;
-        @JsonProperty("video_split_ratio") private double videoSplitRatio = 0.75;
-        @JsonProperty("drafts") private Map<String, String> drafts = new HashMap<>();
+
+        @JsonProperty("path_to_avatar")
+        private String pathToAvatar;
+        @JsonProperty("nickname")
+        private String nickname;
+        @JsonProperty("signaling_url")
+        private String signalingUrl = "ws://127.0.0.1:8080/javaphone/signaling";
+        @JsonProperty("user_key")
+        private String userKey;
+        @JsonProperty("theme")
+        private String theme;
+        @JsonProperty("notifications_enabled")
+        private boolean notificationsEnabled;
+        @JsonProperty("microphone")
+        private String microphone;
+        @JsonProperty("speaker")
+        private String speaker;
+        @JsonProperty("microphone_volume")
+        private int microphoneVolume;
+        @JsonProperty("speaker_volume")
+        private int speakerVolume;
+        @JsonProperty("audio_bitrate")
+        private int audioBitrate;
+        @JsonProperty("camera")
+        private String camera;
+        @JsonProperty("camera_bitrate")
+        private int cameraBitrate;
+        @JsonProperty("main_split_ratio")
+        private double mainSplitRatio = 0.25;
+        @JsonProperty("video_split_ratio")
+        private double videoSplitRatio = 0.75;
+        @JsonProperty("drafts")
+        private Map<String, String> drafts = new HashMap<>();
     }
 }
