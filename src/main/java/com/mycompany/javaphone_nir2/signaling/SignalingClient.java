@@ -35,7 +35,9 @@ import javafx.beans.property.SimpleObjectProperty;
 public class SignalingClient {
     private Session session;
     private final String serverUrl;
+
     private String clientId;
+
 
     private final ObjectMapper mapper = new ObjectMapper();
 

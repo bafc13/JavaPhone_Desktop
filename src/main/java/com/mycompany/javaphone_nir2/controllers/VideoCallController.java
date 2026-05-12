@@ -2,6 +2,7 @@ package com.mycompany.javaphone_nir2.controllers;
 
 import com.mycompany.javaphone_nir2.ChatHistoryCell;
 import com.mycompany.javaphone_nir2.WebRtcVideoPanel;
+import com.mycompany.javaphone_nir2.games.GameMenuApp;
 import com.mycompany.javaphone_nir2.logging.SessionLogger;
 import com.mycompany.javaphone_nir2.models.Media;
 import com.mycompany.javaphone_nir2.models.Message;
@@ -678,10 +679,11 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
         logger.log("Video call window: open game chooser");
 
 
+
         //that how i think we might choose themes (example with putting theme and listen to changes)
 
         //scene.getStylesheets().add(getClass().getResource("dark".equals(settings.getTheme()) ?
-        //                    "css/chat_main_dark.css"
+         //                  "css/chat_main_dark.css"
         //                    : "css/chat_main.css").toExternalForm());
         //
         //            settings.themeProperty().addListener((obs, oldTheme, newTheme) -> {
@@ -690,6 +692,16 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
         //                    "css/chat_main_dark.css"
         //                    : "css/chat_main.css").toExternalForm());
         //            });
+
+        if (WebRTCManager.getInstance().isGameChannelReady()) {
+        GameMenuApp.getInstance().showGameSelection();
+    } else {
+        // Ждём открытия канала
+        WebRTCManager.getInstance().setOnGameChannelReady(() -> {
+            GameMenuApp.getInstance().showGameSelection();
+        });
+
+    }
     }
 
     /** This method responsible for redefine window closing */

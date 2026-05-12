@@ -1,0 +1,99 @@
+/*
+Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+Click nbfs://nbhost/SystemFileSystem/Templates/Other/CascadeStyleSheet.css to edit this template
+*/
+/* 
+    Created on : 8 мая 2026 г., 19:52:09
+    Author     : Марина
+*/
+
+/* ===== ИГРЫ - ТЁМНАЯ ТЕМА ===== */
+
+.game-container {
+    -fx-background-color: #1e1e2e;
+    -fx-padding: 30;
+}
+
+.title-text {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-fill: #ffffff;
+}
+
+.body-text {
+    -fx-font-size: 14px;
+    -fx-fill: #ffffff;
+}
+
+.game-button {
+    -fx-font-size: 14px;
+    -fx-padding: 10 20;
+    -fx-background-color: #3541a1;
+    -fx-text-fill: white;
+    -fx-background-radius: 5;
+    -fx-cursor: hand;
+}
+
+.game-button:hover {
+    -fx-background-color: #4a5ac1;
+}
+
+.reject-button {
+    -fx-font-size: 14px;
+    -fx-padding: 10 20;
+    -fx-background-color: #ef4444;
+    -fx-text-fill: white;
+    -fx-background-radius: 5;
+    -fx-cursor: hand;
+}
+
+.game-status {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffffff;
+}
+
+/* ===== КРЕСТИКИ-НОЛИКИ ===== */
+
+.tic-tac-toe-cell {
+    -fx-font-size: 48px;
+    -fx-font-weight: bold;
+    -fx-min-width: 80px;
+    -fx-min-height: 80px;
+    -fx-border-width: 2px;
+    -fx-border-radius: 12px;
+    -fx-background-radius: 12px;
+    -fx-alignment: center;  /* ← ЭТА СТРОЧКА центрирует X и O */
+}
+
+.tic-tac-toe-cell-empty {
+    -fx-background-color: #2d2d3d;
+    -fx-border-color: #6c6c7c;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 4, 0.5, 0, 2);
+}
+
+.tic-tac-toe-cell-empty:hover {
+    -fx-background-color: #4a4a5a !important;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 8, 0.5, 0, 2);
+}
+
+/* X - зелёный (ход игрока) */
+.tic-tac-toe-cell-x {
+    -fx-background-color: #2ecc71;
+    -fx-text-fill: white;
+    -fx-border-color: #6c6c7c;
+}
+
+/* O - красный (ход соперника) */
+.tic-tac-toe-cell-o {
+    -fx-background-color: #e74c3c;
+    -fx-text-fill: white;
+    -fx-border-color: #6c6c7c;
+}
+
+.tic-tac-toe-cell-winning {
+    -fx-effect: dropshadow(gaussian, #f1c40f, 20, 0.8, 0, 0);
+    -fx-border-color: #f1c40f;
+    -fx-border-width: 3;
+}

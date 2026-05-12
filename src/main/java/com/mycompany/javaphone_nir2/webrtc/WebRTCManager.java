@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mycompany.javaphone_nir2.controllers.ChatController;
 import com.mycompany.javaphone_nir2.controllers.VideoCallController;
+import com.mycompany.javaphone_nir2.games.GameMenuApp;
 import com.mycompany.javaphone_nir2.cryptography.MessageCryptographer;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
 import com.mycompany.javaphone_nir2.signaling.SignalingClient;
@@ -75,6 +76,10 @@ public class WebRTCManager implements PeerConnectionObserver {
 
     private Integer microphoneVolume = 0;
     private Integer speakerVolume = 0;
+    
+    //game channel check
+    private boolean isGameChannelReady = false;
+    private Runnable onGameChannelReadyCallback;
 
     private final ScheduledExecutorService statsExecutor = Executors.newSingleThreadScheduledExecutor();
 
@@ -240,11 +245,13 @@ public class WebRTCManager implements PeerConnectionObserver {
         RTCDataChannelInit init = new RTCDataChannelInit();
         init.ordered = true;
         init.negotiated = false;
+
         RTCDataChannel dataChannel1 = peerConnection.createDataChannel("chat", init);
         setupDataChannel(dataChannel1);
 
         RTCDataChannel dataChannel2 = peerConnection.createDataChannel("game", init);
         setupDataChannel(dataChannel2);
+
 
 //        Create offer
 //        RTCMediaConstraints constraints = new MediaConstraints();
@@ -278,6 +285,7 @@ public class WebRTCManager implements PeerConnectionObserver {
     }
 
     public void handleOffer(String sdp, String sender) {
+
         initializeMedia();
         initializeCapture();
 
@@ -436,27 +444,70 @@ public class WebRTCManager implements PeerConnectionObserver {
                     public void onBufferedAmountChange(long amount) {}
 
                     @Override
-                    public void onStateChange() {}
+                public void onStateChange() {
+                    System.out.println("🎮 GAME CHANNEL IS OPEN!");
+    isGameChannelReady = true;
+    if (onGameChannelReadyCallback != null) {
+        onGameChannelReadyCallback.run();
+    }
+    GameMenuApp.getInstance().onGameChannelReady();}
 
                     @Override
-                    public void onMessage(RTCDataChannelBuffer buffer) {
-                        ByteBuffer data = buffer.data;
-                        byte[] textBytes;
+        public void onMessage(RTCDataChannelBuffer buffer) {
+            ByteBuffer data = buffer.data;
+            byte[] textBytes;
 
-                        if (data.hasArray()) {
-                            textBytes = data.array();
-                        } else {
-                            textBytes = new byte[data.remaining()];
-                            data.get(textBytes);
-                        }
+            if (data.hasArray()) {
+                textBytes = data.array();
+            } else {
+                textBytes = new byte[data.remaining()];
+                data.get(textBytes);
+            }
 
-                        String text = new String(textBytes, StandardCharsets.UTF_8);
-                        // TODO: process game message
-                    }
-                });
+            String text = new String(textBytes, StandardCharsets.UTF_8);
+            try {
+                System.out.println("🎮 [GAME] Получено сообщение:");
+                System.out.println(text);
+                JsonNode message = mapper.readTree(text);
+                String sender = message.get("sender").asText();
+                String content = message.get("content").asText();
+               
+                
+                // Игнорируем свои сообщения, чтобы не обрабатывать их дважды
+                javafx.application.Platform.runLater(() -> {
+            String myId = getMyUserId();
+            if (myId != null && !sender.equals(myId)) {
+                GameMenuApp.getInstance().onGameMessage(content);
+            } else if (myId == null) {
+                GameMenuApp.getInstance().onGameMessage(content);
+            }
+        });} catch (Exception ex) {
+                System.getLogger(WebRTCManager.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+            }
+        }
+                
+
+        
+    });
+    break;
         }
     }
+    public boolean isGameChannelReady() {
+    return gameDataChannel != null && gameDataChannel.getState() == RTCDataChannelState.OPEN;
+}
 
+public void setOnGameChannelReady(Runnable callback) {
+    this.onGameChannelReadyCallback = callback;
+}
+public String getMyUserId() {
+    // Получаем clientId из SignalingClient
+    try {
+        return SignalingClient.getInstance().getClientId();
+    } catch (Exception e) {
+        // Fallback на nickname
+        return SettingsManager.getInstance().getNickname();
+    }
+}
     public void sendChatMessage(String content) {
         if (chatDataChannel != null && chatDataChannel.getState() == RTCDataChannelState.OPEN) {
             try {
@@ -493,20 +544,30 @@ public class WebRTCManager implements PeerConnectionObserver {
     }
 
 
-    public void sendGameMessage(String textMessage) {
-        if (gameDataChannel != null && gameDataChannel.getState() == RTCDataChannelState.OPEN) {
-            try {
-                ByteBuffer textBuffer = ByteBuffer.wrap(textMessage.getBytes(StandardCharsets.UTF_8));
-                RTCDataChannelBuffer textChannelBuffer = new RTCDataChannelBuffer(textBuffer, false);
 
-                gameDataChannel.send(textChannelBuffer);
-            } catch (Exception ex) {
-                Logger.getLogger(WebRTCManager.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        } else {
-            System.out.println("GAME CHANNEL DOES NOT EXIST");
+ 
+    public void sendGameMessage(String content) {
+    if (gameDataChannel != null && gameDataChannel.getState() == RTCDataChannelState.OPEN) {
+        try {
+            ObjectNode message = mapper.createObjectNode();
+            String sender = getMyUserId(); // Теперь используем clientId
+            message.put("sender", sender);
+            message.put("content", content);
+            
+            String textMessage = mapper.writeValueAsString(message);
+            ByteBuffer textBuffer = ByteBuffer.wrap(textMessage.getBytes(StandardCharsets.UTF_8));
+            RTCDataChannelBuffer textChannelBuffer = new RTCDataChannelBuffer(textBuffer, false);
+            
+            gameDataChannel.send(textChannelBuffer);
+            System.out.println("📤 [GAME] Отправлено сообщение: " + content);
+        } catch (Exception ex) {
+            System.getLogger(WebRTCManager.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
         }
+    } else {
+        System.out.println("❌ GAME CHANNEL NOT READY. State: " + 
+            (gameDataChannel != null ? gameDataChannel.getState() : "null"));
     }
+}
 
     private void startStatisticsCollection() {
         RTCStatsType[] types = {RTCStatsType.PEER_CONNECTION, RTCStatsType.SENDER, RTCStatsType.RECEIVER, RTCStatsType.TRACK, RTCStatsType.MEDIA_SOURCE, RTCStatsType.TRANSPORT};

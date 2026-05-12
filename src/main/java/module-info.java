@@ -7,7 +7,6 @@ module com.mycompany.javaphone_nir2 {
     requires jakarta.websocket;
     requires webrtc.java;
     requires java.desktop;
-
     opens com.mycompany.javaphone_nir2 to javafx.fxml, com.fasterxml.jackson.databind;
     exports com.mycompany.javaphone_nir2;
 
@@ -18,4 +17,8 @@ module com.mycompany.javaphone_nir2 {
     exports com.mycompany.javaphone_nir2.models;
     
     exports com.mycompany.javaphone_nir2.signaling;
+    requires com.almasb.fxgl.all;
+    
+    exports com.mycompany.javaphone_nir2.games to com.almasb.fxgl.core;
+    requires chesslib;
 }

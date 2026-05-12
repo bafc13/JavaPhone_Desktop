@@ -258,6 +258,7 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
 
         SignalingClient.initialize(settings.getSignalingUrl());
 
+
         Platform.runLater(() -> connectToSignaling());
 
         signalingClient = SignalingClient.getInstance();
