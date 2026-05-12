@@ -34,6 +34,26 @@
     -fx-translate-y: 1px; 
 }
 
+.chat-status {
+    -fx-text-fill: black;
+    -fx-font-size: 12px;
+    -fx-background-color: transparent;
+}
+
+.call-duration-label {
+    -fx-text-fill: black;
+    -fx-font-size: 12px;
+    -fx-background-color: transparent;
+}
+
+.typing-indicator {
+    -fx-text-fill: black;
+    -fx-font-size: 12px;
+    -fx-background-color: transparent;
+    -fx-margin: 0; 
+    -fx-alignment: center-left;
+}
+
 .message-input {
     -fx-padding: 8;
     -fx-font-size: 14;
@@ -107,6 +127,12 @@
     -fx-text-fill: rgba(255, 255, 255, 0.9);
     -fx-font-size: 12px;
     -fx-font-weight: bold;
+}
+
+.uppercase-message {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-letter-spacing: 0.5px;
 }
 
 .chat-history .list-cell {
@@ -185,4 +211,39 @@
 .video-pane:hover {
     -fx-border-color: #3498db;
     -fx-effect: dropshadow(gaussian, rgba(52, 152, 219, 0.6), 15, 0, 0, 2);
+}
+
+.file-preview {
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-border-color: rgba(255, 255, 255, 0.2);
+    -fx-border-width: 1px;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 4, 0, 0, 1);
+}
+
+.file-preview:hover {
+    -fx-border-color: #3498db;
+}
+
+.file-name-link {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-underline: true;
+    -fx-cursor: hand;
+    -fx-font-size: 13px;
+}
+
+.file-name-link:hover {
+    -fx-text-fill: #2980b9;
+    -fx-underline: false;
+}
+
+.file-size {
+    -fx-text-fill: rgba(224, 224, 224, 0.7);
+    -fx-font-size: 11px;
+}
+
+.file-attachment-box {
+    -fx-padding: 4px 0;
 }

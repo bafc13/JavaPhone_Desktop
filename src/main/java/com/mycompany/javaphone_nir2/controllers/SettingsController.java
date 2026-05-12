@@ -9,7 +9,10 @@ import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.StringProperty;
 import javafx.fxml.FXML;
+import javafx.scene.Parent;
 import javafx.scene.control.*;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -181,6 +184,7 @@ public class SettingsController {
         logger.log("Settings window: called func initializeResponsiveLayout");
 
         setupCloseInterceptor(stage);
+        setupGlobalKeyboardNavigation(stage);
     }
 
     /**
@@ -194,6 +198,20 @@ public class SettingsController {
             onDiscardButtonClicked();
             event.consume();
         });
+    }
+
+    private void setupGlobalKeyboardNavigation(Stage stage) {
+        logger.log("Settings window: setupping keyboard navigation");
+
+        if (stage.getScene() != null) {
+            Parent root = stage.getScene().getRoot();
+            root.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+                if (event.getCode() == KeyCode.ESCAPE) {
+                    onDiscardButtonClicked();
+                    event.consume();
+                }
+            });
+        }
     }
 
     /** This method response for binding reactive fields to SettingsManager fields */

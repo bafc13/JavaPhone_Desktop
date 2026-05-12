@@ -21,7 +21,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -198,6 +200,16 @@ public class SettingsManager {
     public void setVideoSplitRatio(double ratio) { videoSplitRatioProperty.set(ratio); }
     public DoubleProperty videoSplitRatioProperty() { return videoSplitRatioProperty; }
 
+
+    public String getDraft(String chatId) { return data.drafts.getOrDefault(chatId, ""); }
+    public void saveDraft(String chatId, String text) {
+        if (text == null || text.trim().isEmpty()) {
+            data.drafts.remove(chatId);
+        } else {
+            data.drafts.put(chatId, text.trim());
+        }
+    }
+    public void clearDraft(String chatId) { data.drafts.remove(chatId); }
 
     public void save() {
         logger.log("Settings manager: saving settings");
@@ -454,5 +466,6 @@ public class SettingsManager {
         @JsonProperty("camera_bitrate") private int cameraBitrate;
         @JsonProperty("main_split_ratio") private double mainSplitRatio = 0.25;
         @JsonProperty("video_split_ratio") private double videoSplitRatio = 0.75;
+        @JsonProperty("drafts") private Map<String, String> drafts = new HashMap<>();
     }
 }

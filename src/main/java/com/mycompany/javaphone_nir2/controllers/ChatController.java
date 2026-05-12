@@ -4,6 +4,7 @@ import com.mycompany.javaphone_nir2.ChatHistoryCell;
 import com.mycompany.javaphone_nir2.ContactListCell;
 import com.mycompany.javaphone_nir2.logging.SessionLogger;
 import com.mycompany.javaphone_nir2.models.Contact;
+import com.mycompany.javaphone_nir2.models.Media;
 import com.mycompany.javaphone_nir2.models.Message;
 import com.mycompany.javaphone_nir2.models.Offer;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
@@ -11,12 +12,14 @@ import com.mycompany.javaphone_nir2.signaling.SignalingClient;
 import com.mycompany.javaphone_nir2.webrtc.JavaPhoneCallManager;
 import com.mycompany.javaphone_nir2.webrtc.JavaPhoneChatHandler;
 import com.mycompany.javaphone_nir2.webrtc.WebRTCManager;
+import java.io.File;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -25,15 +28,22 @@ import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.collections.ObservableMap;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import javafx.stage.Popup;
 import javafx.stage.Window;
 import javafx.util.Duration;
@@ -61,9 +71,15 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
     @FXML private Button exitButton;
     @FXML private Label chatTitleLabel;
     @FXML private SplitPane mainSplitPane;
+    @FXML private Label typingIndicator;
+    @FXML private StackPane chatRootContainer;
+    @FXML private Button attachButton;
 
+    private VBox searchOverlay;
+    private TextField searchField;
+    private int searchIndex = 0;
 
-    /** ObservableMap, that stores contacts, which connected to the signal server  */
+   /** ObservableMap, that stores contacts, which connected to the signal server  */
     private ObservableMap<String, Contact> contacts;
     private Contact selectedContact;
     private Contact incomingCallContact;
@@ -103,6 +119,10 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
         setupChatUI();
         checkRegistration();
         initSignalingClient();
+        setupMessageSearch();
+        setupFileHandling();
+
+        scheduleIncomingCallTimer();
 
     }
 
@@ -116,12 +136,60 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
         contactsList.setCellFactory(param -> new ContactListCell());
         contactsList.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
+                if (selectedContact != null) {
+                    settings.saveDraft(selectedContact.getName(), messageInput.getText());
+                }
+
                 selectedContact = newVal;
+                messageInput.requestFocus();
                 updateChatPanel();
             }
         });
 
         contactsList.getStyleClass().add("contacts-list");
+    }
+
+    public void removeContactFromList(Contact contact) {
+        contactsList.getItems().removeIf(e -> {
+            if(e.getName().equals(contact.getName())) {
+                return true;
+            }
+            return false;
+        });
+
+        contactsList.refresh();
+    }
+
+    public void setTypingContactIndicator(Contact contact, boolean isTyping) {
+        if(selectedContact != null){
+            if(selectedContact.equals(contact)){
+                if (isTyping) {
+                    typingIndicator.setText("печатает...");
+                    typingIndicator.setVisible(true);
+                    typingIndicator.setManaged(true);
+                    typingIndicator.setOpacity(1.0);
+                } else {
+                    typingIndicator.setVisible(false);
+                    typingIndicator.setManaged(true);
+                }
+            }
+        }
+
+        if(contactsList.getItems() != null) {
+            int indexOfContact = contactsList.getItems().indexOf(contact);
+            if (indexOfContact >= 0) {
+                Platform.runLater(() -> {
+                    for (Node node : contactsList.lookupAll(".list-cell")) {
+                        if (node instanceof ContactListCell cell) {
+                            if (cell.getIndex() == indexOfContact) {
+                                cell.setTypingIndicator(isTyping);
+                                break;
+                            }
+                        }
+                    }
+                });
+            }
+        }
     }
 
     /** This method set styles for nav bar and contacts and set onClick handlers for nav buttons */
@@ -163,6 +231,14 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
                 }
             closeWindow();
         });
+
+        ImageView imageView = new ImageView(new Image(getClass()
+                .getResourceAsStream("/com/mycompany/javaphone_nir2/images/attachment.png")));
+        imageView.setFitWidth(25);
+        imageView.setFitHeight(25);
+        imageView.setPreserveRatio(true);
+
+        attachButton.setGraphic(imageView);
     }
 
     /** This method open settings window when user is not registered */
@@ -243,6 +319,129 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
         sendButton.getStyleClass().add("send-button");
 
         messageContainer.getStyleClass().add("message-container");
+
+        typingIndicator.getStyleClass().add("typing-indicator");
+    }
+
+    private void setupMessageSearch() {
+        searchField = new TextField();
+        searchField.setPromptText("Поиск по сообщениям...");
+
+        Button closeBtn = new Button("✕");
+        closeBtn.getStyleClass().add("search-close-btn");
+        closeBtn.setOnAction(e -> hideSearch());
+
+        searchOverlay = new VBox(8, searchField, closeBtn);
+        searchOverlay.getStyleClass().add("search-overlay");
+        searchOverlay.setVisible(false);
+
+        searchField.textProperty().addListener((obs, old, newVal) -> {
+            if (newVal.trim().isEmpty()) return;
+            searchAndHighlight(newVal.trim().toLowerCase());
+        });
+
+        chatRootContainer.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) {
+                newScene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+                    if (event.getCode() == KeyCode.F && event.isControlDown()) {
+                        showSearch();
+                        event.consume();
+                    }
+                });
+            }
+        });
+
+        chatRootContainer.getChildren().add(searchOverlay);
+
+        setupSearchHide();
+    }
+
+    private void showSearch() {
+        searchOverlay.setVisible(true);
+        searchField.requestFocus();
+        searchField.selectAll();
+    }
+
+    private void hideSearch() {
+        searchOverlay.setVisible(false);
+        chatHistory.getSelectionModel().clearSelection();
+
+        messageInput.requestFocus();
+    }
+
+    private void searchAndHighlight(String query) {
+        ObservableList<Message> messages = chatHistory.getItems();
+        for (int i = 0; i < messages.size(); i++) {
+            String content = messages.get(i).getContent().toLowerCase();
+            if (content.contains(query)) {
+                chatHistory.scrollTo(i);
+                chatHistory.getSelectionModel().select(i);
+                return;
+            }
+        }
+    }
+
+    private void setupSearchHide() {
+        chatRootContainer.setOnMouseClicked(e -> {
+            if (searchOverlay.isVisible() && !searchOverlay.contains(e.getX(), e.getY())) {
+                hideSearch();
+            }
+        });
+        chatRootContainer.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ESCAPE && searchOverlay.isVisible()) {
+                hideSearch();
+            }
+            if (event.getCode() == KeyCode.ENTER && searchOverlay.isVisible()) {
+                hideSearch();
+            }
+        });
+    }
+
+    private void setupFileHandling() {
+        chatRootContainer.setOnDragOver(event -> {
+            if (event.getDragboard().hasFiles()) {
+                event.acceptTransferModes(TransferMode.COPY);
+            }
+            event.consume();
+        });
+
+        chatRootContainer.setOnDragDropped(event -> {
+            List<File> files = event.getDragboard().getFiles();
+            if (files != null && !files.isEmpty()) {
+                handleSelectedFiles(files);
+                event.setDropCompleted(true);
+            }
+            event.consume();
+        });
+
+        attachButton.setOnAction(e -> {
+            FileChooser fc = new FileChooser();
+            fc.setTitle("Выберите файлы для отправки");
+            fc.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Изображения", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.webp"),
+                new FileChooser.ExtensionFilter("Все файлы", "*.*")
+            );
+            List<File> files = fc.showOpenMultipleDialog(attachButton.getScene().getWindow());
+            if (files != null && !files.isEmpty()) {
+                handleSelectedFiles(files);
+            }
+        });
+    }
+
+    private void handleSelectedFiles(List<File> files) {
+        for (File f : files) {
+            appendFileToChat(f, "Вы");
+
+            // webRTCManager.sendFile(msg, media);
+        }
+    }
+
+    private String computeChecksum(File f) {
+        try {
+            return Integer.toHexString(Files.readAllBytes(f.toPath()).hashCode());
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     /**
@@ -293,6 +492,20 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
                     switchChat(event.getCode() == KeyCode.UP ? -1 : 1);
                     event.consume();
                 }
+                if (event.getCode() == KeyCode.ESCAPE &&
+                        (messageInput.isFocused() || chatHistory.isFocused())) {
+                    settings.saveDraft(selectedContact.getName(), messageInput.getText());
+
+                    chatHistory.getItems().clear();
+                    messageInput.clear();
+
+                    selectedContact = null;
+                    updateChatPanel();
+
+                    contactsList.getFocusModel().focus(-1);
+                    contactsList.getSelectionModel().clearSelection();
+                    contactsList.requestFocus();
+                }
             });
         }
     }
@@ -303,6 +516,10 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
     */
     private void switchChat(int direction) {
         logger.log("Chat window: switch chat via alt + arrow in direction: " + direction);
+
+        if(selectedContact != null) {
+            settings.saveDraft(selectedContact.getName(), messageInput.getText());
+        }
 
         int currentIndex = contactsList.getSelectionModel().getSelectedIndex();
         int size = contactsList.getItems().size();
@@ -316,21 +533,28 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
         // selecting new picked chat in contactsList
         contactsList.getSelectionModel().select(nextIndex);
         contactsList.scrollTo(nextIndex);
+        messageInput.clear();
+
+        messageInput.setText(settings.getDraft(selectedContact.getName()));
         messageInput.requestFocus();
     }
 
     /** This method demonstrate notification about call  */
     private void scheduleIncomingCallTimer() {
-        if (contacts != null && !contacts.isEmpty()) {
+//        if (contacts != null && !contacts.isEmpty()) {
             // rand delay
-            int delaySeconds = 2 + (int) (Math.random() * 6);
+            int delaySeconds = 8 + (int) (Math.random() * 6);
 
             PauseTransition pause = new PauseTransition(Duration.seconds(delaySeconds));
             pause.setOnFinished(e -> {
-                Platform.runLater(this::showIncomingCallNotification);
+//                Platform.runLater(this::showIncomingCallNotification);
+                Platform.runLater(() -> {
+                    setTypingContactIndicator(new Contact("bafc13", "ONLINE", "1333"), true);
+                });
+
             });
             pause.play();
-        }
+//        }
     }
 
     /** This method shows notification via popup */
@@ -581,10 +805,14 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
     private void updateChatPanel() {
         logger.log("Chat window: updating chatTitleLabel with contact: " + selectedContact);
 
+        //TO DO: load chat with selected contact via method loadChatHistory(...);
+
         if (selectedContact != null) {
             chatTitleLabel.setText("Чат с " + selectedContact.getName());
+
+            messageInput.setText(settings.getDraft(selectedContact.getName()));
         } else {
-            chatTitleLabel.setText("");
+            chatTitleLabel.setText("Выберите чат для общения!");
         }
     }
 
@@ -655,6 +883,9 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
     private void closeWindow() {
         logger.log("Chat window: user requested closing window, closing application");
 
+        if (selectedContact != null) {
+            settings.saveDraft(selectedContact.getName(), messageInput.getText());
+        }
         settings.save();
 
         Platform.runLater(() -> {

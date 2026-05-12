@@ -40,7 +40,7 @@ public class Contact {
     public String getAvatarColor() {
         return avatarColor;
     }
-    
+
     public String getKey() {
         return key;
     }
@@ -56,7 +56,7 @@ public class Contact {
     public void setAvatarColor(String avatarColor) {
         this.avatarColor = avatarColor;
     }
-    
+
     public void setKey(String key) {
         this.key = key;
     }
@@ -64,5 +64,23 @@ public class Contact {
     @Override
     public String toString() {
         return name;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Contact)) return false;
+        Contact contact = (Contact) o;
+        if(key.equals(contact.key) &&
+                name.equals(contact.name) &&
+                status.equals(contact.status)) {
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return key != null ? key.hashCode() : 0;
     }
 }
