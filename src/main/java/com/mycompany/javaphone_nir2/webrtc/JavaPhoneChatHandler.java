@@ -5,6 +5,7 @@
 package com.mycompany.javaphone_nir2.webrtc;
 
 import com.mycompany.javaphone_nir2.models.Message;
+import java.io.File;
 
 /**
  *
@@ -13,4 +14,5 @@ import com.mycompany.javaphone_nir2.models.Message;
 public interface JavaPhoneChatHandler {
     public void handleStringMessage(String sender, String content);
     public void handleMessage(Message message);
+    public void handleFileMessage(File file, String sender);
 }

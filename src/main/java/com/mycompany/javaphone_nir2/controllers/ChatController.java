@@ -97,7 +97,7 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
 
     /** WebRTCManager let users communicate, used when call is starting */
     private final WebRTCManager webRtcManager = WebRTCManager.getInstance();
-    
+
     private SignalingClient signalingClient = null;
 
     /** Logger saves session information into log */
@@ -209,7 +209,7 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
         settingsButton.getStyleClass().add("header-button");
 
         callButton.setOnAction(e -> startVideoCall());
-  //      callButton.setOnAction(e -> startVideoCallWithContact(selectedContact));
+//        callButton.setOnAction(e -> startVideoCallWithContact(new Contact("Bafc13", "Online", "1333")));
         callButton.getStyleClass().add("header-button");
 
         exitButton.getStyleClass().add("header-button");
@@ -263,7 +263,7 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
         signalingClient = SignalingClient.getInstance();
         signalingClient.setCallManager(this);
         signalingClient.addChatHandler(this);
-        
+
         webRtcManager.setCallManager(this);
     }
 
@@ -430,10 +430,26 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
 
     private void handleSelectedFiles(List<File> files) {
         for (File f : files) {
-            appendFileToChat(f, "Вы");
+            handleFileMessage(f, "Вы");
 
             // webRTCManager.sendFile(msg, media);
         }
+    }
+
+    @Override
+    public void handleFileMessage(File file, String sender) {
+        Media media = new Media();
+        media.setPath(file.getAbsolutePath());
+        media.setChecksum(computeChecksum(file));
+
+        Message msg = new Message();
+        msg.setChatId(1);
+        msg.setSenderPublicKey(sender);
+        msg.setContent("");
+        msg.setTime(System.currentTimeMillis() / 1000);
+        msg.setAttachments(List.of(media));
+
+        handleMessage(msg);
     }
 
     private String computeChecksum(File f) {
@@ -676,7 +692,7 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
     /** This method responsible for accept the call */
     private void acceptCall() {
         logger.log("Chat window: accepting call with: " + incomingCallContact.getName() + ", key: " + incomingCallContact.getKey());
-        
+
         webRtcManager.handleOffer(offer.getSdp(), offer.getSender());
         hideIncomingCallNotification();
         startVideoCallWithContact(incomingCallContact);
@@ -989,7 +1005,7 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
     @Override
     public void handleMessage(Message message) {
         // Добавляем в конец списка
-       
+
 
        // 🔥 Прокрутка вниз к новому сообщению
        Platform.runLater(() -> {
@@ -1035,7 +1051,7 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
             });
         }
     }
-    
+
     @Override
     public void handleCallAccepted() {
         Platform.runLater(() -> {

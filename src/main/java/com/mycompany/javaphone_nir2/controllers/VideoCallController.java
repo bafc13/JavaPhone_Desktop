@@ -117,7 +117,7 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
         handleStringMessage("System", "Звонок активен");
 
         callChatHistory.setEditable(false);
-        
+
         WebRTCManager.getInstance().setVideoHandler(this);
         WebRTCManager.getInstance().addChatHandler(this);
         setChatStatus("Соединение установлено");
@@ -523,7 +523,7 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
 
     private void handleSelectedFiles(List<File> files) {
         for (File f : files) {
-            appendFileToChat(f, "Вы");
+            handleFileMessage(f, "Вы");
 
             // webRTCManager.sendFile(msg, media);
         }
@@ -716,21 +716,6 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
         });
     }
 
-    public void appendFileToChat(File file, String sender){
-        Media media = new Media();
-        media.setPath(file.getAbsolutePath());
-        media.setChecksum(computeChecksum(file));
-
-        Message msg = new Message();
-        msg.setChatId(1);
-        msg.setSenderPublicKey(sender);
-        msg.setContent("");
-        msg.setTime(System.currentTimeMillis() / 1000);
-        msg.setAttachments(List.of(media));
-
-        appendToCallChat(msg);
-    }
-
     /**
      * Простая генерация уникального ID (заглушка)
      * В реальном приложении — использовать базу данных или UUID
@@ -747,6 +732,22 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
     @Override
     public void addRemoteTrack(VideoTrack remoteTrack) {
         remoteTrack.addSink(remoteVideo);
+    }
+
+    @Override
+    public void handleFileMessage(File file, String sender) {
+        Media media = new Media();
+        media.setPath(file.getAbsolutePath());
+        media.setChecksum(computeChecksum(file));
+
+        Message msg = new Message();
+        msg.setChatId(1);
+        msg.setSenderPublicKey(sender);
+        msg.setContent("");
+        msg.setTime(System.currentTimeMillis() / 1000);
+        msg.setAttachments(List.of(media));
+
+        handleMessage(msg);
     }
 
     @Override
