@@ -17,7 +17,6 @@ public class TicTacToeModule extends FXGLGame {
     private Label statusLabel;
     private boolean gameOver = false;
     private VBox root;
-    private GridPane boardGrid;
     
     @Override
     public void showUI() {
@@ -30,9 +29,9 @@ public class TicTacToeModule extends FXGLGame {
         
         statusLabel = new Label(waitingForOpponent ? "Ожидание соперника..." : "Ваш ход!");
         statusLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
-        themeHelper.styleLabel(statusLabel, false);
+        statusLabel.getStyleClass().add("game-status");
         
-        boardGrid = createBoard();
+        GridPane boardGrid = createBoard();
         
         Button backButton = new Button("Выйти в меню");
         themeHelper.styleButton(backButton);
@@ -47,11 +46,6 @@ public class TicTacToeModule extends FXGLGame {
         
         Scene scene = new Scene(root, 450, 550);
         themeHelper.applyThemeToScene(scene);
-        
-        // Подписываемся на изменения темы
-        com.mycompany.javaphone_nir2.models.SettingsManager.getInstance().themeProperty().addListener((obs, oldTheme, newTheme) -> {
-            Platform.runLater(() -> updateTheme());
-        });
         
         gameStage.setScene(scene);
     }
@@ -68,23 +62,22 @@ public class TicTacToeModule extends FXGLGame {
                 button.setPrefSize(100, 100);
                 button.setFont(Font.font("Segoe UI", FontWeight.BOLD, 48));
                 
-                // Применяем стиль клетки в зависимости от темы
-                updateCellStyle(button, " ", false);
+                // Начальный стиль пустой клетки
+                themeHelper.styleTicTacToeCell(button, " ", false);
                 
-                // Эффект при наведении
                 final int row = i;
                 final int col = j;
+                
+                // Hover эффект для пустых клеток
                 button.setOnMouseEntered(e -> {
                     if (button.getText().equals(" ") && !gameOver && isMyTurn && !waitingForOpponent) {
-                     // Добавляем временный класс для hover-эффекта
-                    button.getStyleClass().add("tic-tac-toe-cell-hover");
+                        button.getStyleClass().add("tic-tac-toe-cell-empty-hover");
                     }
                 });
                 
                 button.setOnMouseExited(e -> {
-                if (button.getText().equals(" ")) {
-                // Убираем hover-класс
-                button.getStyleClass().remove("tic-tac-toe-cell-hover");
+                    if (button.getText().equals(" ")) {
+                        button.getStyleClass().remove("tic-tac-toe-cell-empty-hover");
                     }
                 });
                 
@@ -97,72 +90,28 @@ public class TicTacToeModule extends FXGLGame {
         return grid;
     }
     
-    private void updateCellStyle(Button button, String symbol, boolean isWinning) {
-    themeHelper.styleTicTacToeCell(button, symbol, isWinning);
-}
-
-
-    
-    private void updateTheme() {
-        // Обновляем фон контейнера
-        themeHelper.applyToContainer(root);
-        
-        // Обновляем стиль статуса
-        if (!gameOver) {
-            if (waitingForOpponent) {
-                statusLabel.setText("Ожидание соперника...");
-            } else if (isMyTurn) {
-                statusLabel.setText("✅ Ваш ход!");
-            } else {
-                statusLabel.setText("Ожидание хода соперника...");
-            }
-            themeHelper.styleLabel(statusLabel, false);
-        }
-        
-        // Обновляем стиль всех клеток
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                Button btn = board[i][j];
-                if (btn != null) {
-                    String symbol = btn.getText();
-                    if (!symbol.equals(" ")) {
-                        // Перерисовываем X и O с новыми цветами
-                        if (symbol.equals("X")) {
-                            updateCellStyle(btn, "X", false);
-                        } else if (symbol.equals("O")) {
-                            updateCellStyle(btn, "O", false);
-                        }
-                    } else {
-                        updateCellStyle(btn, " ", false);
-                    }
-                }
-            }
-        }
-    }
-    
     private void makeMove(int row, int col) {
         if (gameOver || !isMyTurn || waitingForOpponent) return;
         if (!board[row][col].getText().equals(" ")) return;
         
         // Устанавливаем X
         board[row][col].setText("X");
-        updateCellStyle(board[row][col], "X", false);
+        themeHelper.styleTicTacToeCell(board[row][col], "X", false);
         board[row][col].setDisable(true);
         
         isMyTurn = false;
         statusLabel.setText("Ожидание хода соперника...");
-        themeHelper.styleLabel(statusLabel, false);
         
         sendMove(row + "," + col);
         
         if (checkWin("X")) {
             gameOver = true;
             statusLabel.setText("🎉 ВЫ ПОБЕДИЛИ! 🎉");
-            statusLabel.setStyle("-fx-text-fill: #27ae60; -fx-font-size: 20px; -fx-font-weight: bold;");
+            statusLabel.setStyle("-fx-text-fill: #27ae60;");
         } else if (isBoardFull()) {
             gameOver = true;
             statusLabel.setText("🤝 НИЧЬЯ! 🤝");
-            statusLabel.setStyle("-fx-text-fill: #f39c12; -fx-font-size: 20px; -fx-font-weight: bold;");
+            statusLabel.setStyle("-fx-text-fill: #f39c12;");
         }
     }
     
@@ -174,21 +123,22 @@ public class TicTacToeModule extends FXGLGame {
         
         // Устанавливаем O
         board[row][col].setText("O");
-        updateCellStyle(board[row][col], "O", false);
+        themeHelper.styleTicTacToeCell(board[row][col], "O", false);
         board[row][col].setDisable(true);
         
         if (checkWin("O")) {
             gameOver = true;
             statusLabel.setText("😢 ВЫ ПРОИГРАЛИ! 😢");
-            statusLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 20px; -fx-font-weight: bold;");
+            statusLabel.setStyle("-fx-text-fill: #e74c3c;");
         } else if (isBoardFull()) {
             gameOver = true;
             statusLabel.setText("🤝 НИЧЬЯ! 🤝");
-            statusLabel.setStyle("-fx-text-fill: #f39c12; -fx-font-size: 20px; -fx-font-weight: bold;");
+            statusLabel.setStyle("-fx-text-fill: #f39c12;");
         } else {
             isMyTurn = true;
             statusLabel.setText("✅ Ваш ход!");
-            themeHelper.styleLabel(statusLabel, false);
+            statusLabel.setStyle(null);
+            statusLabel.getStyleClass().add("game-status");
         }
     }
     
@@ -204,7 +154,6 @@ public class TicTacToeModule extends FXGLGame {
         } else {
             statusLabel.setText("Ожидание хода соперника...");
         }
-        themeHelper.styleLabel(statusLabel, false);
     }
     
     @Override
@@ -213,7 +162,6 @@ public class TicTacToeModule extends FXGLGame {
     }
     
     private boolean checkWin(String symbol) {
-        // Проверка по строкам и столбцам
         for (int i = 0; i < 3; i++) {
             if (board[i][0].getText().equals(symbol) &&
                 board[i][1].getText().equals(symbol) &&
@@ -229,7 +177,6 @@ public class TicTacToeModule extends FXGLGame {
             }
         }
         
-        // Проверка диагоналей
         if (board[0][0].getText().equals(symbol) &&
             board[1][1].getText().equals(symbol) &&
             board[2][2].getText().equals(symbol)) {
@@ -251,7 +198,8 @@ public class TicTacToeModule extends FXGLGame {
         for (int i = 0; i < cells.length; i += 2) {
             int row = cells[i];
             int col = cells[i+1];
-            updateCellStyle(board[row][col], board[row][col].getText(), true);
+            String symbol = board[row][col].getText();
+            themeHelper.styleTicTacToeCell(board[row][col], symbol, true);
         }
     }
     
