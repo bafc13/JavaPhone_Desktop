@@ -1,10 +1,9 @@
 package com.mycompany.javaphone_nir2.models;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.mycompany.javaphone_nir2.logging.SessionLogger;
 
 import javafx.beans.property.*;
 
@@ -22,24 +21,35 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
-public class SettingsManager {
+/**
+ * Settings controller of application
+ *
+ * Responsible for saving, loading, validate
+ */
 
+public class SettingsManager {
     private static SettingsManager instance;
 
     private static final String SETTINGS_FOLDER = ".javaphone";
     private static final String CONFIG_FILE = "app_settings.json";
     private static final String AVATARS_FOLDER = "avatars";
 
+    /** path to settings in system */
     private final Path settingsPath;
-    private final ObjectMapper objectMapper; // 🔥 Jackson вместо Gson
+    private final ObjectMapper objectMapper;
+
+    /** Logger saves session information into log */
+    private final SessionLogger logger = SessionLogger.getInstance();
 
     private boolean registered;
     private SettingsData data;
 
-    // === REACTIVE PROPERTIES (transient для Jackson) ===
+    /** rective properties that going to be serialized */
     private transient final StringProperty nicknameProperty = new SimpleStringProperty(this, "nickname");
     private transient final StringProperty signalingUrlProperty = new SimpleStringProperty(this, "signalingUrl", "ws://127.0.0.1:8080/javaphone/signaling");
     private transient final StringProperty userKeyProperty = new SimpleStringProperty(this, "userKey");
@@ -57,13 +67,16 @@ public class SettingsManager {
     private transient final DoubleProperty videoSplitRatioProperty = new SimpleDoubleProperty(this, "videoSplitRatio", 0.5);
 
     private SettingsManager() {
-        // 🔥 Инициализация Jackson ObjectMapper
+        logger.log("Constructing settings manager");
+
         this.objectMapper = new ObjectMapper();
 
         this.settingsPath = Paths.get(System.getProperty("user.home"), SETTINGS_FOLDER, CONFIG_FILE);
         this.data = new SettingsData();
 
-        // === РЕГИСТРАЦИЯ СЛУШАТЕЛЕЙ: свойство → data ===
+        /** listeners registration */
+        logger.log("Settings manager: listeners registration");
+
         nicknameProperty.addListener((obs, old, newVal) -> { data.nickname = newVal; });
         signalingUrlProperty.addListener((obs, old, newVal) -> { data.signalingUrl = newVal; });
         userKeyProperty.addListener((obs, old, newVal) -> { data.userKey = newVal; });
@@ -104,6 +117,8 @@ public class SettingsManager {
     }
 
     private void syncPropertiesWithData() {
+        logger.log("Settings manager: sync properties with data");
+
         nicknameProperty.set(data.nickname);
         signalingUrlProperty.set(data.signalingUrl);
         userKeyProperty.set(data.userKey);
@@ -119,12 +134,13 @@ public class SettingsManager {
         cameraBitrateProperty.set(data.cameraBitrate);
     }
 
-    // === PUBLIC API (без изменений — полная обратная совместимость) ===
     public boolean isRegistered() { return registered; }
 
     public String getNickname() { return data.nickname; }
     public void setNickname(String nickname) { nicknameProperty.set(nickname); }
     public StringProperty nicknameProperty() { return nicknameProperty; }
+    
+    public String getEmail() { return data.nickname + "@example.com"; }
 
     public String getSignalingUrl() { return data.signalingUrl; }
     public void setSignalingUrl(String url) { signalingUrlProperty.set(url); }
@@ -185,10 +201,21 @@ public class SettingsManager {
     public DoubleProperty videoSplitRatioProperty() { return videoSplitRatioProperty; }
 
 
+    public String getDraft(String chatId) { return data.drafts.getOrDefault(chatId, ""); }
+    public void saveDraft(String chatId, String text) {
+        if (text == null || text.trim().isEmpty()) {
+            data.drafts.remove(chatId);
+        } else {
+            data.drafts.put(chatId, text.trim());
+        }
+    }
+    public void clearDraft(String chatId) { data.drafts.remove(chatId); }
+
     public void save() {
+        logger.log("Settings manager: saving settings");
+
         try {
             Files.createDirectories(settingsPath.getParent());
-            // writerWithDefaultPrettyPrinter() даёт форматирование локально для этого вызова
             String json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(data);
             Files.writeString(settingsPath, json);
             System.out.println("Settings saved: " + settingsPath);
@@ -200,6 +227,8 @@ public class SettingsManager {
     }
 
     private void loadSettings() {
+        logger.log("Settings manager: loading settings");
+
         if (!Files.exists(settingsPath)) {
             System.out.println("Using default settings, JSON not found.");
             setDefaults();
@@ -207,7 +236,6 @@ public class SettingsManager {
         }
 
         try {
-            // 🔥 Jackson: десериализация из файла
             String json = Files.readString(settingsPath);
             SettingsData loaded = objectMapper.readValue(json, SettingsData.class);
 
@@ -228,6 +256,8 @@ public class SettingsManager {
     }
 
     private void setDefaults() {
+        logger.log("Settings manager: setting default settings values");
+
         this.registered = false;
         SettingsData defaults = new SettingsData();
         defaults.pathToAvatar = "";
@@ -249,9 +279,9 @@ public class SettingsManager {
         syncPropertiesWithData();
     }
 
-    // === УСТРОЙСТВА (без изменений) ===
-
     public List<String> getAvailableMicrophones() {
+        logger.log("Settings manager: getting available microphones from webrtc");
+
         List<String> devices = new ArrayList<>();
         devices.add("Default");
         try {
@@ -271,6 +301,8 @@ public class SettingsManager {
     }
 
     public List<String> getAvailableSpeakers() {
+        logger.log("Settings manager: getting available speakers from webrtc");
+
         List<String> devices = new ArrayList<>();
         devices.add("Default");
         try {
@@ -290,6 +322,8 @@ public class SettingsManager {
     }
 
     public List<String> getAvailableCameras() {
+        logger.log("Settings manager: getting available cameras from webrtc");
+
         List<String> devices = new ArrayList<>();
         devices.add("Default");
         try {
@@ -308,9 +342,9 @@ public class SettingsManager {
         return devices;
     }
 
-    // === AVATAR UPLOAD (без изменений) ===
-
     public boolean uploadAvatar(File avatarFile) {
+        logger.log("Settings manager: uploading avatar");
+
         try {
             Path appAvatarsDir = Path.of(System.getProperty("user.home"), SETTINGS_FOLDER, AVATARS_FOLDER);
             Files.createDirectories(appAvatarsDir);
@@ -328,18 +362,15 @@ public class SettingsManager {
     }
 
     public Optional<String> validateSignalingUrl(String url) {
+        logger.log("Settings manager: validating signaling url");
+
         if (url == null || url.isBlank()) {
             return Optional.of("URL не может быть пустым");
         }
-
         String trimmed = url.trim();
-
-        // 1. Проверка протокола (обязательно)
         if (!trimmed.matches("^(ws|wss|http|https)://.+")) {
             return Optional.of("Неверный протокол. Ожидается: ws://, wss://, http:// или https://");
         }
-
-        // 2. Базовая проверка структуры через стандартный Java URI
         try {
             URI uri = new URI(trimmed);
             String host = uri.getHost();
@@ -348,27 +379,16 @@ public class SettingsManager {
             if (host == null || host.isEmpty()) {
                 return Optional.of("Хост не указан (пример: ws://localhost:8080)");
             }
-
-            // Валидация хоста: домен или IP
             if (!host.matches("^[a-zA-Z0-9.-]+$") && !host.matches("^\\d{1,3}(\\.\\d{1,3}){3}$")) {
                 return Optional.of("Неверный формат хоста");
             }
-
-            // Валидация порта (если указан)
             if (port != -1 && (port < 1 || port > 65535)) {
                 return Optional.of("Порт должен быть в диапазоне 1–65535");
             }
-
-            // Если порт не указан в строке, но протокол требует (опционально)
-            if (port == -1) {
-                 // Можно добавить предупреждение, но не ошибку, т.к. есть дефолтные порты
-            }
-
+            if (port == -1) {}
         } catch (URISyntaxException e) {
             return Optional.of("Неверный синтаксис URL: " + e.getReason());
         }
-
-        // 3. Проверка длины (защита от переполнения)
         if (trimmed.length() > 255) {
             return Optional.of("URL слишком длинный (макс. 255 символов)");
         }
@@ -376,31 +396,38 @@ public class SettingsManager {
         return Optional.empty();
     }
 
-    // === VALIDATION (без изменений) ===
-
     public Optional<String> validateNickname(String nickname) {
+        logger.log("Settings manager: validating nickname");
+
         if (nickname == null || nickname.isBlank()) return Optional.of("Никнейм не может быть пустым");
         String trimmed = nickname.trim();
         if (trimmed.length() < 3) return Optional.of("Минимальная длина: 3 символа");
         if (trimmed.length() > 20) return Optional.of("Максимальная длина: 20 символов");
-        if (!trimmed.matches("^[a-zA-Z0-9_\\s\\u0400-\\u04FF]+$"))
+        if (!trimmed.matches("^[a-zA-Z0-9_\\s\\u0400-\\u04FF]+$")){
             return Optional.of("Только буквы, цифры, пробелы и подчёркивания");
+        }
         return Optional.empty();
     }
 
     public Optional<String> validateUserKey(String key) {
+        logger.log("Settings manager: validating user key");
+
         if (key == null) return Optional.empty();
         if (key.length() > 128) return Optional.of("Максимальная длина ключа: 128 символов");
         return Optional.empty();
     }
 
     public Optional<String> validateAudioBitrate(int bitrate) {
+        logger.log("Settings manager: validating audio bitrate");
+
         if (bitrate < 32) return Optional.of("Мин. битрейт аудио: 32 кбит/с");
         if (bitrate > 320) return Optional.of("Макс. битрейт аудио: 320 кбит/с");
         return Optional.empty();
     }
 
     public Optional<String> validateCameraBitrate(int bitrate) {
+        logger.log("Settings manager: validating camera bitrate");
+
         if (bitrate < 100) return Optional.of("Мин. битрейт видео: 100 кбит/с");
         if (bitrate > 10000) return Optional.of("Макс. битрейт видео: 10000 кбит/с");
         return Optional.empty();
@@ -412,6 +439,8 @@ public class SettingsManager {
     public boolean isCameraBitrateValid(int bitrate) { return validateCameraBitrate(bitrate).isEmpty(); }
 
     public Optional<String> getValidationError(String field, Object value) {
+        logger.log("Settings manager: getting validation error of field: " + field);
+
         return switch (field) {
             case "nickname" -> validateNickname((String) value);
             case "key" -> validateUserKey((String) value);
@@ -437,5 +466,6 @@ public class SettingsManager {
         @JsonProperty("camera_bitrate") private int cameraBitrate;
         @JsonProperty("main_split_ratio") private double mainSplitRatio = 0.25;
         @JsonProperty("video_split_ratio") private double videoSplitRatio = 0.75;
+        @JsonProperty("drafts") private Map<String, String> drafts = new HashMap<>();
     }
 }

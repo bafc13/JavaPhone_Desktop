@@ -1,19 +1,18 @@
 package com.mycompany.javaphone_nir2.controllers;
 
+import com.mycompany.javaphone_nir2.logging.SessionLogger;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
 import java.io.File;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
-import javafx.beans.property.Property;
 import javafx.beans.property.StringProperty;
-import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.scene.Parent;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -22,8 +21,21 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 
-public class SettingsController {
+/**
+ * Controller for settings window
+ *
+ * Responsible for: 1. Uploading avatar 2. Setting nickname
+ * 3. Setting url of signaling server 4. Setting user key
+ * 5. Setting application theme 6. Turning on/off notifications
+ * 7. Setting microphone, speaker, camera settings
+ * 8. Validating input info
+ * 9. Saving settings
+ */
 
+public class SettingsController {
+    /**
+     * FXML ui skeleton
+     */
     @FXML private Label audioBitrateLabel;
     @FXML private TextField audioBitrateField;
 //    @FXML private ImageView avatarView;
@@ -67,24 +79,39 @@ public class SettingsController {
     @FXML private Label videoBitrateLabel;
     @FXML private TextField videoBitrateField;
 
+    /** SettingsManager stores and saves settings */
     private SettingsManager settings;
 
+    /** Logger saves session information into log */
+    private final SessionLogger logger = SessionLogger.getInstance();
+
+    /** SettingsSnapshot necessary  to realize transactional mechanism
+     * in settings window (when button cancel clicked - transaction cancelling) */
     private SettingsSnapshot initialSnapshot;
 
-    @FXML
-    public void initialize() {
+    /**
+     * This method is automatically called by the FXMLLoader after the FXML file is loaded
+     * and all @FXML fields have been injected
+     * So this method is key method to init styles, listeners and etc before showing ui
+     */
+    @FXML public void initialize() {
+        logger.log("Settings window initializing");
+
         settings = SettingsManager.getInstance();
 
+        logger.log("Settings window: initializing settings snapshot");
         initialSnapshot = SettingsSnapshot.from(settings);
 
-        setupSettingsUI();      // CSS-классы и обработчики кнопок
-        bindReactiveFields();   // 🔥 Реактивная привязка к настройкам
+        setupSettingsUI();
+        bindReactiveFields();
         setupFieldValidation();
-        loadNonReactiveValues(); // ComboBox, аватар (требуют ручной инициализации)
+        loadNonReactiveValues();
     }
 
-    // === 1. CSS и обработчики кнопок (без изменений) ===
+    /** This method set styles and onClick handlers */
     private void setupSettingsUI() {
+        logger.log("Settings window: setupping settings UI");
+
         mainContainer.getStyleClass().add("main-container");
         gradientBackgroundContainer.getStyleClass().add("gradient-background-container");
 
@@ -140,53 +167,77 @@ public class SettingsController {
         saveButton.setOnAction(e -> saveSettings());
     }
 
+    /** This method saves settings */
     private void saveSettings() {
+        logger.log("Settings window: saving settings");
+
         SettingsManager.getInstance().save();
 
         closeWindow();
     }
 
+    /**
+     * This method helps init responsive layout
+     * @param stage helps to accurately set the event handler on the initialized object
+     */
     public void initializeResponsiveLayout(Stage stage) {
+        logger.log("Settings window: called func initializeResponsiveLayout");
+
         setupCloseInterceptor(stage);
-    }
-
-    private void setupCloseInterceptor(Stage stage) {
-        stage.setOnCloseRequest(event -> {
-                        onDiscardButtonClicked();
-                        event.consume();
-                    });
-    }
-
-    // === 2. 🔥 РЕАКТИВНАЯ ПРИВЯЗКА (заменяет setSettingsValues) ===
-    private void bindReactiveFields() {
-        // TextField ↔ StringProperty
-        nicknameField.textProperty().bindBidirectional(settings.nicknameProperty());
-
-        keyField.textProperty().bindBidirectional(settings.userKeyProperty());
-//        audioBitrateField.textProperty().bindBidirectional((Property<String>) settings.audioBitrateProperty().asString());
-        bindIntegerField(audioBitrateField, settings.audioBitrateProperty(), 32, 320, "audioBitrate");
-        bindIntegerField(videoBitrateField, settings.cameraBitrateProperty(), 100, 10000, "cameraBitrate");
-
-        // Slider ↔ IntegerProperty
-        microphoneVolumeSlider.valueProperty().bindBidirectional(settings.microphoneVolumeProperty());
-        speakerVolumeSlider.valueProperty().bindBidirectional(settings.speakerVolumeProperty());
-
-        // ToggleButton ↔ BooleanProperty
-        notificationsToggleButtonSelector.selectedProperty().bindBidirectional(settings.notificationsEnabledProperty());
-
-        bindThemeToggle(themeToggleButtonSelector, settings.themeProperty());
-//        themeToggleButtonSelector.selectedProperty().bindBidirectional(settings.themeProperty().isEqualTo("light"));
+        setupGlobalKeyboardNavigation(stage);
     }
 
     /**
-     * Ручная двусторонняя привязка ToggleButton к строковому свойству темы.
-     * selected = true -> "light" selected = false -> "dark"
-     */
+     * This method lets net module stop work correct and continue closing the window
+    *  @param stage helps to accurately set the event handler on the initialized object
+    */
+    private void setupCloseInterceptor(Stage stage) {
+        logger.log("Settings window: override the window closing method");
+
+        stage.setOnCloseRequest(event -> {
+            onDiscardButtonClicked();
+            event.consume();
+        });
+    }
+
+    private void setupGlobalKeyboardNavigation(Stage stage) {
+        logger.log("Settings window: setupping keyboard navigation");
+
+        if (stage.getScene() != null) {
+            Parent root = stage.getScene().getRoot();
+            root.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+                if (event.getCode() == KeyCode.ESCAPE) {
+                    onDiscardButtonClicked();
+                    event.consume();
+                }
+            });
+        }
+    }
+
+    /** This method response for binding reactive fields to SettingsManager fields */
+    private void bindReactiveFields() {
+        logger.log("Settings window: binding reactive fields");
+
+        nicknameField.textProperty().bindBidirectional(settings.nicknameProperty());
+
+        keyField.textProperty().bindBidirectional(settings.userKeyProperty());
+        bindIntegerField(audioBitrateField, settings.audioBitrateProperty(), 32, 320, "audioBitrate");
+        bindIntegerField(videoBitrateField, settings.cameraBitrateProperty(), 100, 10000, "cameraBitrate");
+
+        microphoneVolumeSlider.valueProperty().bindBidirectional(settings.microphoneVolumeProperty());
+        speakerVolumeSlider.valueProperty().bindBidirectional(settings.speakerVolumeProperty());
+
+        notificationsToggleButtonSelector.selectedProperty().bindBidirectional(settings.notificationsEnabledProperty());
+
+        bindThemeToggle(themeToggleButtonSelector, settings.themeProperty());
+    }
+
+    /** This method responsible for manual bidirectional bindings for theme */
     private void bindThemeToggle(ToggleButton toggle, StringProperty themeProperty) {
-        // 1. Инициализация состояния
+        logger.log("Settings window: binding theme toggle");
+
         toggle.setSelected("light".equals(themeProperty.get()));
 
-        // 2. Модель → UI (изменение темы в файле/коде обновляет кнопку)
         themeProperty.addListener((obs, oldVal, newVal) -> {
             boolean shouldBeSelected = "light".equals(newVal);
             if (toggle.isSelected() != shouldBeSelected) {
@@ -194,7 +245,6 @@ public class SettingsController {
             }
         });
 
-        // 3. UI → Модель (клик по кнопке обновляет тему и сохраняет в JSON)
         toggle.selectedProperty().addListener((obs, wasSelected, isNowSelected) -> {
             String newTheme = isNowSelected ? "light" : "dark";
             if (!newTheme.equals(themeProperty.get())) {
@@ -204,23 +254,18 @@ public class SettingsController {
     }
 
     /**
-     * Создаёт двустороннюю привязку между TextField и IntegerProperty. Включает
-     * базовую валидацию целых чисел.
-     *
-     * @param textField поле ввода
-     * @param intProperty свойство модели
-     * @param min минимальное допустимое значение
-     * @param max максимальное допустимое значение
-     */
-    /**
-     * Создаёт двустороннюю привязку между TextField и IntegerProperty с
-     * валидацией диапазона и визуальной обратной связью
+     * This method responsible for bidirectional bindings for integer fields
+     * and validating this fields
+     * @param textField integer field
+     * @param intProperty model property
+     * @param min min value
+     * @param max max value
      */
     private void bindIntegerField(TextField textField, IntegerProperty intProperty, int min, int max, String fieldName) {
-        // 1. Инициализация
+        logger.log("Settings window: binding integer field");
+
         textField.setText(String.valueOf(intProperty.get()));
 
-        // 2. TextFormatter: только цифры
         textField.setTextFormatter(new TextFormatter<>(change -> {
             String newText = change.getControlNewText();
             if (newText.isEmpty() || newText.matches("\\d+")) {
@@ -229,14 +274,12 @@ public class SettingsController {
             return null;
         }));
 
-        // 3. Модель → UI (если поле не в фокусе)
         intProperty.addListener((obs, oldVal, newVal) -> {
             if (!textField.isFocused()) {
                 textField.setText(String.valueOf(newVal));
             }
         });
 
-        // 4. UI → Модель (при потере фокуса + валидация)
         textField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
             if (!isNowFocused) {
                 try {
@@ -247,14 +290,12 @@ public class SettingsController {
                     }
                     int value = Integer.parseInt(text);
 
-                    // Валидация диапазона
                     if (value < min || value > max) {
                         showFieldError(textField, "Допустимый диапазон: " + min + "–" + max);
                         textField.setText(String.valueOf(intProperty.get()));
                         return;
                     }
 
-                    // Дополнительно: бизнес-валидация из SettingsManager
                     Optional<String> error = settings.getValidationError(fieldName, value);
                     if (error.isPresent()) {
                         showFieldError(textField, error.get());
@@ -262,9 +303,7 @@ public class SettingsController {
                         return;
                     }
 
-                    // Всё ок → сохраняем в модель
                     intProperty.set(value);
-
                 } catch (NumberFormatException e) {
                     showFieldError(textField, "Введите целое число");
                     textField.setText(String.valueOf(intProperty.get()));
@@ -273,18 +312,17 @@ public class SettingsController {
         });
     }
 
-    /**
-     * Настраивает базовую валидацию для текстовых полей
-     */
+    /** This method responsible for validation text fields */
     private void setupFieldValidation() {
-        // Никнейм: фильтр ввода + валидация при потере фокуса
+        logger.log("Settings window: setupping field validation");
+
         nicknameField.setTextFormatter(new TextFormatter<>(change -> {
             String newText = change.getControlNewText();
-            // Разрешаем пустое, буквы (лат/кир), цифры, пробелы, подчёркивания
+            // allow empty characters, letters (latin/cyr), numbers, spaces, underscores
             if (newText.isEmpty() || newText.matches("^[a-zA-Z0-9_\\s\\u0400-\\u04FF]{0,20}$")) {
                 return change;
             }
-            return null; // Отклоняем ввод
+            return null;
         }));
 
         nicknameField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
@@ -293,45 +331,41 @@ public class SettingsController {
                 Optional<String> error = settings.validateNickname(value);
                 if (error.isPresent()) {
                     showFieldError(nicknameField, error.get());
-                    // Откат к последнему валидному значению из модели
+                    // rollback to the last valid value from the model
                     nicknameField.setText(settings.getNickname());
                 }
             }
         });
 
-        // 1. Простой TextFormatter: разрешаем ВСЁ, кроме переносов строк и табов
+        // simple TextFormatter: Allows EVERYTHING Except Line Breaks and Tabs
         urlField.setTextFormatter(new TextFormatter<>(change -> {
             String newText = change.getControlNewText();
-            // Блокируем только управляющие символы, которые ломают URL
+            // block only control characters that break URLs.
             if (newText != null && newText.matches(".*[\\n\\r\\t].*")) {
                 return null;
             }
-            return change; // Всё остальное пропускаем
+            return change;
         }));
 
-        // 2. Инициализация: модель → поле (ОДИН РАЗ, без bind!)
         urlField.setText(settings.getSignalingUrl());
 
-        // 3. Слушатель: поле → модель (при потере фокуса)
-            urlField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
-            if (!isNowFocused) { // Только когда пользователь закончил ввод
+        urlField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
+            if (!isNowFocused) { // only when user ended input
                 String url = urlField.getText().trim();
                 Optional<String> error = settings.validateSignalingUrl(url);
 
                 if (error.isPresent()) {
-                    // ❌ Ошибка: показываем и откатываем
                     showFieldError(urlField, error.get());
                     urlField.setText(settings.getSignalingUrl());
                 } else {
-                    // ✅ Всё ок: сохраняем в модель
                     settings.setSignalingUrl(url);
-                    urlField.setStyle(""); // Убираем красную рамку
+                    urlField.setStyle("");
                     Tooltip.uninstall(urlField, null);
                 }
             }
         });
 
-        // Ключ пользователя: макс. 128 символов
+        // user key - max length 128
         keyField.setTextFormatter(new TextFormatter<>(change -> {
             if (change.getControlNewText().length() <= 128) {
                 return change;
@@ -350,16 +384,16 @@ public class SettingsController {
         });
     }
 
-    /**
-     * Показывает ошибку валидации: красная рамка + tooltip
-     */
+    /** This method responsible for showing validation error: tooltip and field color */
     private void showFieldError(TextField field, String message) {
+        logger.log("Settings window: showing field error via tooltip");
+
         Tooltip tooltip = new Tooltip(message);
         tooltip.setStyle("-fx-background-color: #ff6b6b; -fx-text-fill: white; -fx-font-size: 12px;");
         Tooltip.install(field, tooltip);
         field.setStyle("-fx-border-color: #ff6b6b; -fx-border-width: 2px; -fx-border-radius: 4px;");
 
-        // Убираем подсветку, когда пользователь начинает исправлять
+        // remove the backlight when the user starts to correct
         field.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
             if (isNowFocused) {
                 field.setStyle("");
@@ -368,13 +402,15 @@ public class SettingsController {
         });
     }
 
+    /** This method responsible for load and set listeners for non reactive fields */
     private void loadNonReactiveValues() {
+        logger.log("Settings window: loading non reactive values to the UI");
+
         showAvatar();
         setMicrophoneComboBox();
         setSpeakerComboBox();
         setCameraComboBox();
 
-        // Синхронизация выбора устройства: UI → модель (односторонняя)
         microphoneComboBox.valueProperty().addListener((obs, old, newVal) -> {
             if (newVal != null) {
                 settings.setMicrophone(newVal);
@@ -392,11 +428,13 @@ public class SettingsController {
         });
     }
 
+    /** This method responsible for set available microphones on ui */
     private void setMicrophoneComboBox() {
+        logger.log("Settings window: setting microphone combo box");
+
         List<String> devices = settings.getAvailableMicrophones();
         microphoneComboBox.getItems().addAll(devices);
 
-        // 2. Восстанавливаем сохраненное значение
         String saved = settings.getMicrophone();
         if (saved != null && devices.contains(saved)) {
             microphoneComboBox.setValue(saved);
@@ -404,8 +442,6 @@ public class SettingsController {
             microphoneComboBox.setValue("Default");
         }
 
-        // 3. 🔥 РЕАКТИВНАЯ ПРИВЯЗКА (Только в Контроллере!)
-        // Изменение в UI -> Обновление Модели (и автосохранение внутри модели)
         microphoneComboBox.valueProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
                 settings.setMicrophone(newVal);
@@ -413,7 +449,10 @@ public class SettingsController {
         });
     }
 
+    /** This method responsible for set available speakers on ui */
     private void setSpeakerComboBox() {
+        logger.log("Settings window: setting speaker combo box");
+
         List<String> devices = settings.getAvailableSpeakers();
         speakerComboBox.getItems().addAll(devices);
 
@@ -431,7 +470,9 @@ public class SettingsController {
         });
     }
 
+    /** This method responsible for set available cameras on ui */
     private void setCameraComboBox() {
+        logger.log("Settings window: setting camera combo box");
 
         List<String> devices = settings.getAvailableCameras();
         cameraComboBox.getItems().addAll(devices);
@@ -450,7 +491,9 @@ public class SettingsController {
         });
     }
 
+    /** This method responsible for show avatar */
     private void showAvatar() {
+        logger.log("Settings window: showing avatar");
 //        if (settings.isRegistered()) {
 //            String path = settings.getPathToAvatar();
 //            if (path != null && !path.isEmpty()) {
@@ -466,7 +509,7 @@ public class SettingsController {
 //            }
 //        }
 
-        //можно переделать imageview на label для удобства
+        //could done label instead of imageview for better handling
         avatarView.setFont(Font.font("System", 89));
         avatarView.setTextFill(Color.BLACK);
         avatarView.setStyle("-fx-alignment: CENTER; "
@@ -481,8 +524,10 @@ public class SettingsController {
         uploadedLabel.setText("Аватар не установлен");
     }
 
-    // === Upload Avatar (минимальные правки) ===
+    /** This method responsible for upload avatar */
     private void uploadAvatar() {
+        logger.log("Settings window: uploading avatar");
+
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Выберите изображение для аватара");
         fileChooser.getExtensionFilters().addAll(
@@ -495,29 +540,34 @@ public class SettingsController {
 
         File selectedFile = fileChooser.showOpenDialog(ownerWindow);
         if (selectedFile != null && settings.uploadAvatar(selectedFile)) {
-            // 🔥 Аватар уже сохранён в модели, просто обновляем UI
             Platform.runLater(this::showAvatar);
         } else if (selectedFile != null) {
             uploadedLabel.setText("❌ Ошибка загрузки");
         }
     }
 
+    /** This method responsible for handling discard button click */
     private void onDiscardButtonClicked() {
+        logger.log("Settings window: handling discard button clicked");
+
+        logger.log("Settings window: revert settings to the previous");
         initialSnapshot.revert(settings);
         closeWindow();
     }
 
+    /** This method responsible for close window properly */
     private void closeWindow() {
+        logger.log("Settings window: user requested closing window");
+
         Platform.runLater(() -> {
-//            try { Thread.sleep(1000); } catch (InterruptedException e) { e.printStackTrace(); }
             Stage stage = (Stage) discardButton.getScene().getWindow();
             stage.close();
         });
     }
 
     /**
-     * Неизменяемый снимок настроек для реализации паттерна Rollback.
-     * Используется при открытии окна настроек и при отмене изменений.
+     * an immutable snapshot of the settings for implementing the Rollback pattern.
+     * used when opening the settings window and when undoing changes.
      */
     private static record SettingsSnapshot(
             String nickname, String signalingUrl, String userKey, String theme, String pathToAvatar,
@@ -525,9 +575,10 @@ public class SettingsController {
             boolean notificationsEnabled,
             int microphoneVolume, int speakerVolume, int audioBitrate, int cameraBitrate) {
 
+
         /**
-         * Фабричный метод: создаёт снимок текущего состояния менеджера настроек
-         */
+        * factory method: creates a snapshot of the current state of the settings manager
+        */
         static SettingsSnapshot from(SettingsManager manager) {
             return new SettingsSnapshot(
                     manager.getNickname(),
@@ -547,9 +598,9 @@ public class SettingsController {
         }
 
         /**
-         * Восстанавливает (откатывает) значения менеджера настроек до состояния
-         * этого снимка
-         */
+        * Restores (rolls back) the settings manager to the state
+        * of this snapshot
+        */
         void revert(SettingsManager manager) {
             manager.setNickname(nickname);
             manager.setSignalingUrl(signalingUrl);
@@ -566,5 +617,4 @@ public class SettingsController {
             manager.setCameraBitrate(cameraBitrate);
         }
     }
-
 }

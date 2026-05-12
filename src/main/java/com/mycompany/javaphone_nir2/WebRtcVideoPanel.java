@@ -20,6 +20,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 
+/**
+ * Pane for camera showing
+ * implements VideoTrackSink to render frames that came via WebRTC
+ *
+ * Responsible for: 1. Show camera 2. Render (draw) frames
+ * 3. Apply camera filter
+ */
 public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
 
     private final Canvas canvas = new Canvas();
@@ -32,17 +39,18 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
 
     private int frameWidth = -1;
     private int frameHeight = -1;
-
-        // 0 = без фильтра, 100 = максимум «желтизны»
+    // 0 = without filter, 100 = maximum filter value (yellow color)
     private final IntegerProperty warmthLevel = new SimpleIntegerProperty(this, "warmthLevel", 0);
     public final int getWarmthLevel() { return warmthLevel.get(); }
     public final void setWarmthLevel(int value) { warmthLevel.set(value); }
+
+    /** Property for warmth level (filter value) */
     public IntegerProperty warmthLevelProperty() { return warmthLevel; }
 
-    // Чтобы не забивать FX-очередь, держим флаг «кадр в обработке»
+    // flag frame in processing
     private final AtomicBoolean frameInQueue = new AtomicBoolean(false);
 
-
+    /** Ctor that adds canvas into pane and init listeners for size */
     public WebRtcVideoPanel() {
         getChildren().add(canvas);
 
@@ -50,6 +58,7 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
         heightProperty().addListener((obs, oldVal, newVal) -> requestLayout());
     }
 
+    /** Method responsible for redraw children with actual size */
     @Override
     protected void layoutChildren() {
         double w = getWidth();
@@ -61,38 +70,33 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
         redraw();
     }
 
+    /**
+     * Method responsible for dram videoFrame that came from WebRTC
+     * @param vf video frame to draw
+     */
     @Override
     public void onVideoFrame(VideoFrame vf) {
         if (vf == null || vf.buffer == null) {
             return;
         }
 
-        // Если предыдущий кадр ещё не отрисован — этот просто дропаем.
-        // Так ты не накопишь тысячи Runnable в FX-очереди.
+        // if previous frame not processed - do not process new frame
+        // to avoid creating a queue
         if (!frameInQueue.compareAndSet(false, true)) {
-            // Мы НЕ будем использовать этот кадр → обязательно освободить.
             try {
-                // Если у VideoFrame есть release() — вызываем его.
                 vf.release();
             } catch (Throwable ignore) {
-                // В некоторых версиях webrtc-java release может быть только у buffer.
                 try {
                     vf.buffer.release();
-                } catch (Throwable ignored2) {
-                    // ничего страшного, просто продолжаем
-                }
+                } catch (Throwable ignored2) {}
             }
             return;
         }
 
-        // Мы собираемся использовать кадр позже на FX-потоке.
-        // У WebRTC-обёрток есть ref-count → держим свою ссылку.
+        // retain frame
         try {
             vf.retain();
-        } catch (Throwable ignore) {
-            // Если retain() нет (редкий случай), просто надеемся, что библиотека
-            // держит кадр живым на время вызова sink'а.
-        }
+        } catch (Throwable ignore) {}
 
         Platform.runLater(() -> {
             try {
@@ -106,16 +110,15 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
 
                 argbNativeBuffer.clear();
 
-                // Конвертация I420 → ARGB (native)
+                // convert I420 to ARGB (native)
                 VideoBufferConverter.convertFromI420(src, argbNativeBuffer, FourCC.ARGB);
 
                 argbNativeBuffer.position(0);
                 argbNativeBuffer.limit(expectedBytes);
 
-                // Перегоняем в IntBuffer для JavaFX
+                // convert into IntBuffer
                 convertNativeArgbToFxArgb(argbNativeBuffer, fxArgbBuffer, width, height);
 
-                // Дёргаем PixelBuffer, чтобы JavaFX перерисовал Image
                 pixelBuffer.updateBuffer(pb -> null);
                 redraw();
 
@@ -125,21 +128,19 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
                 System.err.println("Video frame conversion error: " + e.getMessage());
                 e.printStackTrace();
             } finally {
-                // Обязательно отпускаем ref на кадр, который мы retain'или
                 try {
-                    vf.release();
+                    vf.release(); //release frame that we draw
                 } catch (Throwable ignore) {
                     try {
                         vf.buffer.release();
-                    } catch (Throwable ignored2) {
-                        // если и это не поддерживается — значит библиотека сама менеджит память
-                    }
+                    } catch (Throwable ignored2) {}
                 }
                 frameInQueue.set(false);
             }
         });
     }
 
+    /** This method responsible for ensure buffers with necessary size */
     private void ensureBuffers(int width, int height) {
         int pixelCount = width * height;
         int bytes = pixelCount * 4;
@@ -173,10 +174,10 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
     }
 
     /**
-     * libyuv/WebRTC для FOURCC_ARGB на little-endian хранит байты в памяти как:
+     * libyuv/WebRTC for FOURCC_ARGB on little-endian have bytes in heap like:
      * [B, G, R, A]
      *
-     * JavaFX IntArgbPre ожидает int вида:
+     * JavaFX IntArgbPre waiting int like:
      * 0xAARRGGBB
      */
     private void convertNativeArgbToFxArgb(ByteBuffer src, IntBuffer dst, int width, int height) {
@@ -197,13 +198,12 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
         src.position(0);
         dst.clear();
 
-        // Локальная копия уровня тёплоты (0..100). Можно ограничить, чтобы не улететь.
         int warmth = Math.max(0, Math.min(100, getWarmthLevel()));
 
-        // Коэффициенты влияния (подбираются «на глаз»)
-        float redBoost   = 0.3f * warmth / 100f;   // до +30% к красному
-        float greenBoost = 0.15f * warmth / 100f;  // до +15% к зелёному
-        float blueCut    = 0.4f * warmth / 100f;   // до −40% синего
+        // warmth influence coefficients
+        float redBoost   = 0.3f * warmth / 100f;   // +30% on red
+        float greenBoost = 0.15f * warmth / 100f;  // +15% on green
+        float blueCut    = 0.4f * warmth / 100f;   // −40% on blue
 
         for (int i = 0; i < pixels; i++) {
             int b = src.get() & 0xFF;
@@ -211,7 +211,7 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
             int r = src.get() & 0xFF;
             int a = src.get() & 0xFF;
 
-            // Применяем «тёплый» фильтр
+            // apply filter
             int rAdj = clamp255((int) (r * (1.0f + redBoost)));
             int gAdj = clamp255((int) (g * (1.0f + greenBoost)));
             int bAdj = clamp255((int) (b * (1.0f - blueCut)));
@@ -223,10 +223,13 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
         dst.flip();
     }
 
+    /** This method responsible for forced limitation of a pixel
+     * value (or color component) to the range from 0 to 255 */
     private static int clamp255(int v) {
         return (v < 0) ? 0 : (v > 255 ? 255 : v);
     }
 
+    /** This method responsible for redraw canvas */
     private void redraw() {
         GraphicsContext gc = canvas.getGraphicsContext2D();
 
@@ -264,11 +267,13 @@ public class WebRtcVideoPanel extends Pane implements VideoTrackSink {
         gc.drawImage(videoImage, drawX, drawY, drawW, drawH);
     }
 
+    /** This method responsible for return default pref width */
     @Override
     protected double computePrefWidth(double height) {
         return 640;
     }
 
+    /** This method responsible for return default pref height */
     @Override
     protected double computePrefHeight(double width) {
         return 480;

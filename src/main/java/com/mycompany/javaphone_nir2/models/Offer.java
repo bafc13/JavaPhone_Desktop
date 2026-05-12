@@ -1,12 +1,8 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.mycompany.javaphone_nir2.models;
 
 /**
- *
- * @author bafc13
+ * Offer class
+ * includes offer sender and sdp
  */
 public class Offer {
     private String sdp;

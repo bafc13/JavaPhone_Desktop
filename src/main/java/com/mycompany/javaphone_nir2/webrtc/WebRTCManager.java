@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mycompany.javaphone_nir2.controllers.ChatController;
 import com.mycompany.javaphone_nir2.controllers.VideoCallController;
 import com.mycompany.javaphone_nir2.games.GameMenuApp;
+import com.mycompany.javaphone_nir2.cryptography.MessageCryptographer;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
 import com.mycompany.javaphone_nir2.signaling.SignalingClient;
 import dev.onvoid.webrtc.*;
@@ -20,9 +21,11 @@ import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -31,6 +34,8 @@ import java.util.logging.Logger;
 import javafx.application.Platform;
 
 public class WebRTCManager implements PeerConnectionObserver {
+    private static MessageCryptographer MC = MessageCryptographer.getInstance();
+    
     private PeerConnectionFactory factory;
 
     private RTCConfiguration config;
@@ -63,7 +68,7 @@ public class WebRTCManager implements PeerConnectionObserver {
 
     private boolean cameraEnabled = true;
     private boolean microphoneEnabled = true;
-    private String remoteClientId;
+    private String remoteClientKey;
 
     private Integer cameraId = 0;
     private Integer microphoneId = 0;
@@ -84,6 +89,13 @@ public class WebRTCManager implements PeerConnectionObserver {
     private static RTCIceServer ICE_SERVERS = null;
 
     private static WebRTCManager instance = null;
+    
+    private JavaPhoneCallManager callManager = null;
+    
+    private JavaPhoneVideoHandler videoHandler = null;
+    private final Set<JavaPhoneChatHandler> chatHandlers = new HashSet<>();
+    
+    private PeerConnectionObserverImpl peerConnectionObserver = null;
 
     public static WebRTCManager getInstance() {
         if (instance == null) {
@@ -125,23 +137,23 @@ public class WebRTCManager implements PeerConnectionObserver {
 
     public void initializeDevices() {
         Thread deviceThread = new Thread(() -> {
-                try {
-                    audioModule = new AudioDeviceModule();
-                    factory = new PeerConnectionFactory(audioModule);
+            try {
+                audioModule = new AudioDeviceModule();
+                factory = new PeerConnectionFactory(audioModule);
 
-                    cameras = MediaDevices.getVideoCaptureDevices();
-                    microphones = MediaDevices.getAudioCaptureDevices();
-                    speakers = MediaDevices.getAudioRenderDevices();
-                } catch (Exception e) {
-                    Platform.runLater(() -> {
-                        System.out.print("Ошибка инициализации устройств: " + e.getMessage());
-                    });
-                }
-            });
+                cameras = MediaDevices.getVideoCaptureDevices();
+                microphones = MediaDevices.getAudioCaptureDevices();
+                speakers = MediaDevices.getAudioRenderDevices();
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    System.out.print("Ошибка инициализации устройств: " + e.getMessage());
+                });
+            }
+        });
 
-            deviceThread.setName("webrtc-device-init");
-            deviceThread.setDaemon(true);
-            deviceThread.start();
+        deviceThread.setName("webrtc-device-init");
+        deviceThread.setDaemon(true);
+        deviceThread.start();
     }
 
     public void initializeMedia() {
@@ -195,9 +207,8 @@ public class WebRTCManager implements PeerConnectionObserver {
         videoSource.start();
         localVideoTrack = factory.createVideoTrack("video0", videoSource);
 
-        VideoCallController vcc = VideoCallController.getInstance();
-        if (vcc != null) {
-            vcc.addLocalTrack(localVideoTrack);
+        if (videoHandler != null) {
+            videoHandler.addLocalTrack(localVideoTrack);
         }
 
         audioModule.initRecording();
@@ -207,13 +218,18 @@ public class WebRTCManager implements PeerConnectionObserver {
         localAudioTrack = factory.createAudioTrack("audio0", ats);
     }
 
-    public void startCall(String targetClientId) {
-       initializeMedia();
+    public void startCall(String targetClientKey) {
+        initializeMedia();  
         initializeCapture();
 
-        remoteClientId = targetClientId;
+        remoteClientKey = targetClientKey;
 
-        peerConnection = factory.createPeerConnection(config, new PeerConnectionObserverImpl(this, remoteClientId));
+        peerConnectionObserver = new PeerConnectionObserverImpl(this, remoteClientKey);
+        if (videoHandler != null) {
+            peerConnectionObserver.setVideoHandler(videoHandler);
+        }
+        
+        peerConnection = factory.createPeerConnection(config, peerConnectionObserver);
 
         List<String> streamIds = new ArrayList<>();
         streamIds.add("stream");
@@ -248,7 +264,7 @@ public class WebRTCManager implements PeerConnectionObserver {
                     @Override
                     public void onSuccess() {
                         try {
-                            SignalingClient.getInstance().sendOffer(sdp.sdp, remoteClientId);
+                            SignalingClient.getInstance().sendOffer(sdp.sdp, remoteClientKey);
                         } catch (IOException ex) {
                             System.getLogger(WebRTCManager.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
                         }
@@ -273,10 +289,13 @@ public class WebRTCManager implements PeerConnectionObserver {
         initializeMedia();
         initializeCapture();
 
-
-        this.remoteClientId = sender;
-
-        peerConnection = factory.createPeerConnection(config, new PeerConnectionObserverImpl(this, remoteClientId));
+        this.remoteClientKey = sender;
+        peerConnectionObserver = new PeerConnectionObserverImpl(this, remoteClientKey);
+        if (videoHandler != null) {
+            peerConnectionObserver.setVideoHandler(videoHandler);
+        }
+        
+        peerConnection = factory.createPeerConnection(config, peerConnectionObserver);
         for (RTCIceCandidate candidate : candidates) {
             peerConnection.addIceCandidate(candidate);
         }
@@ -310,7 +329,7 @@ public class WebRTCManager implements PeerConnectionObserver {
                             @Override
                             public void onSuccess() {
                                 try {
-                                    SignalingClient.getInstance().sendAccept(sdp.sdp, remoteClientId);
+                                    SignalingClient.getInstance().sendAccept(sdp.sdp, remoteClientKey);
                                 } catch (IOException ex) {
                                     System.getLogger(WebRTCManager.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
                                 }
@@ -342,8 +361,9 @@ public class WebRTCManager implements PeerConnectionObserver {
         peerConnection.setRemoteDescription(remoteSdp, new SetSessionDescriptionObserver() {
             @Override
             public void onSuccess() {
-                ChatController cc = ChatController.getInstance();
-                cc.handleCallAccepted();
+                if (callManager != null) {
+                    callManager.handleCallAccepted();
+                }
             }
 
             @Override
@@ -363,47 +383,58 @@ public class WebRTCManager implements PeerConnectionObserver {
     public void setupDataChannel(RTCDataChannel dataChannel) {
         switch (dataChannel.getLabel()) {
             case "chat":
-    System.out.println("GOT CHAT DATA CHANNEL");
-    chatDataChannel = dataChannel;
-    dataChannel.registerObserver(new RTCDataChannelObserver() {
-        @Override
-        public void onBufferedAmountChange(long amount) {}
+                chatDataChannel = dataChannel;
+                dataChannel.registerObserver(new RTCDataChannelObserver() {
+                    @Override
+                    public void onBufferedAmountChange(long amount) {}
 
-        @Override
-        public void onStateChange() {}
+                    @Override
+                    public void onStateChange() {}
 
-        @Override
-        public void onMessage(RTCDataChannelBuffer buffer) {
-            ByteBuffer data = buffer.data;
-            byte[] textBytes;
+                    @Override
+                    public void onMessage(RTCDataChannelBuffer buffer) {
+                        ByteBuffer data = buffer.data;
+                        byte[] textBytes;
 
-            if (data.hasArray()) {
-                textBytes = data.array();
-            } else {
-                textBytes = new byte[data.remaining()];
-                data.get(textBytes);
-            }
+                        if (data.hasArray()) {
+                            textBytes = data.array();
+                        } else {
+                            textBytes = new byte[data.remaining()];
+                            data.get(textBytes);
+                        }
 
-            String text = new String(textBytes, StandardCharsets.UTF_8);
-            try {
-                System.out.println("GOT MESSAGE:");
-                System.out.println(text);
-                JsonNode message = mapper.readTree(text);
-                String sender = message.get("sender").asText();
-                String content = message.get("content").asText();
-                
-                VideoCallController vcc = VideoCallController.getInstance();
-                vcc.appendToCallChat(sender, content);
-                
-                // НЕ УДАЛЯЙТЕ ЭТУ СТРОКУ ДЛЯ ЧАТА!
-                // GameMenuApp.getInstance().onGameMessage(content); ← ЭТО ТОЛЬКО ДЛЯ ИГР!
-                
-            } catch (Exception ex) {
-                System.getLogger(WebRTCManager.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
-            }
-        }
-    });
-    break;
+                        String textEncrypted = new String(textBytes, StandardCharsets.UTF_8);
+                        String text = MC.decryptMessage(textEncrypted);
+                        
+                        try {
+                            System.out.println("GOT MESSAGE:");
+                            System.out.println(text);
+                            
+                            JsonNode message = mapper.readTree(text);
+                            String signature = message.get("signature").asText();
+                            String sender = message.get("sender").asText();
+                            String content = message.get("content").asText();
+                            
+                            
+                            PublicKey publicKey = MessageCryptographer.stringToPublicKey(remoteClientKey);
+                            boolean isVerified = MC.confirmSign(content, signature, publicKey);
+                            if (!isVerified) {
+                                System.out.println("Signature is false, skipping");
+                                return;
+                            }
+                            
+                            for (JavaPhoneChatHandler chatHandler : chatHandlers) {
+                                if (chatHandler != null) {
+                                    chatHandler.handleStringMessage(sender, content);
+                                }
+                            }
+
+                        } catch (Exception ex) {
+                            System.getLogger(WebRTCManager.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+                        }
+                    }
+                });
+                break;
            
             case "game":
                 System.out.println("GOT GAME DATA CHANNEL");
@@ -460,7 +491,6 @@ public class WebRTCManager implements PeerConnectionObserver {
     });
     break;
         }
-
     }
     public boolean isGameChannelReady() {
     return gameDataChannel != null && gameDataChannel.getState() == RTCDataChannelState.OPEN;
@@ -483,16 +513,26 @@ public String getMyUserId() {
             try {
                 ObjectNode message = mapper.createObjectNode();
                 String sender = SettingsManager.getInstance().getNickname();
+                String signature = MC.signMessage(content);
                 message.put("sender", sender);
                 message.put("content", content);
+                message.put("signature", signature);
+                     
                 String textMessage = mapper.writeValueAsString(message);
                 System.out.println("SENDING MESSAGE");
                 System.out.println(textMessage);
-                ByteBuffer textBuffer = ByteBuffer.wrap(textMessage.getBytes(StandardCharsets.UTF_8));
+                
+                PublicKey publicKey = MessageCryptographer.stringToPublicKey(remoteClientKey);
+                String textEncrypted = MC.encryptMessage(textMessage, publicKey);
+                
+                ByteBuffer textBuffer = ByteBuffer.wrap(textEncrypted.getBytes(StandardCharsets.UTF_8));
                 RTCDataChannelBuffer textChannelBuffer = new RTCDataChannelBuffer(textBuffer, false);
 
-                VideoCallController vcc = VideoCallController.getInstance();
-                vcc.appendToCallChat(sender, content);
+                for (JavaPhoneChatHandler chatHandler : chatHandlers) {
+                    if (chatHandler != null) {
+                        chatHandler.handleStringMessage(sender, content);
+                    }
+                }
 
                 chatDataChannel.send(textChannelBuffer);
             } catch (Exception ex) {
@@ -585,9 +625,9 @@ public String getMyUserId() {
             chatDataChannel = null;
         }
 
-        if (remoteClientId != null) {
+        if (remoteClientKey != null) {
             // TODO: send bye through signaling client
-            remoteClientId = null;
+            remoteClientKey = null;
         }
 
         statsExecutor.shutdown();
@@ -681,5 +721,30 @@ public String getMyUserId() {
 
     public Integer getSpeakerVolume() {
         return speakerVolume;
+    }
+    
+    public void setCallManager(JavaPhoneCallManager callManager) {
+        this.callManager = callManager;
+    }
+    
+    public void setVideoHandler(JavaPhoneVideoHandler videoHandler) {
+        this.videoHandler = videoHandler;
+        
+        if (videoHandler != null) {
+            if (localVideoTrack != null) {
+                this.videoHandler.addLocalTrack(localVideoTrack);
+            }
+            if (peerConnectionObserver != null) {
+                peerConnectionObserver.setVideoHandler(videoHandler);
+            }
+        }
+    }
+    
+    public boolean addChatHandler(JavaPhoneChatHandler chatHandler) {
+        return this.chatHandlers.add(chatHandler);
+    }
+    
+    public boolean removeChatHandler(JavaPhoneChatHandler chatHandler) {
+        return this.chatHandlers.remove(chatHandler);
     }
 }
