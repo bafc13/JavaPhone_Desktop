@@ -9,6 +9,8 @@ import com.mycompany.javaphone_nir2.models.Message;
 import com.mycompany.javaphone_nir2.models.Offer;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
 import com.mycompany.javaphone_nir2.signaling.SignalingClient;
+import com.mycompany.javaphone_nir2.webrtc.JavaPhoneCallManager;
+import com.mycompany.javaphone_nir2.webrtc.JavaPhoneChatHandler;
 import com.mycompany.javaphone_nir2.webrtc.WebRTCManager;
 import java.io.File;
 import javafx.fxml.FXML;
@@ -53,7 +55,7 @@ import javafx.util.Duration;
  * 3. Sending new messages 4. Switching to the video call window 5. Handling nav
  * buttons (Exit, Settings) 6. Opening settings window
  */
-public class ChatController {
+public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManager {
     /**
      * FXML ui skeleton
      */
@@ -95,19 +97,14 @@ public class ChatController {
 
     /** WebRTCManager let users communicate, used when call is starting */
     private final WebRTCManager webRtcManager = WebRTCManager.getInstance();
+    
+    private SignalingClient signalingClient = null;
 
     /** Logger saves session information into log */
     private final SessionLogger logger = SessionLogger.getInstance();
 
     /** Offer stores info about call offer (name, sdp) */
     public Offer offer;
-
-    /** Singleton of this class to use public methods and don`t reproduce invalid objects,
-     * which not related to the ui thread */
-    private static ChatController instance;
-    public static ChatController getInstance() {
-        return instance;
-    }
 
     /**
      * This method is automatically called by the FXMLLoader after the FXML file is loaded
@@ -127,7 +124,6 @@ public class ChatController {
 
         scheduleIncomingCallTimer();
 
-        instance = this;
     }
 
     /** This method inits observableHashMap for contacts, sets cells for contacts ListView and styles */
@@ -212,8 +208,8 @@ public class ChatController {
         settingsButton.setOnAction(e -> openSettings());
         settingsButton.getStyleClass().add("header-button");
 
-//        callButton.setOnAction(e -> startVideoCall());
-        callButton.setOnAction(e -> startVideoCallWithContact(new Contact("bafc13", "ONLINE", "1333")));
+        callButton.setOnAction(e -> startVideoCall());
+  //      callButton.setOnAction(e -> startVideoCallWithContact(selectedContact));
         callButton.getStyleClass().add("header-button");
 
         exitButton.getStyleClass().add("header-button");
@@ -260,15 +256,15 @@ public class ChatController {
     private void initSignalingClient(){
         logger.log("Chat window: initializing signaling client");
 
-        SettingsManager settings = SettingsManager.getInstance();
         SignalingClient.initialize(settings.getSignalingUrl());
 
         Platform.runLater(() -> connectToSignaling());
 
-        SignalingClient.getInstance().offerProperty().addListener((obs, oldVal, newVal) -> {
-            offer = new Offer(newVal.getSdp(), newVal.getSender());
-            initIncomingCall(offer.getSender());
-        });
+        signalingClient = SignalingClient.getInstance();
+        signalingClient.setCallManager(this);
+        signalingClient.addChatHandler(this);
+        
+        webRtcManager.setCallManager(this);
     }
 
     /** This method connect to signaling client */
@@ -611,7 +607,7 @@ public class ChatController {
             updateCallPopupPosition();
         }
 
-        appendToChat("System", "🔔 Входящий звонок от " + incomingCallContact.getName());
+        handleStringMessage("System", "🔔 Входящий звонок от " + incomingCallContact.getName());
     }
 
     /** This method responsible for notificaion pos update */
@@ -680,22 +676,12 @@ public class ChatController {
     /** This method responsible for accept the call */
     private void acceptCall() {
         logger.log("Chat window: accepting call with: " + incomingCallContact.getName() + ", key: " + incomingCallContact.getKey());
-
+        
         webRtcManager.handleOffer(offer.getSdp(), offer.getSender());
         hideIncomingCallNotification();
         startVideoCallWithContact(incomingCallContact);
     }
 
-    /** This method responsible for handle call accept */
-    public void handleCallAccepted() {
-        logger.log("Chat window: handling call accepted");
-
-        Platform.runLater(() -> {
-            startVideoCallWithContact(selectedContact);
-        });
-    }
-
-    /** This method responsible for handle call rejected */
     private void handleCallRejected() {
         logger.log("Chat window: handling call rejected");
 
@@ -744,7 +730,7 @@ public class ChatController {
             logger.log("Showing video call window, call with: " + contact.getName() + ", key: " + contact.getKey());
             videoStage.show();
 
-            appendToChat("System", "📞 Видеозвонок с " + contact.getName() + " начат");
+            handleStringMessage("System", "📞 Видеозвонок с " + contact.getName() + " начат");
 
         } catch (IOException e) {
             System.err.println("Ошибка при загрузке окна видеозвонка: " + e.getMessage());
@@ -758,52 +744,9 @@ public class ChatController {
         }
     }
 
-    /** This method responsible for add contact to the UI */
-    public void addContact(Contact contact) {
-        logger.log("Chat window: adding contact to UI: " + contact.getName() + ", key: " + contact.getKey());
-
-        System.out.println("GOT CONTACT TO UI");
-        System.out.println(contact.getKey());
-
-        contacts.put(contact.getKey(), contact);
-        contactsList.setItems(FXCollections.observableArrayList(contacts.values()));
-        contactsList.refresh();
-    }
-
-    /** This method responsible for init and show call notification
-     * @param offer object that include sdp and sender name
+    /**
+     * func responsible for initialization of incoming call notification popup
      */
-    public void initIncomingCall(Offer offer) {
-        logger.log("Chat window: initialize incoming call with offer, sdp: " + offer.getSdp() + ", sender: " + offer.getSender());
-
-        this.offer = offer;
-        String callerKey = offer.getSender();
-
-        incomingCallContact = contacts.getOrDefault(callerKey, null);
-        if (incomingCallContact != null) {
-            Platform.runLater( () -> {
-                initIncomingCallNotification();
-                showIncomingCallNotification();
-            });
-        }
-    }
-
-    /** This method responsible for init and show call notification
-     * @param callerKey caller id in signal server
-     */
-    public void initIncomingCall(String callerKey) {
-        logger.log("Chat window: initialize incoming call with callerKey: " + callerKey);
-
-        incomingCallContact = contacts.getOrDefault(callerKey, null);
-        if (incomingCallContact != null) {
-            Platform.runLater( () -> {
-                initIncomingCallNotification();
-                showIncomingCallNotification();
-            });
-        }
-    }
-
-    /** This method responsible for components initialization of incoming call notification popup */
     private void initIncomingCallNotification() {
         logger.log("Chat window: initializing ui for incoming call notification");
 
@@ -905,26 +848,16 @@ public class ChatController {
         SignalingClient sc = SignalingClient.getInstance();
         try {
             sc.sendDM(selectedContact.getKey(), message);
-            appendToChat("Вы", message);
+            handleStringMessage("Вы", message);
             messageInput.clear();
         } catch (IOException ex) {
             System.getLogger(ChatController.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex); /////////
         }
     }
 
-    /** This method responsible for handle message
-     * @param sender
-     * @param content message
+    /**
+     * response simulation
      */
-    public void handleMessage(String sender, String content) {
-        logger.log("Chat window: handling message, sender: " + sender);
-
-        Platform.runLater(() -> {
-            appendToChat(sender, content);
-        });
-    }
-
-    /** This method responsible for simulate chat response */
     private void simulateResponse() {
         String[] responses = {
             "Привет! 😊",
@@ -942,7 +875,7 @@ public class ChatController {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            appendToChat(selectedContact.getName(), response);
+            handleStringMessage(selectedContact.getName(), response);
         });
     }
 
@@ -979,54 +912,10 @@ public class ChatController {
         webRtcManager.startCall(selectedContact.getKey());
     }
 
-    public void appendFileToChat(File file, String sender){
-        Media media = new Media();
-        media.setPath(file.getAbsolutePath());
-        media.setChecksum(computeChecksum(file));
-
-        Message msg = new Message();
-        msg.setChatId(1);
-        msg.setSenderPublicKey(sender);
-        msg.setContent("");
-        msg.setTime(System.currentTimeMillis() / 1000);
-        msg.setAttachments(List.of(media));
-
-        appendToChat(msg);
-    }
-
-    /** This method responsible for add message to chat
-     * @param sender
-     * @param content message
-     */
-   public void appendToChat(String sender, String content) {
-       logger.log("Chat window: appending message to chat with sender and content");
-
-       Message msg = new Message();
-       msg.setId(generateMessageId());
-       msg.setChatId(1);
-       msg.setSenderPublicKey(sender);
-       msg.setContent(content);
-       msg.setTime(System.currentTimeMillis() / 1000); // Unix timestamp in seconds
-
-       appendToChat(msg);
-   }
-
-   /** This method responsible for adding message to history
-    * @param message (id, chatId, sender public key, content, time, attachments)
+   /**
+    * Простая генерация уникального ID (заглушка)
+    * В реальном приложении — использовать базу данных или UUID
     */
-   public void appendToChat(Message message) {
-       logger.log("Chat window: appending message to chat with Message");
-       chatHistory.getItems().add(message);
-
-       Platform.runLater(() -> {
-           int lastIndex = chatHistory.getItems().size() - 1;
-           if (lastIndex >= 0) {
-               chatHistory.scrollTo(lastIndex);
-           }
-       });
-   }
-
-   /** This method responsible for  simple generation of message id */
    private int generateMessageId() {
        int id = (int) (System.currentTimeMillis() % Integer.MAX_VALUE);
        logger.log("Chat window: generationg message id: " + id);
@@ -1084,4 +973,74 @@ public class ChatController {
             alert.showAndWait();
         }
     }
+
+    @Override
+    public void handleStringMessage(String sender, String content) {
+        Message msg = new Message();
+        msg.setId(generateMessageId()); // Простая генерация ID
+        msg.setChatId(1); // Или динамически
+        msg.setSenderPublicKey(sender);
+        msg.setContent(content);
+        msg.setTime(System.currentTimeMillis() / 1000); // Unix timestamp в секундах
+
+        handleMessage(msg);
+    }
+
+    @Override
+    public void handleMessage(Message message) {
+        // Добавляем в конец списка
+       
+
+       // 🔥 Прокрутка вниз к новому сообщению
+       Platform.runLater(() -> {
+           chatHistory.getItems().add(message);
+           int lastIndex = chatHistory.getItems().size() - 1;
+           if (lastIndex >= 0) {
+               chatHistory.scrollTo(lastIndex);
+           }
+       });
+    }
+
+    @Override
+    public void handleContact(Contact contact) {
+        System.out.println("GOT CONTACT TO UI");
+        System.out.println(contact.getKey());
+
+        contacts.put(contact.getKey(), contact);
+        contactsList.setItems(FXCollections.observableArrayList(contacts.values()));
+        contactsList.refresh();
+    }
+
+    @Override
+    public void handleIncomingCall(Offer offer) {
+        this.offer = offer;
+        String callerKey = offer.getSender();
+
+        incomingCallContact = contacts.getOrDefault(callerKey, null);
+        if (incomingCallContact != null) {
+            Platform.runLater( () -> {
+                initIncomingCallNotification();
+                showIncomingCallNotification();
+            });
+        }
+    }
+
+    @Override
+    public void handleIncomingCall(String callerKey) {
+        incomingCallContact = contacts.getOrDefault(callerKey, null);
+        if (incomingCallContact != null) {
+            Platform.runLater( () -> {
+                initIncomingCallNotification();
+                showIncomingCallNotification();
+            });
+        }
+    }
+    
+    @Override
+    public void handleCallAccepted() {
+        Platform.runLater(() -> {
+            startVideoCallWithContact(selectedContact);
+        });
+    }
 }
+
