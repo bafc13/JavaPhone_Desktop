@@ -630,8 +630,8 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
         WebRTCManager rtcm = WebRTCManager.getInstance();
 
         rtcm.sendChatMessage(message);
+        rtcm.sendTyping(false);
         callMessageInput.clear();
-        sendTyping(false);
     }
     
     private void sendTyping(boolean status) {

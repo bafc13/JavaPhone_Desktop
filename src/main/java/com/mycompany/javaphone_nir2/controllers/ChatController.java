@@ -867,7 +867,7 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
         SignalingClient sc = SignalingClient.getInstance();
         try {
             sc.sendDM(selectedContact.getKey(), message);
-            sendTyping(false);
+            sc.sendTyping(selectedContact.getKey(), false);
             handleStringMessage("Вы", message);
             messageInput.clear();
         } catch (IOException ex) {
