@@ -419,22 +419,38 @@ public class WebRTCManager implements PeerConnectionObserver {
                             System.out.println(text);
 
                             JsonNode message = mapper.readTree(text);
-                            String signature = message.get("signature").asText();
-                            String sender = message.get("sender").asText();
-                            String content = message.get("content").asText();
+                            String type = message.get("type").asText();
+                            String sender;
+                            switch (type) {
+                                case "message":
+                                    String signature = message.get("signature").asText();
+                                    sender = message.get("sender").asText();
+                                    String content = message.get("content").asText();
 
-                            PublicKey publicKey = MessageCryptographer.stringToPublicKey(remoteClientKey);
-                            boolean isVerified = MC.confirmSign(content, signature, publicKey);
-                            if (!isVerified) {
-                                System.out.println("Signature in chatMessage is false, skipping");
-                                return;
-                            }
+                                    PublicKey publicKey = MessageCryptographer.stringToPublicKey(remoteClientKey);
+                                    boolean isVerified = MC.confirmSign(content, signature, publicKey);
+                                    if (!isVerified) {
+                                        System.out.println("Signature in chatMessage is false, skipping");
+                                        return;
+                                    }
 
-                            for (JavaPhoneChatHandler chatHandler : chatHandlers) {
-                                if (chatHandler != null) {
-                                    chatHandler.handleStringMessage(sender, content);
-                                }
+                                    for (JavaPhoneChatHandler chatHandler : chatHandlers) {
+                                        if (chatHandler != null) {
+                                            chatHandler.handleStringMessage(sender, content);
+                                        }
+                                    }
+                                    break;
+                                case "typing":
+                                    sender = message.get("sender").asText();
+                                    boolean status = message.get("status").asBoolean();
+                                    for (JavaPhoneChatHandler chatHandler : chatHandlers) {
+                                        if (chatHandler != null) {
+                                            chatHandler.setTyping(sender, status);
+                                        }
+                                    }
                             }
+                             
+                            
 
                         } catch (Exception ex) {
                             System.getLogger(WebRTCManager.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
@@ -532,8 +548,9 @@ public class WebRTCManager implements PeerConnectionObserver {
         if (chatDataChannel != null && chatDataChannel.getState() == RTCDataChannelState.OPEN) {
             try {
                 ObjectNode message = mapper.createObjectNode();
-                String sender = SettingsManager.getInstance().getNickname();
+                String sender = MC.getPublicKeyString();
                 String signature = MC.signMessage(content);
+                message.put("type", "message");
                 message.put("sender", sender);
                 message.put("content", content);
                 message.put("signature", signature);
@@ -553,6 +570,34 @@ public class WebRTCManager implements PeerConnectionObserver {
                         chatHandler.handleStringMessage(sender, content);
                     }
                 }
+
+                chatDataChannel.send(textChannelBuffer);
+            } catch (Exception ex) {
+                Logger.getLogger(WebRTCManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        } else {
+            System.out.println("CHAT CHANNEL DOES NOT EXIST");
+        }
+    }
+    
+    public void sendTyping(boolean status) {
+        if (chatDataChannel != null && chatDataChannel.getState() == RTCDataChannelState.OPEN) {
+            try {
+                ObjectNode message = mapper.createObjectNode();
+                String sender = SettingsManager.getInstance().getNickname();
+                message.put("type", "typing");
+                message.put("sender", sender);
+                message.put("status", status);
+
+                String textMessage = mapper.writeValueAsString(message);
+                System.out.println("SENDING MESSAGE");
+                System.out.println(textMessage);
+
+                PublicKey publicKey = MessageCryptographer.stringToPublicKey(remoteClientKey);
+                String textEncrypted = MC.encryptMessage(textMessage, publicKey);
+
+                ByteBuffer textBuffer = ByteBuffer.wrap(textEncrypted.getBytes(StandardCharsets.UTF_8));
+                RTCDataChannelBuffer textChannelBuffer = new RTCDataChannelBuffer(textBuffer, false);
 
                 chatDataChannel.send(textChannelBuffer);
             } catch (Exception ex) {

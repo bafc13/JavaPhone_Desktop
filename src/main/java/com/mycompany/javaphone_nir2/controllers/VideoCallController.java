@@ -2,6 +2,7 @@ package com.mycompany.javaphone_nir2.controllers;
 
 import com.mycompany.javaphone_nir2.ChatHistoryCell;
 import com.mycompany.javaphone_nir2.WebRtcVideoPanel;
+import com.mycompany.javaphone_nir2.cryptography.MessageCryptographer;
 import com.mycompany.javaphone_nir2.games.GameMenuApp;
 import com.mycompany.javaphone_nir2.logging.SessionLogger;
 import com.mycompany.javaphone_nir2.models.Media;
@@ -604,9 +605,11 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
 
         // send message button
         sendCallMessageButton.setOnAction(e -> sendCallMessage());
+        sendCallMessageButton.setOnKeyTyped(e -> sendTyping(true));
         sendCallMessageButton.getStyleClass().add("send-button");
 
         callMessageInput.setOnAction(e -> sendCallMessage());
+        callMessageInput.setOnAction(e -> sendTyping(false));
         callMessageInput.getStyleClass().add("message-input");
 
         messageContainer.getStyleClass().add("mesage-container");
@@ -629,6 +632,14 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
 
         rtcm.sendChatMessage(message);
         callMessageInput.clear();
+    }
+    
+    private void sendTyping(boolean status) {
+        logger.log("Video call window: sending typing status");
+
+        WebRTCManager rtcm = WebRTCManager.getInstance();
+
+        rtcm.sendTyping(status);
     }
 
     /** This method responsible for simulate chat response */
@@ -754,7 +765,12 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
 
         Message msg = new Message();
         msg.setChatId(1);
-        msg.setSenderPublicKey(sender);
+        MessageCryptographer MC = MessageCryptographer.getInstance();
+        if (sender.equals(MC.getPublicKeyString())) {
+            msg.setSenderPublicKey("Вы");
+        } else {
+            msg.setSenderPublicKey(sender);
+        }
         msg.setContent("");
         msg.setTime(System.currentTimeMillis() / 1000);
         msg.setAttachments(List.of(media));
@@ -767,7 +783,8 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
         Message msg = new Message();
         msg.setId(generateMessageId());
         msg.setChatId(1);
-        if (sender.equals(settings.getUserKey())) {
+        MessageCryptographer MC = MessageCryptographer.getInstance();
+        if (sender.equals(MC.getPublicKeyString())) {
             msg.setSenderPublicKey("Вы");
         } else {
             msg.setSenderPublicKey(sender);
@@ -791,6 +808,11 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
                 callChatHistory.scrollTo(lastIndex);
             }
         });
+    }
+
+    @Override
+    public void setTyping(String sender, boolean status) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 }
 
