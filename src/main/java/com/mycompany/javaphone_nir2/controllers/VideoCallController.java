@@ -660,22 +660,24 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
     }
 
     public void setTypingIndicator(boolean isTyping) {
-        if (isTyping) {
-            typingIndicator.setText("печатает...");
-            typingIndicator.setVisible(true);
-            typingIndicator.setManaged(true);
-            typingIndicator.setOpacity(1.0);
-            
-            try {
-                Thread.sleep(5 * 1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        Platform.runLater(() -> {
+            if (isTyping) {
+                typingIndicator.setText("печатает...");
+                typingIndicator.setVisible(true);
+                typingIndicator.setManaged(true);
+                typingIndicator.setOpacity(1.0);
+
+                try {
+                    Thread.sleep(5 * 1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                setTypingIndicator(false);
+            } else {
+                typingIndicator.setVisible(false);
+                typingIndicator.setManaged(true);
             }
-            setTypingIndicator(false);
-        } else {
-            typingIndicator.setVisible(false);
-            typingIndicator.setManaged(true);
-        }
+        });
     }
 
     /** This method responsible for ending call and closing window */

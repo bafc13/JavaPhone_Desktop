@@ -160,31 +160,32 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
     }
 
     public void setTypingContactIndicator(Contact contact, boolean isTyping) {
-        if(selectedContact != null){
-            if(selectedContact.equals(contact)){
-                if (isTyping) {
-                    typingIndicator.setText("Печатает...");
-                    typingIndicator.setVisible(true);
-                    typingIndicator.setManaged(true);
-                    typingIndicator.setOpacity(1.0);
-                    
-                    try {
-                        Thread.sleep(5 * 1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+        Platform.runLater(() -> {
+            if(selectedContact != null){
+                if(selectedContact.equals(contact)){
+                    if (isTyping) {
+                        typingIndicator.setText("Печатает...");
+                        typingIndicator.setVisible(true);
+                        typingIndicator.setManaged(true);
+                        typingIndicator.setOpacity(1.0);
+
+                        try {
+                            Thread.sleep(5 * 1000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        setTypingContactIndicator(contact, false);
+                    } else {
+                        typingIndicator.setVisible(false);
+                        typingIndicator.setManaged(true);
                     }
-                    setTypingContactIndicator(contact, false);
-                } else {
-                    typingIndicator.setVisible(false);
-                    typingIndicator.setManaged(true);
                 }
             }
-        }
 
-        if(contactsList.getItems() != null) {
-            int indexOfContact = contactsList.getItems().indexOf(contact);
-            if (indexOfContact >= 0) {
-                Platform.runLater(() -> {
+            if(contactsList.getItems() != null) {
+                int indexOfContact = contactsList.getItems().indexOf(contact);
+                if (indexOfContact >= 0) {
+
                     for (Node node : contactsList.lookupAll(".list-cell")) {
                         if (node instanceof ContactListCell cell) {
                             if (cell.getIndex() == indexOfContact) {
@@ -193,9 +194,10 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
                             }
                         }
                     }
-                });
+
+                }
             }
-        }
+        });
     }
 
     /** This method set styles for nav bar and contacts and set onClick handlers for nav buttons */
