@@ -23,8 +23,10 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.PublicKey;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -452,6 +454,7 @@ public class WebRTCManager implements PeerConnectionObserver {
                                             chatHandler.setTyping(sender, status);
                                         }
                                     }
+                                    break;
                                 case "file":
                                     signature = message.get("signature").asText();
                                     sender = message.get("sender").asText();
@@ -467,7 +470,7 @@ public class WebRTCManager implements PeerConnectionObserver {
 
                                     try {
                                         String filePath = SettingsManager.getInstance().getFilesFolder().toString() + name;
-                                        Files.writeString(Path.of(filePath), content);
+                                        writeBase64toFile(content, filePath);
                                         for (JavaPhoneChatHandler chatHandler : chatHandlers) {
                                             if (chatHandler != null) {
                                                 chatHandler.handleFileMessage(Path.of(filePath).toFile(), sender);
@@ -609,7 +612,7 @@ public class WebRTCManager implements PeerConnectionObserver {
     public void sendFile(File file) {
         if (chatDataChannel != null && chatDataChannel.getState() == RTCDataChannelState.OPEN) {
             try {
-                String content = Files.readString(file.toPath());
+                String content = encodeFileToBase64Binary(file);
 
                 ObjectNode message = mapper.createObjectNode();
                 String sender = MC.getPublicKeyString();
@@ -876,5 +879,16 @@ public class WebRTCManager implements PeerConnectionObserver {
 
     public boolean removeChatHandler(JavaPhoneChatHandler chatHandler) {
         return this.chatHandlers.remove(chatHandler);
+    }
+    
+    private static String encodeFileToBase64Binary(File file) throws IOException {
+        byte[] content = Files.readAllBytes(file.toPath());
+        String encoded = Base64.getEncoder().encodeToString(content);
+        return encoded;
+    }
+    
+    private static void writeBase64toFile(String content, String filePath) throws IOException {
+        byte[] contentBytes = Base64.getDecoder().decode(content.getBytes());
+        Files.write(Paths.get(filePath), contentBytes);
     }
 }

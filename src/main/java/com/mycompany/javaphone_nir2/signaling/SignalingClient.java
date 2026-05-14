@@ -20,9 +20,12 @@ import java.io.File;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.PublicKey;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -283,8 +286,8 @@ public class SignalingClient {
         }
         
         try {
-            String filePath = settings.getFilesFolder().toString() + name;
-            Files.writeString(Path.of(filePath), content);
+            String filePath = settings.getFilesFolder().toString() + "\\" + name;
+            writeBase64toFile(content, filePath);
             for (JavaPhoneChatHandler chatHandler : chatHandlers) {
                 if (chatHandler != null) {
                     chatHandler.handleFileMessage(Path.of(filePath).toFile(), sender);
@@ -364,7 +367,7 @@ public class SignalingClient {
     public void sendFile(String targetClientId, File file) throws IOException {
         PublicKey targetKey = MessageCryptographer.stringToPublicKey(targetClientId);
         
-        String content = Files.readString(file.toPath());
+        String content = encodeFileToBase64Binary(file);
         String contentEncrypted = MC.encryptMessage(content, targetKey);
         String signature = MC.signMessage(content);
         
@@ -436,5 +439,16 @@ public class SignalingClient {
 
     public Contact getContact(String key) {
         return contacts.get(key);
+    }
+    
+    private static String encodeFileToBase64Binary(File file) throws IOException {
+        byte[] content = Files.readAllBytes(file.toPath());
+        String encoded = Base64.getEncoder().encodeToString(content);
+        return encoded;
+    }
+    
+    private static void writeBase64toFile(String content, String filePath) throws IOException {
+        byte[] contentBytes = Base64.getDecoder().decode(content.getBytes());
+        Files.write(Paths.get(filePath), contentBytes);
     }
 }
