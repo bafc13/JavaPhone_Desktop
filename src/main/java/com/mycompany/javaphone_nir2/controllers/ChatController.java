@@ -169,7 +169,7 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
                     typingIndicator.setOpacity(1.0);
                     
                     try {
-                        Thread.sleep(30 * 1000);
+                        Thread.sleep(5 * 1000);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -320,6 +320,7 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
         });
 
         messageInput.setOnAction(e -> sendMessage());
+        messageInput.setOnAction(e -> sendTyping(false));
         messageInput.setOnKeyTyped(e -> sendTyping(true));
         messageInput.getStyleClass().add("message-input");
 
