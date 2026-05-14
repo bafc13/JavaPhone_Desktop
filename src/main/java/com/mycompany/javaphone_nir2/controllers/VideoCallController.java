@@ -605,11 +605,10 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
 
         // send message button
         sendCallMessageButton.setOnAction(e -> sendCallMessage());
-        sendCallMessageButton.setOnKeyTyped(e -> sendTyping(true));
         sendCallMessageButton.getStyleClass().add("send-button");
 
         callMessageInput.setOnAction(e -> sendCallMessage());
-        callMessageInput.setOnAction(e -> sendTyping(false));
+        callMessageInput.setOnKeyTyped(e -> sendTyping(true));
         callMessageInput.getStyleClass().add("message-input");
 
         messageContainer.getStyleClass().add("mesage-container");
@@ -632,6 +631,7 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
 
         rtcm.sendChatMessage(message);
         callMessageInput.clear();
+        sendTyping(false);
     }
     
     private void sendTyping(boolean status) {

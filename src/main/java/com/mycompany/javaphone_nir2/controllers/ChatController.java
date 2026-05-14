@@ -320,12 +320,10 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
         });
 
         messageInput.setOnAction(e -> sendMessage());
-        messageInput.setOnAction(e -> sendTyping(false));
         messageInput.setOnKeyTyped(e -> sendTyping(true));
         messageInput.getStyleClass().add("message-input");
 
         sendButton.setOnAction(e -> sendMessage());
-        sendButton.setOnAction(e -> sendTyping(false));
         sendButton.getStyleClass().add("send-button");
 
         messageContainer.getStyleClass().add("message-container");
@@ -874,6 +872,7 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
         SignalingClient sc = SignalingClient.getInstance();
         try {
             sc.sendDM(selectedContact.getKey(), message);
+            sendTyping(false);
             handleStringMessage("Вы", message);
             messageInput.clear();
         } catch (IOException ex) {
