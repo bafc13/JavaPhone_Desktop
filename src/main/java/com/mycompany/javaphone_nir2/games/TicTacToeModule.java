@@ -11,6 +11,11 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
+import com.almasb.fxgl.animation.Animation;
+import com.almasb.fxgl.animation.AnimationBuilder;
+import javafx.animation.FadeTransition;
+import javafx.geometry.Point2D;
+import javafx.util.Duration;
 
 public class TicTacToeModule extends FXGLGame {
 
@@ -100,6 +105,7 @@ public class TicTacToeModule extends FXGLGame {
         }
 
         // Устанавливаем X
+        animateSymbol(board[row][col], "X"); 
         board[row][col].setText("X");
         FXGL.play("com/mycompany/javaphone_nir2/games/sounds/pencil1.wav");
         themeHelper.styleTicTacToeCell(board[row][col], "X", false);
@@ -129,6 +135,7 @@ public class TicTacToeModule extends FXGLGame {
         int col = Integer.parseInt(coords[1]);
 
         // Устанавливаем O
+        animateSymbol(board[row][col], "O");
         board[row][col].setText("O");
         FXGL.play("com/mycompany/javaphone_nir2/games/sounds/pencil1.wav");
         themeHelper.styleTicTacToeCell(board[row][col], "O", false);
@@ -150,6 +157,34 @@ public class TicTacToeModule extends FXGLGame {
             statusLabel.getStyleClass().add("game-status");
         }
     }
+    
+private void animateSymbol(Button button, String symbol) {
+    button.setText(symbol);
+    
+    // Начинаем с прозрачного
+    button.setOpacity(0);
+    
+    // Плавно появляемся
+    javafx.animation.FadeTransition fade = new javafx.animation.FadeTransition(
+        javafx.util.Duration.millis(200), button
+    );
+    fade.setFromValue(0);
+    fade.setToValue(1);
+    fade.play();
+    
+    // Добавляем лёгкое увеличение для эффекта "выскакивания"
+    button.setScaleX(0.8);
+    button.setScaleY(0.8);
+    
+    javafx.animation.ScaleTransition scale = new javafx.animation.ScaleTransition(
+        javafx.util.Duration.millis(200), button
+    );
+    scale.setFromX(0.8);
+    scale.setFromY(0.8);
+    scale.setToX(1);
+    scale.setToY(1);
+    scale.play();
+}
 
     @Override
     public void startBattle() {

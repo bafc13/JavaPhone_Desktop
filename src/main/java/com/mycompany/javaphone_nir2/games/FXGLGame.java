@@ -2,6 +2,7 @@ package com.mycompany.javaphone_nir2.games;
 
 import javafx.stage.Stage;
 
+
 public abstract class FXGLGame {
 
     protected String gameType;
