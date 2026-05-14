@@ -1,10 +1,13 @@
 package com.mycompany.javaphone_nir2.games;
 
+import com.almasb.fxgl.dsl.FXGL;
 import com.github.bhlangonijr.chesslib.Board;
 import com.github.bhlangonijr.chesslib.Piece;
 import com.github.bhlangonijr.chesslib.Side;
 import com.github.bhlangonijr.chesslib.Square;
 import com.github.bhlangonijr.chesslib.move.Move;
+import com.github.bhlangonijr.chesslib.move.MoveGenerator;
+import com.github.bhlangonijr.chesslib.move.MoveList;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -104,10 +107,7 @@ public class ChessModule extends FXGLGame {
         root.getChildren().addAll(statusLabel, boardGrid, backButton);
 
         Scene scene = new Scene(root, 600, 700);
-
-        // ПРИМЕНЯЕМ ТЕМУ (как в комментарии коллеги)
         themeApplier.applyThemeToScene(scene);
-
         gameStage.setScene(scene);
         Platform.runLater(() -> updateBoardUI());
     }
@@ -202,43 +202,144 @@ public class ChessModule extends FXGLGame {
             // Make move
             Move move = new Move(selectedSquare, clickedSquare);
             System.out.println("  Attempting move: " + selectedSquare + " -> " + clickedSquare);
-            System.out.println("  Move legal: " + chessBoard.isMoveLegal(move, true));
-
-            if (chessBoard.isMoveLegal(move, true)) {
-                if (chessBoard.doMove(move)) {
-                    System.out.println("  Move successful!");
-
-                    // Update UI
-                    updateBoardUI();
-
-                    isMyTurn = false;
-                    statusLabel.setText("Ожидание хода соперника...");
-                    statusLabel.setTextFill(Color.ORANGE);
-
-                    // Send move in algebraic notation
-                    String moveStr = selectedSquare.toString().toLowerCase()
-                            + clickedSquare.toString().toLowerCase();
-                    System.out.println("  Sending move: " + moveStr);
-                    sendMove(moveStr);
-
-                    checkGameOver();
-                } else {
-                    System.out.println("  Move failed!");
-                    statusLabel.setText("❌ Некорректный ход!");
-                    statusLabel.setTextFill(Color.RED);
-                }
+            
+            // Полная проверка легальности хода
+            if (isCompletelyLegalMove(move)) {
+                System.out.println("  Move is completely legal!");
+                
+                // Выполняем ход
+                chessBoard.doMove(move);
+                updateBoardUI();
+                
+                isMyTurn = false;
+                statusLabel.setText("Ожидание хода соперника...");
+                statusLabel.setTextFill(Color.ORANGE);
+                
+                // Отправляем ход сопернику
+                String moveStr = selectedSquare.toString().toLowerCase()
+                        + clickedSquare.toString().toLowerCase();
+                System.out.println("  Sending move: " + moveStr);
+                sendMove(moveStr);
+                
+                checkGameOver();
             } else {
                 System.out.println("  Move is illegal!");
                 statusLabel.setText("❌ Некорректный ход!");
                 statusLabel.setTextFill(Color.RED);
             }
-
+            
             selectedSquare = null;
             clearHighlights();
         }
     }
+    
+    /**
+     * Полная проверка легальности хода по всем правилам шахмат
+     */
+    private boolean isCompletelyLegalMove(Move move) {
+        // 1. Проверяем, что ход валиден по правилам движения фигур
+        if (!isMoveValidByPieceRules(move)) {
+            System.out.println("  Move invalid by piece rules");
+            return false;
+        }
+        
+        // 2. Проверяем, что ход делает игрок, который должен ходить
+        Piece piece = chessBoard.getPiece(move.getFrom());
+        if (piece == null || piece.getPieceSide() != chessBoard.getSideToMove()) {
+            System.out.println("  Not your turn or no piece");
+            return false;
+        }
+        
+        // 3. Создаем копию доски для проверки
+        Board testBoard = new Board();
+        testBoard.loadFromFen(chessBoard.getFen());
+        
+        // 4. Пробуем выполнить ход на копии
+        if (!testBoard.doMove(move)) {
+            System.out.println("  Move execution failed");
+            return false;
+        }
+        
+        // 5. Проверяем, не подставили ли мы своего короля под шах
+        // Получаем позицию нашего короля после хода
+        Square myKingSquare = getKingSquare(testBoard, getMySide());
+        if (myKingSquare == null) {
+            System.out.println("  King not found!");
+            return false;
+        }
+        
+        // Проверяем, атакована ли клетка с нашим королем фигурами противника
+        boolean isKingAttacked = isSquareAttackedByOpponent(testBoard, myKingSquare, getMySide());
+        
+        if (isKingAttacked) {
+            System.out.println("  Move would put own king in check!");
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Проверяет, валиден ли ход по правилам движения фигур
+     */
+    private boolean isMoveValidByPieceRules(Move move) {
+        Piece piece = chessBoard.getPiece(move.getFrom());
+        if (piece == null) {
+            return false;
+        }
+        
+        // Получаем все возможные ходы для всех фигур
+        MoveList legalMoves = (MoveList) MoveGenerator.generateLegalMoves(chessBoard);
+        
+        // Проверяем, есть ли наш ход в списке легальных
+        for (Move legalMove : legalMoves) {
+            if (legalMove.getFrom().equals(move.getFrom()) && 
+                legalMove.getTo().equals(move.getTo())) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Возвращает позицию короля указанной стороны
+     */
+    private Square getKingSquare(Board board, Side side) {
+        Piece kingPiece = (side == Side.WHITE) ? Piece.WHITE_KING : Piece.BLACK_KING;
+        
+        for (Square square : Square.values()) {
+            if (board.getPiece(square) == kingPiece) {
+                return square;
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * Проверяет, атакована ли указанная клетка фигурами противника
+     */
+    private boolean isSquareAttackedByOpponent(Board board, Square square, Side mySide) {
+        Side opponentSide = (mySide == Side.WHITE) ? Side.BLACK : Side.WHITE;
+        
+        // Перебираем все клетки доски
+        for (Square fromSquare : Square.values()) {
+            Piece piece = board.getPiece(fromSquare);
+            // Если на клетке есть фигура противника
+            if (piece != null && piece.getPieceSide() == opponentSide) {
+                // Создаем ход с этой клетки на нашу
+                Move possibleMove = new Move(fromSquare, square);
+                // Проверяем, может ли эта фигура так сходить (без учета шаха королю)
+                if (board.isMoveLegal(possibleMove, false)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
     private void highlightSquare(int row, int col) {
+        clearHighlights();
         ChessCell cell = cellButtons[row][col];
         if (cell != null) {
             String currentStyle = cell.getStyle();
@@ -272,15 +373,6 @@ public class ChessModule extends FXGLGame {
                 Piece p = chessBoard.getPiece(sq);
                 Image img = getPieceImage(p);
                 cellButtons[i][j].setPieceImage(img);
-
-                // Debug output
-                String symbol = (img != null) ? "IMAGE" : "EMPTY";
-                System.out.print("UPDATE " + symbol + " on: " + i + " " + j);
-                if (p != null) {
-                    System.out.println(" " + p);
-                } else {
-                    System.out.println();
-                }
             }
         }
     }
@@ -295,18 +387,27 @@ public class ChessModule extends FXGLGame {
     private void checkGameOver() {
         if (chessBoard.isMated()) {
             gameOver = true;
-            String winner = chessBoard.getSideToMove() == Side.WHITE ? "Чёрные" : "Белые";
-            if ((winner.equals("Белые") && getMySide() == Side.WHITE)
-                    || (winner.equals("Чёрные") && getMySide() == Side.BLACK)) {
+            // isMated() возвращает true, когда текущий игрок получил мат
+            // Текущий игрок - это тот, кто должен ходить, значит он проиграл
+            Side loser = chessBoard.getSideToMove();
+            Side winner = (loser == Side.WHITE) ? Side.BLACK : Side.WHITE;
+            
+            if (winner == getMySide()) {
+                FXGL.play("com/mycompany/javaphone_nir2/games/sounds/win.wav");
                 statusLabel.setText("🎉 ВЫ ПОБЕДИЛИ! 🎉");
                 statusLabel.setTextFill(Color.GREEN);
             } else {
+                FXGL.play("com/mycompany/javaphone_nir2/games/sounds/lose.wav");
                 statusLabel.setText("😢 ВЫ ПРОИГРАЛИ! 😢");
                 statusLabel.setTextFill(Color.RED);
             }
         } else if (chessBoard.isStaleMate()) {
             gameOver = true;
             statusLabel.setText("🤝 ПАТ! НИЧЬЯ! 🤝");
+            statusLabel.setTextFill(Color.ORANGE);
+        } else if (chessBoard.isDraw()) {
+            gameOver = true;
+            statusLabel.setText("🤝 НИЧЬЯ! 🤝");
             statusLabel.setTextFill(Color.ORANGE);
         }
     }
@@ -339,21 +440,25 @@ public class ChessModule extends FXGLGame {
             Square to = Square.valueOf(toStr);
 
             Move move = new Move(from, to);
-
-            if (chessBoard.isMoveLegal(move, true)) {
+            
+            // Проверяем легальность хода соперника
+            if (isOpponentMoveLegal(move)) {
                 if (chessBoard.doMove(move)) {
                     System.out.println("Opponent move: " + from + " -> " + to);
-
+                    
                     // Update UI
-                    Platform.runLater(() -> updateBoardUI());
-
-                    checkGameOver();
-
+                    Platform.runLater(() -> {
+                        updateBoardUI();
+                        checkGameOver();
+                    });
+                    
                     if (!gameOver) {
                         isMyTurn = true;
                         statusLabel.setText("✅ Ваш ход!");
                         statusLabel.setTextFill(Color.GREEN);
                     }
+                } else {
+                    System.err.println("Failed to execute opponent move: " + moveData);
                 }
             } else {
                 System.err.println("Illegal move from opponent: " + moveData);
@@ -363,6 +468,32 @@ public class ChessModule extends FXGLGame {
             e.printStackTrace();
         }
     }
+    
+    /**
+     * Проверяет легальность хода соперника
+     */
+    private boolean isOpponentMoveLegal(Move move) {
+        // Проверяем, что сейчас очередь соперника
+        if (chessBoard.getSideToMove() != getOpponentSide()) {
+            System.out.println("Not opponent's turn");
+            return false;
+        }
+        
+        // Проверяем по правилам движения фигур
+        MoveList legalMoves = (MoveList) MoveGenerator.generateLegalMoves(chessBoard);
+        for (Move legalMove : legalMoves) {
+            if (legalMove.getFrom().equals(move.getFrom()) && 
+                legalMove.getTo().equals(move.getTo())) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    private Side getOpponentSide() {
+        return getMySide() == Side.WHITE ? Side.BLACK : Side.WHITE;
+    }
 
     @Override
     public void startBattle() {
@@ -370,7 +501,8 @@ public class ChessModule extends FXGLGame {
         System.out.println("  amIHost=" + amIHost);
 
         waitingForOpponent = false;
-        isMyTurn = amIHost;
+        isMyTurn = (amIHost && chessBoard.getSideToMove() == Side.WHITE) ||
+                   (!amIHost && chessBoard.getSideToMove() == Side.BLACK);
 
         System.out.println("  isMyTurn=" + isMyTurn);
 
@@ -378,7 +510,7 @@ public class ChessModule extends FXGLGame {
             updateBoardUI();
 
             if (isMyTurn) {
-                statusLabel.setText("✅ Ваш ход! Белые начинают!");
+                statusLabel.setText("✅ Ваш ход!");
                 statusLabel.setTextFill(Color.GREEN);
             } else {
                 statusLabel.setText("Ожидание хода соперника...");
@@ -395,7 +527,6 @@ public class ChessModule extends FXGLGame {
 
     // Inner class for chess cell
     private static class ChessCell extends StackPane {
-
         private final ImageView pieceImageView;
         private final int row;
         private final int col;
@@ -408,7 +539,6 @@ public class ChessModule extends FXGLGame {
             setMinSize(size, size);
             setMaxSize(size, size);
 
-            // ImageView will take 80% of cell size
             pieceImageView = new ImageView();
             pieceImageView.setFitWidth(size * 0.8);
             pieceImageView.setFitHeight(size * 0.8);

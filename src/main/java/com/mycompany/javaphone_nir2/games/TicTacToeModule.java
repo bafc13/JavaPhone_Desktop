@@ -1,5 +1,6 @@
 package com.mycompany.javaphone_nir2.games;
 
+import com.almasb.fxgl.dsl.FXGL; 
 import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -100,6 +101,7 @@ public class TicTacToeModule extends FXGLGame {
 
         // Устанавливаем X
         board[row][col].setText("X");
+        FXGL.play("com/mycompany/javaphone_nir2/games/sounds/pencil1.wav");
         themeHelper.styleTicTacToeCell(board[row][col], "X", false);
         board[row][col].setDisable(true);
 
@@ -110,6 +112,7 @@ public class TicTacToeModule extends FXGLGame {
 
         if (checkWin("X")) {
             gameOver = true;
+            FXGL.play("com/mycompany/javaphone_nir2/games/sounds/win.wav");
             statusLabel.setText("🎉 ВЫ ПОБЕДИЛИ! 🎉");
             statusLabel.setStyle("-fx-text-fill: #27ae60;");
         } else if (isBoardFull()) {
@@ -127,11 +130,13 @@ public class TicTacToeModule extends FXGLGame {
 
         // Устанавливаем O
         board[row][col].setText("O");
+        FXGL.play("com/mycompany/javaphone_nir2/games/sounds/pencil1.wav");
         themeHelper.styleTicTacToeCell(board[row][col], "O", false);
         board[row][col].setDisable(true);
 
         if (checkWin("O")) {
             gameOver = true;
+            FXGL.play("com/mycompany/javaphone_nir2/games/sounds/lose.wav");
             statusLabel.setText("😢 ВЫ ПРОИГРАЛИ! 😢");
             statusLabel.setStyle("-fx-text-fill: #e74c3c;");
         } else if (isBoardFull()) {
