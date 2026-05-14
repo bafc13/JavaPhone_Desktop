@@ -35,9 +35,10 @@ public class SettingsManager {
 
     private static SettingsManager instance;
 
-    private static final String SETTINGS_FOLDER = ".javaphone";
+    private static final String JAVAPHONE_FOLDER = ".javaphone";
     private static final String CONFIG_FILE = "app_settings.json";
     private static final String AVATARS_FOLDER = "avatars";
+    private static final String FILES_FOLDER = "files";
 
     /**
      * path to settings in system
@@ -77,7 +78,7 @@ public class SettingsManager {
 
         this.objectMapper = new ObjectMapper();
 
-        this.settingsPath = Paths.get(System.getProperty("user.home"), SETTINGS_FOLDER, CONFIG_FILE);
+        this.settingsPath = Paths.get(System.getProperty("user.home"), JAVAPHONE_FOLDER, CONFIG_FILE);
         this.data = new SettingsData();
 
         /**
@@ -182,6 +183,10 @@ public class SettingsManager {
 
     public String getEmail() {
         return data.nickname + "@example.com";
+    }
+    
+    public Path getFilesFolder() {
+        return Paths.get(System.getProperty("user.home"), JAVAPHONE_FOLDER, FILES_FOLDER);
     }
 
     public String getSignalingUrl() {
@@ -418,6 +423,9 @@ public class SettingsManager {
             System.err.println("Error loading settings: " + e.getMessage() + "\nSetting default values");
             setDefaults();
         }
+        
+        Path filesPath = Paths.get(System.getProperty("user.home"), JAVAPHONE_FOLDER, FILES_FOLDER);
+        filesPath.toFile().mkdirs();
     }
 
     private void setDefaults() {
@@ -511,7 +519,7 @@ public class SettingsManager {
         logger.log("Settings manager: uploading avatar");
 
         try {
-            Path appAvatarsDir = Path.of(System.getProperty("user.home"), SETTINGS_FOLDER, AVATARS_FOLDER);
+            Path appAvatarsDir = Path.of(System.getProperty("user.home"), JAVAPHONE_FOLDER, AVATARS_FOLDER);
             Files.createDirectories(appAvatarsDir);
             Path targetPath = appAvatarsDir.resolve(avatarFile.getName());
             if (Files.exists(targetPath)) {

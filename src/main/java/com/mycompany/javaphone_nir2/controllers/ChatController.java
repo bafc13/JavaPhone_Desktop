@@ -432,10 +432,24 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
     }
 
     private void handleSelectedFiles(List<File> files) {
+        if (selectedContact == null) {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Предупреждение");
+            alert.setHeaderText("Контакт не выбран");
+            alert.setContentText("Выберите контакт для отправки сообщения");
+            alert.showAndWait();
+            return;
+        }
+        
+        SignalingClient sc = SignalingClient.getInstance();
         for (File f : files) {
-            handleFileMessage(f, "Вы");
+            try {
+                sc.sendFile(selectedContact.getKey(), f);
+                handleFileMessage(f, "Вы");
+            } catch (IOException ex) {
+                System.getLogger(ChatController.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex); /////////
+            }
 
-            // webRTCManager.sendFile(msg, media);
         }
     }
 
