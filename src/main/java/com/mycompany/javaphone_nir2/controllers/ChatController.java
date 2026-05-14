@@ -168,13 +168,6 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
                         typingIndicator.setVisible(true);
                         typingIndicator.setManaged(true);
                         typingIndicator.setOpacity(1.0);
-
-                        try {
-                            Thread.sleep(5 * 1000);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        setTypingContactIndicator(contact, false);
                     } else {
                         typingIndicator.setVisible(false);
                         typingIndicator.setManaged(true);
