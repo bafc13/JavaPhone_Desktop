@@ -266,7 +266,7 @@ public void onOpponentMove(String moveData) {
             message = "💨 Противник промахнулся!";
             statusLabel.getStyleClass().removeAll("game-status-success", "game-status-error");
             statusLabel.getStyleClass().add("game-status-warning");
-            // Анимация промаха (всплеск воды)
+            FXGL.play("com/mycompany/javaphone_nir2/games/sounds/miss.wav");
             showWaterSplash(cellCoords.getX(), cellCoords.getY());
             break;
         case 1:
@@ -274,7 +274,7 @@ public void onOpponentMove(String moveData) {
             message = "💥 Противник попал!";
             statusLabel.getStyleClass().removeAll("game-status-success", "game-status-warning");
             statusLabel.getStyleClass().add("game-status-error");
-            // Анимация попадания (взрыв)
+            FXGL.play("com/mycompany/javaphone_nir2/games/sounds/hit.wav");
             showExplosion(cellCoords.getX(), cellCoords.getY());
             break;
         case 2:
@@ -282,7 +282,7 @@ public void onOpponentMove(String moveData) {
             message = "💀 Противник уничтожил ваш корабль! Осталось кораблей: " + myBoard.getShipsAlive();
             statusLabel.getStyleClass().removeAll("game-status-success", "game-status-warning");
             statusLabel.getStyleClass().add("game-status-error");
-            // Анимация уничтожения корабля
+            FXGL.play("com/mycompany/javaphone_nir2/games/sounds/destroyed.wav");
             showShipDestroyed(row, col, true);
             break;
         default:
@@ -407,12 +407,13 @@ public void onOpponentMove(String moveData) {
     if ("hit".equals(result) || "kill".equals(result)) {
         // Анимация попадания
         showExplosion(cellCoords.getX(), cellCoords.getY());
+        FXGL.play("com/mycompany/javaphone_nir2/games/sounds/hit.wav");
         
         enemyBoard.getCell(row, col).markAsHit();
         updateEnemyBoard();
 
         if ("kill".equals(result)) {
-            // Анимация уничтожения корабля
+            // Анимация уничтожения корабля (уже вызывается один раз)
             showShipDestroyed(row, col, false);
             
             List<int[]> shipCells = findConnectedShipCells(row, col);
@@ -443,6 +444,7 @@ public void onOpponentMove(String moveData) {
             statusLabel.setText("💀 Корабль уничтожен! Осталось кораблей: " + (10 - destroyedShipsCount));
             statusLabel.getStyleClass().removeAll("game-status-error", "game-status-warning");
             statusLabel.getStyleClass().add("game-status-success");
+            FXGL.play("com/mycompany/javaphone_nir2/games/sounds/destroyed.wav");
 
             if (destroyedShipsCount >= 10) {
                 gameOver = true;
@@ -465,7 +467,7 @@ public void onOpponentMove(String moveData) {
             return;
         }
     } else if ("miss".equals(result)) {
-        // Анимация промаха
+        FXGL.play("com/mycompany/javaphone_nir2/games/sounds/miss.wav");
         showWaterSplash(cellCoords.getX(), cellCoords.getY());
         
         enemyBoard.getCell(row, col).markAsMiss();
