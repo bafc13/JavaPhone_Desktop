@@ -665,6 +665,13 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
             typingIndicator.setVisible(true);
             typingIndicator.setManaged(true);
             typingIndicator.setOpacity(1.0);
+            
+            try {
+                Thread.sleep(5 * 1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            setTypingIndicator(false);
         } else {
             typingIndicator.setVisible(false);
             typingIndicator.setManaged(true);
@@ -812,7 +819,7 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
 
     @Override
     public void setTyping(String sender, boolean status) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        setTypingIndicator(status);
     }
 }
 
