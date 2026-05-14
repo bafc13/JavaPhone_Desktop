@@ -119,6 +119,9 @@ public class SignalingClient {
             case "message":
                 handleDM(json);
                 break;
+            case "typing":
+                handleTyping(json);
+                break;
             case "error":
                 handleError(json);
                 break;
@@ -254,7 +257,18 @@ public class SignalingClient {
             }
         }
     }
-
+    
+    private void handleTyping(JsonNode json) {
+        String sender = json.get("sender").asText();
+        boolean status = json.get("status").asBoolean();
+        
+        for (JavaPhoneChatHandler chatHandler : chatHandlers) {
+            if (chatHandler != null) {
+                chatHandler.setTyping(sender, status);
+            }
+        }
+    }
+ 
     private void handleError(JsonNode json) {
         String error = json.get("message").asText();
     }
@@ -304,6 +318,16 @@ public class SignalingClient {
         message.put("target", targetClientId);
         message.put("content", contentEncrypted);
         message.put("signature", signature);
+
+        sendJson(message);
+    }
+    
+    public void sendTyping(String targetClientId, boolean status) throws IOException {
+        ObjectNode message = mapper.createObjectNode();
+        message.put("type", "typing");
+        message.put("sender", clientId);
+        message.put("target", targetClientId);
+        message.put("status", status);
 
         sendJson(message);
     }
