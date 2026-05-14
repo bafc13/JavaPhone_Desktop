@@ -632,12 +632,6 @@ public class WebRTCManager implements PeerConnectionObserver {
                 ByteBuffer textBuffer = ByteBuffer.wrap(textEncrypted.getBytes(StandardCharsets.UTF_8));
                 RTCDataChannelBuffer textChannelBuffer = new RTCDataChannelBuffer(textBuffer, false);
 
-                for (JavaPhoneChatHandler chatHandler : chatHandlers) {
-                    if (chatHandler != null) {
-                        chatHandler.handleStringMessage(sender, content);
-                    }
-                }
-
                 chatDataChannel.send(textChannelBuffer);
             } catch (Exception ex) {
                 Logger.getLogger(WebRTCManager.class.getName()).log(Level.SEVERE, null, ex);
