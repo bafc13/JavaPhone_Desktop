@@ -163,10 +163,17 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
         if(selectedContact != null){
             if(selectedContact.equals(contact)){
                 if (isTyping) {
-                    typingIndicator.setText("печатает...");
+                    typingIndicator.setText("Печатает...");
                     typingIndicator.setVisible(true);
                     typingIndicator.setManaged(true);
                     typingIndicator.setOpacity(1.0);
+                    
+                    try {
+                        Thread.sleep(30 * 1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    setTypingContactIndicator(contact, false);
                 } else {
                     typingIndicator.setVisible(false);
                     typingIndicator.setManaged(true);
@@ -313,9 +320,11 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
         });
 
         messageInput.setOnAction(e -> sendMessage());
+        messageInput.setOnKeyTyped(e -> sendTyping(true));
         messageInput.getStyleClass().add("message-input");
 
         sendButton.setOnAction(e -> sendMessage());
+        sendButton.setOnAction(e -> sendTyping(false));
         sendButton.getStyleClass().add("send-button");
 
         messageContainer.getStyleClass().add("message-container");
@@ -870,6 +879,18 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
             System.getLogger(ChatController.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex); /////////
         }
     }
+    
+    private void sendTyping(boolean status) {
+        if (selectedContact == null) {
+            return;
+        }
+        
+        try {
+            signalingClient.sendTyping(selectedContact.getKey(), status);
+        } catch (IOException ex) {
+            System.getLogger(ChatController.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+        }
+    }
 
     /**
      * response simulation
@@ -1057,6 +1078,12 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
         Platform.runLater(() -> {
             startVideoCallWithContact(selectedContact);
         });
+    }
+
+    @Override
+    public void setTyping(String sender, boolean status) {
+        Contact typer = signalingClient.getContact(sender);
+        this.setTypingContactIndicator(typer, status);
     }
 }
 
