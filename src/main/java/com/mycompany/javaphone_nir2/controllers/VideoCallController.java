@@ -525,7 +525,8 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
 
     private void handleSelectedFiles(List<File> files) {
         for (File f : files) {
-            
+            WebRTCManager rtcm = WebRTCManager.getInstance();
+            rtcm.sendFile(f);
             handleFileMessage(f, "Вы");
         }
     }

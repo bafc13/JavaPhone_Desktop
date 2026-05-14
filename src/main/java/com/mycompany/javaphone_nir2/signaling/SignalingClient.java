@@ -382,7 +382,7 @@ public class SignalingClient {
         message.put("name", nameEncrypted);
         message.put("signature", signature);
 
-        sendJson(message);
+            sendJson(message);
     }
     
     public void sendTyping(String targetClientId, boolean status) throws IOException {
