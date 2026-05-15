@@ -266,24 +266,30 @@ public void onOpponentMove(String moveData) {
             message = "💨 Противник промахнулся!";
             statusLabel.getStyleClass().removeAll("game-status-success", "game-status-error");
             statusLabel.getStyleClass().add("game-status-warning");
-            FXGL.play("com/mycompany/javaphone_nir2/games/sounds/miss.wav");
-            showWaterSplash(cellCoords.getX(), cellCoords.getY());
+            javafx.application.Platform.runLater(() -> {
+                showWaterSplash(cellCoords.getX(), cellCoords.getY());
+                FXGL.play("com/mycompany/javaphone_nir2/games/sounds/miss.wav");
+            });
             break;
         case 1:
             resultType = "hit";
             message = "💥 Противник попал!";
             statusLabel.getStyleClass().removeAll("game-status-success", "game-status-warning");
             statusLabel.getStyleClass().add("game-status-error");
-            FXGL.play("com/mycompany/javaphone_nir2/games/sounds/hit.wav");
-            showExplosion(cellCoords.getX(), cellCoords.getY());
+            javafx.application.Platform.runLater(() -> {
+                showExplosion(cellCoords.getX(), cellCoords.getY());
+                FXGL.play("com/mycompany/javaphone_nir2/games/sounds/hit.wav");
+            });
             break;
         case 2:
             resultType = "kill";
             message = "💀 Противник уничтожил ваш корабль! Осталось кораблей: " + myBoard.getShipsAlive();
             statusLabel.getStyleClass().removeAll("game-status-success", "game-status-warning");
             statusLabel.getStyleClass().add("game-status-error");
-            FXGL.play("com/mycompany/javaphone_nir2/games/sounds/destroyed.wav");
-            showShipDestroyed(row, col, true);
+            javafx.application.Platform.runLater(() -> {
+                showShipDestroyed(row, col, false);
+                FXGL.play("com/mycompany/javaphone_nir2/games/sounds/destroyed.wav");
+            });
             break;
         default:
             resultType = "error";
@@ -314,7 +320,7 @@ public void onOpponentMove(String moveData) {
         javafx.scene.layout.Pane root = (javafx.scene.layout.Pane) gameStage.getScene().getRoot();
         
         // Создаём 5-10 капель воды
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 3; i++) {
             Circle droplet = new Circle(3, Color.LIGHTBLUE);
             droplet.setCenterX(cellX + 15 + Math.random() * 20);
             droplet.setCenterY(cellY + 15 + Math.random() * 20);
@@ -340,7 +346,7 @@ public void onOpponentMove(String moveData) {
         javafx.scene.layout.Pane root = (javafx.scene.layout.Pane) gameStage.getScene().getRoot();
         
         // Создаём искры/осколки
-        for (int i = 0; i < 15; i++) {
+        for (int i = 0; i < 4; i++) {
             Circle spark = new Circle(2, Color.ORANGERED);
             spark.setCenterX(cellX + 19);
             spark.setCenterY(cellY + 19);
@@ -405,16 +411,19 @@ public void onOpponentMove(String moveData) {
     javafx.geometry.Point2D cellCoords = getCellCenterScreenCoords(cell);
 
     if ("hit".equals(result) || "kill".equals(result)) {
-        // Анимация попадания
-        showExplosion(cellCoords.getX(), cellCoords.getY());
-        FXGL.play("com/mycompany/javaphone_nir2/games/sounds/hit.wav");
         
         enemyBoard.getCell(row, col).markAsHit();
         updateEnemyBoard();
+        
+        // ПОТОМ анимация и звук
+        javafx.application.Platform.runLater(() -> {
+            showExplosion(cellCoords.getX(), cellCoords.getY());
+            FXGL.play("com/mycompany/javaphone_nir2/games/sounds/hit.wav");
+        });
 
         if ("kill".equals(result)) {
             // Анимация уничтожения корабля (уже вызывается один раз)
-            showShipDestroyed(row, col, false);
+            javafx.application.Platform.runLater(() -> {showShipDestroyed(row, col, false);});
             
             List<int[]> shipCells = findConnectedShipCells(row, col);
             System.out.println("   Found " + shipCells.size() + " ship cells");
@@ -444,7 +453,7 @@ public void onOpponentMove(String moveData) {
             statusLabel.setText("💀 Корабль уничтожен! Осталось кораблей: " + (10 - destroyedShipsCount));
             statusLabel.getStyleClass().removeAll("game-status-error", "game-status-warning");
             statusLabel.getStyleClass().add("game-status-success");
-            FXGL.play("com/mycompany/javaphone_nir2/games/sounds/destroyed.wav");
+            javafx.application.Platform.runLater(() -> {FXGL.play("com/mycompany/javaphone_nir2/games/sounds/destroyed.wav");});
 
             if (destroyedShipsCount >= 10) {
                 gameOver = true;
@@ -467,11 +476,12 @@ public void onOpponentMove(String moveData) {
             return;
         }
     } else if ("miss".equals(result)) {
-        FXGL.play("com/mycompany/javaphone_nir2/games/sounds/miss.wav");
-        showWaterSplash(cellCoords.getX(), cellCoords.getY());
-        
         enemyBoard.getCell(row, col).markAsMiss();
         updateEnemyBoard();
+        javafx.application.Platform.runLater(() -> {
+            showWaterSplash(cellCoords.getX(), cellCoords.getY());
+            FXGL.play("com/mycompany/javaphone_nir2/games/sounds/miss.wav");
+        });
         statusLabel.setText("💨 Промах!");
         statusLabel.getStyleClass().removeAll("game-status-success", "game-status-error");
         statusLabel.getStyleClass().add("game-status-warning");
@@ -496,23 +506,23 @@ private javafx.geometry.Point2D getCellCenterScreenCoords(Button cell) {
 private void showWaterSplash(double x, double y) {
     javafx.scene.layout.Pane root = (javafx.scene.layout.Pane) gameStage.getScene().getRoot();
     
-    // Всплеск воды - капли
-    for (int i = 0; i < 8; i++) {
-        javafx.scene.shape.Circle droplet = new javafx.scene.shape.Circle(3, javafx.scene.paint.Color.LIGHTBLUE);
+    // Всего 3-4 капли
+    for (int i = 0; i < 4; i++) {
+        javafx.scene.shape.Circle droplet = new javafx.scene.shape.Circle(2, javafx.scene.paint.Color.LIGHTBLUE);
         droplet.setCenterX(x);
         droplet.setCenterY(y);
         root.getChildren().add(droplet);
         
         double angle = Math.random() * 2 * Math.PI;
-        double distance = 20 + Math.random() * 30;
+        double distance = 10 + Math.random() * 20;
         
         javafx.animation.TranslateTransition fly = new javafx.animation.TranslateTransition(
-            javafx.util.Duration.millis(400), droplet);
+            javafx.util.Duration.millis(250), droplet);
         fly.setByX(Math.cos(angle) * distance);
         fly.setByY(Math.sin(angle) * distance);
         
         javafx.animation.FadeTransition fade = new javafx.animation.FadeTransition(
-            javafx.util.Duration.millis(400), droplet);
+            javafx.util.Duration.millis(250), droplet);
         fade.setFromValue(1);
         fade.setToValue(0);
         
@@ -520,51 +530,28 @@ private void showWaterSplash(double x, double y) {
         parallel.setOnFinished(e -> root.getChildren().remove(droplet));
         parallel.play();
     }
-    
-    // Центральная капля
-    javafx.scene.shape.Circle splash = new javafx.scene.shape.Circle(8, javafx.scene.paint.Color.CYAN);
-    splash.setCenterX(x);
-    splash.setCenterY(y);
-    root.getChildren().add(splash);
-    
-    javafx.animation.ScaleTransition scale = new javafx.animation.ScaleTransition(
-        javafx.util.Duration.millis(300), splash);
-    scale.setFromX(0.5);
-    scale.setFromY(0.5);
-    scale.setToX(2);
-    scale.setToY(2);
-    
-    javafx.animation.FadeTransition fade = new javafx.animation.FadeTransition(
-        javafx.util.Duration.millis(300), splash);
-    fade.setFromValue(1);
-    fade.setToValue(0);
-    
-    javafx.animation.ParallelTransition parallel = new javafx.animation.ParallelTransition(scale, fade);
-    parallel.setOnFinished(e -> root.getChildren().remove(splash));
-    parallel.play();
 }
 
 private void showExplosion(double x, double y) {
     javafx.scene.layout.Pane root = (javafx.scene.layout.Pane) gameStage.getScene().getRoot();
     
-    // Искры/осколки
-    for (int i = 0; i < 12; i++) {
-        javafx.scene.shape.Circle spark = new javafx.scene.shape.Circle(2, 
-            javafx.scene.paint.Color.ORANGERED);
+    // Всего 3-4 искры
+    for (int i = 0; i < 4; i++) {
+        javafx.scene.shape.Circle spark = new javafx.scene.shape.Circle(2, javafx.scene.paint.Color.ORANGERED);
         spark.setCenterX(x);
         spark.setCenterY(y);
         root.getChildren().add(spark);
         
         double angle = Math.random() * 2 * Math.PI;
-        double distance = 25 + Math.random() * 40;
+        double distance = 15 + Math.random() * 20;
         
         javafx.animation.TranslateTransition fly = new javafx.animation.TranslateTransition(
-            javafx.util.Duration.millis(500), spark);
+            javafx.util.Duration.millis(250), spark);
         fly.setByX(Math.cos(angle) * distance);
         fly.setByY(Math.sin(angle) * distance);
         
         javafx.animation.FadeTransition fade = new javafx.animation.FadeTransition(
-            javafx.util.Duration.millis(500), spark);
+            javafx.util.Duration.millis(250), spark);
         fade.setFromValue(1);
         fade.setToValue(0);
         
@@ -572,28 +559,6 @@ private void showExplosion(double x, double y) {
         parallel.setOnFinished(e -> root.getChildren().remove(spark));
         parallel.play();
     }
-    
-    // Центральная вспышка
-    javafx.scene.shape.Circle flash = new javafx.scene.shape.Circle(12, javafx.scene.paint.Color.YELLOW);
-    flash.setCenterX(x);
-    flash.setCenterY(y);
-    root.getChildren().add(flash);
-    
-    javafx.animation.ScaleTransition scaleFlash = new javafx.animation.ScaleTransition(
-        javafx.util.Duration.millis(200), flash);
-    scaleFlash.setFromX(0.5);
-    scaleFlash.setFromY(0.5);
-    scaleFlash.setToX(2.5);
-    scaleFlash.setToY(2.5);
-    
-    javafx.animation.FadeTransition fadeFlash = new javafx.animation.FadeTransition(
-        javafx.util.Duration.millis(200), flash);
-    fadeFlash.setFromValue(1);
-    fadeFlash.setToValue(0);
-    
-    javafx.animation.ParallelTransition parallelFlash = new javafx.animation.ParallelTransition(scaleFlash, fadeFlash);
-    parallelFlash.setOnFinished(e -> root.getChildren().remove(flash));
-    parallelFlash.play();
 }
 
 private void showShipDestroyed(int row, int col, boolean isMyBoard) {

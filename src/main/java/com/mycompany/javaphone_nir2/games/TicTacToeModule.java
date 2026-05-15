@@ -97,66 +97,62 @@ public class TicTacToeModule extends FXGLGame {
     }
 
     private void makeMove(int row, int col) {
-        if (gameOver || !isMyTurn || waitingForOpponent) {
-            return;
-        }
-        if (!board[row][col].getText().equals(" ")) {
-            return;
-        }
-
-        // Устанавливаем X
-        animateSymbol(board[row][col], "X"); 
-        board[row][col].setText("X");
-        FXGL.play("com/mycompany/javaphone_nir2/games/sounds/pencil1.wav");
-        themeHelper.styleTicTacToeCell(board[row][col], "X", false);
-        board[row][col].setDisable(true);
-
-        isMyTurn = false;
-        statusLabel.setText("Ожидание хода соперника...");
-
-        sendMove(row + "," + col);
-
-        if (checkWin("X")) {
-            gameOver = true;
-            FXGL.play("com/mycompany/javaphone_nir2/games/sounds/win.wav");
-            statusLabel.setText("🎉 ВЫ ПОБЕДИЛИ! 🎉");
-            statusLabel.setStyle("-fx-text-fill: #27ae60;");
-        } else if (isBoardFull()) {
-            gameOver = true;
-            statusLabel.setText("🤝 НИЧЬЯ! 🤝");
-            statusLabel.setStyle("-fx-text-fill: #f39c12;");
-        }
+    if (gameOver || !isMyTurn || waitingForOpponent) return;
+    if (!board[row][col].getText().equals(" ")) return;
+    
+    Button cell = board[row][col];
+    
+    // СНАЧАЛА меняем состояние
+    cell.setText("X");
+    themeHelper.styleTicTacToeCell(cell, "X", false);
+    cell.setDisable(true);
+    
+    isMyTurn = false;
+    statusLabel.setText("Ожидание хода соперника...");
+    
+    // ОТПРАВЛЯЕМ ход
+    sendMove(row + "," + col);
+    
+    // ПОТОМ анимация
+    javafx.application.Platform.runLater(() -> animateSymbol(cell, "X"));
+    
+    if (checkWin("X")) {
+        gameOver = true;
+        statusLabel.setText("🎉 ВЫ ПОБЕДИЛИ! 🎉");
+    } else if (isBoardFull()) {
+        gameOver = true;
+        statusLabel.setText("🤝 НИЧЬЯ! 🤝");
     }
+}
 
-    @Override
-    public void onOpponentMove(String moveData) {
-        String[] coords = moveData.split(",");
-        int row = Integer.parseInt(coords[0]);
-        int col = Integer.parseInt(coords[1]);
-
-        // Устанавливаем O
-        animateSymbol(board[row][col], "O");
-        board[row][col].setText("O");
-        FXGL.play("com/mycompany/javaphone_nir2/games/sounds/pencil1.wav");
-        themeHelper.styleTicTacToeCell(board[row][col], "O", false);
-        board[row][col].setDisable(true);
-
-        if (checkWin("O")) {
-            gameOver = true;
-            FXGL.play("com/mycompany/javaphone_nir2/games/sounds/lose.wav");
-            statusLabel.setText("😢 ВЫ ПРОИГРАЛИ! 😢");
-            statusLabel.setStyle("-fx-text-fill: #e74c3c;");
-        } else if (isBoardFull()) {
-            gameOver = true;
-            statusLabel.setText("🤝 НИЧЬЯ! 🤝");
-            statusLabel.setStyle("-fx-text-fill: #f39c12;");
-        } else {
-            isMyTurn = true;
-            statusLabel.setText("✅ Ваш ход!");
-            statusLabel.setStyle(null);
-            statusLabel.getStyleClass().add("game-status");
-        }
+    
+@Override
+public void onOpponentMove(String moveData) {
+    String[] coords = moveData.split(",");
+    int row = Integer.parseInt(coords[0]);
+    int col = Integer.parseInt(coords[1]);
+    
+    Button cell = board[row][col];
+    
+    // СНАЧАЛА меняем состояние
+    cell.setText("O");
+    themeHelper.styleTicTacToeCell(cell, "O", false);
+    cell.setDisable(true);
+    
+    // ПОТОМ анимация
+    javafx.application.Platform.runLater(() -> animateSymbol(cell, "O"));
+    
+    if (checkWin("O")) {
+        gameOver = true;
+        statusLabel.setText("😢 ВЫ ПРОИГРАЛИ! 😢");
+    } else if (isBoardFull()) {
+        gameOver = true;
+        statusLabel.setText("🤝 НИЧЬЯ! 🤝");
+    } else {
+        isMyTurn = true;
+        statusLabel.setText("✅ Ваш ход!");
     }
+}
     
 private void animateSymbol(Button button, String symbol) {
     button.setText(symbol);
@@ -164,27 +160,15 @@ private void animateSymbol(Button button, String symbol) {
     // Начинаем с прозрачного
     button.setOpacity(0);
     
-    // Плавно появляемся
+    // Простое появление без масштабирования
     javafx.animation.FadeTransition fade = new javafx.animation.FadeTransition(
-        javafx.util.Duration.millis(200), button
+        javafx.util.Duration.millis(150), button
     );
     fade.setFromValue(0);
     fade.setToValue(1);
     fade.play();
-    
-    // Добавляем лёгкое увеличение для эффекта "выскакивания"
-    button.setScaleX(0.8);
-    button.setScaleY(0.8);
-    
-    javafx.animation.ScaleTransition scale = new javafx.animation.ScaleTransition(
-        javafx.util.Duration.millis(200), button
-    );
-    scale.setFromX(0.8);
-    scale.setFromY(0.8);
-    scale.setToX(1);
-    scale.setToY(1);
-    scale.play();
 }
+
 
     @Override
     public void startBattle() {

@@ -283,23 +283,22 @@ public class ChessModule extends FXGLGame {
      * Проверяет, валиден ли ход по правилам движения фигур
      */
     private boolean isMoveValidByPieceRules(Move move) {
-        Piece piece = chessBoard.getPiece(move.getFrom());
-        if (piece == null) {
-            return false;
-        }
-        
-        // Получаем все возможные ходы для всех фигур
-        MoveList legalMoves = (MoveList) MoveGenerator.generateLegalMoves(chessBoard);
-        
-        // Проверяем, есть ли наш ход в списке легальных
-        for (Move legalMove : legalMoves) {
-            if (legalMove.getFrom().equals(move.getFrom()) && 
-                legalMove.getTo().equals(move.getTo())) {
-                return true;
-            }
-        }
-        
+    Piece piece = chessBoard.getPiece(move.getFrom());
+    if (piece == null) {
         return false;
+    }
+    
+    // Получаем все возможные ходы для всех фигур
+    java.util.List<Move> legalMoves = MoveGenerator.generateLegalMoves(chessBoard);
+    
+    // Проверяем, есть ли наш ход в списке легальных
+    for (Move legalMove : legalMoves) {
+        if (legalMove.getFrom().equals(move.getFrom()) && 
+            legalMove.getTo().equals(move.getTo())) {
+            return true;
+        }
+    }
+    return false;
     }
     
     /**
