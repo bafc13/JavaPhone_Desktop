@@ -157,73 +157,84 @@ public class ChessModule extends FXGLGame {
     }
 
     private void onCellClick(int row, int col) {
-        System.out.println("=== CELL CLICKED ===");
-        System.out.println("  row=" + row + ", col=" + col);
-        System.out.println("  gameOver=" + gameOver);
-        System.out.println("  isMyTurn=" + isMyTurn);
+    System.out.println("=== CELL CLICKED ===");
+    System.out.println("  row=" + row + ", col=" + col);
+    System.out.println("  gameOver=" + gameOver);
+    System.out.println("  isMyTurn=" + isMyTurn);
 
-        if (gameOver || !isMyTurn || waitingForOpponent) {
-            System.out.println("  ❌ CLICK BLOCKED!");
-            return;
-        }
-
-        Square clickedSquare = getSquareFromRowCol(row, col);
-        System.out.println("  Clicked square: " + clickedSquare);
-
-        if (selectedSquare == null) {
-            // Select piece
-            Piece piece = chessBoard.getPiece(clickedSquare);
-            System.out.println("  Piece at square: " + piece);
-
-            if (piece != null && piece.getPieceSide() == getMySide()) {
-                selectedSquare = clickedSquare;
-                highlightSquare(row, col);
-                System.out.println("  ✅ Selected piece at " + selectedSquare);
-                statusLabel.setText("Выбрана фигура. Теперь выберите клетку для хода.");
-                statusLabel.setTextFill(Color.YELLOW);
-            } else {
-                System.out.println("  ❌ Cannot select this piece");
-                if (piece == null) {
-                    statusLabel.setText("❌ Здесь нет фигуры!");
-                } else {
-                    statusLabel.setText("❌ Это не ваша фигура!");
-                }
-                statusLabel.setTextFill(Color.RED);
-            }
-        } else {
-            // Make move
-            Move move = new Move(selectedSquare, clickedSquare);
-            System.out.println("  Attempting move: " + selectedSquare + " -> " + clickedSquare);
-            
-            // ПРОСТАЯ ПРОВЕРКА - используем встроенный метод isMoveLegal
-            if (chessBoard.isMoveLegal(move, true)) {
-                System.out.println("  Move is legal!");
-                
-                // Выполняем ход
-                chessBoard.doMove(move);
-                updateBoardUI();
-                
-                isMyTurn = false;
-                statusLabel.setText("Ожидание хода соперника...");
-                statusLabel.setTextFill(Color.ORANGE);
-                
-                // Отправляем ход сопернику
-                String moveStr = selectedSquare.toString().toLowerCase()
-                        + clickedSquare.toString().toLowerCase();
-                System.out.println("  Sending move: " + moveStr);
-                sendMove(moveStr);
-                
-                checkGameOver();
-            } else {
-                System.out.println("  Move is illegal!");
-                statusLabel.setText("❌ Некорректный ход!");
-                statusLabel.setTextFill(Color.RED);
-            }
-            
-            selectedSquare = null;
-            clearHighlights();
-        }
+    if (gameOver || !isMyTurn || waitingForOpponent) {
+        System.out.println("  ❌ CLICK BLOCKED!");
+        return;
     }
+
+    Square clickedSquare = getSquareFromRowCol(row, col);
+    System.out.println("  Clicked square: " + clickedSquare);
+
+    if (selectedSquare == null) {
+        // Select piece
+        Piece piece = chessBoard.getPiece(clickedSquare);
+        System.out.println("  Piece at square: " + piece);
+
+        if (piece != null && piece.getPieceSide() == getMySide()) {
+            selectedSquare = clickedSquare;
+            highlightSquare(row, col);
+            System.out.println("  ✅ Selected piece at " + selectedSquare);
+            statusLabel.setText("Выбрана фигура. Теперь выберите клетку для хода.");
+            statusLabel.setTextFill(Color.YELLOW);
+        } else {
+            System.out.println("  ❌ Cannot select this piece");
+            if (piece == null) {
+                statusLabel.setText("❌ Здесь нет фигуры!");
+            } else {
+                statusLabel.setText("❌ Это не ваша фигура!");
+            }
+            statusLabel.setTextFill(Color.RED);
+        }
+    } else {
+        // Make move
+        Move move = new Move(selectedSquare, clickedSquare);
+        System.out.println("  Attempting move: " + selectedSquare + " -> " + clickedSquare);
+        
+        // ПРАВИЛЬНАЯ ПРОВЕРКА - через список легальных ходов
+        List<Move> legalMoves = chessBoard.legalMoves();
+        boolean isLegal = false;
+        
+        for (Move legalMove : legalMoves) {
+            if (legalMove.getFrom().equals(move.getFrom()) && 
+                legalMove.getTo().equals(move.getTo())) {
+                isLegal = true;
+                break;
+            }
+        }
+        
+        if (isLegal) {
+            System.out.println("  Move is legal!");
+            
+            // Выполняем ход
+            chessBoard.doMove(move);
+            updateBoardUI();
+            
+            isMyTurn = false;
+            statusLabel.setText("Ожидание хода соперника...");
+            statusLabel.setTextFill(Color.ORANGE);
+            
+            // Отправляем ход сопернику
+            String moveStr = selectedSquare.toString().toLowerCase()
+                    + clickedSquare.toString().toLowerCase();
+            System.out.println("  Sending move: " + moveStr);
+            sendMove(moveStr);
+            
+            checkGameOver();
+        } else {
+            System.out.println("  Move is illegal!");
+            statusLabel.setText("❌ Некорректный ход! Фигура так не ходит.");
+            statusLabel.setTextFill(Color.RED);
+        }
+        
+        selectedSquare = null;
+        clearHighlights();
+    }
+}
 
     private void highlightSquare(int row, int col) {
         clearHighlights();
