@@ -71,6 +71,47 @@ public class GameController {
         }
     }
 
+private void sendChatMessage(String message) {
+    GameMenuApp.getInstance().sendChatMessage(message);
+}
+
+// Отправка приглашения
+private void sendInvitationToChat() {
+    String gameName = getGameDisplayName(currentGameType);
+    String message = "Приглашаю сыграть в " + gameName + "!";
+    sendChatMessage(message);
+}
+
+// Приглашение принято
+public void sendInvitationAccepted() {
+    String gameName = getGameDisplayName(currentGameType);
+    String message = "Приглашение принято! Игра в " + gameName + " началась!";
+    sendChatMessage(message);
+}
+
+// Приглашение отклонено
+public void sendInvitationRejected() {
+    String message = "Приглашение отклонено.";
+    sendChatMessage(message);
+}
+
+// Сообщение о победе (отправляет победитель)
+public void sendVictoryMessage() {
+    String message = "Я победил! Спасибо за игру!";
+    sendChatMessage(message);
+}
+
+// Сообщение о поражении (отправляет проигравший)
+public void sendDefeatMessage() {
+    String message = "Поздравляю с победой! Спасибо за игру!";
+    sendChatMessage(message);
+}
+
+// Сообщение о ничьей
+public void sendDrawMessage() {
+    String message = "Ничья! Спасибо за интересную игру!";
+    sendChatMessage(message);
+}
     public void onGameChannelReady() {
         System.out.println("🎮 [Controller] Game channel is ready!");
     }

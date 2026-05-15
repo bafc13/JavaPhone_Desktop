@@ -119,9 +119,11 @@ public class TicTacToeModule extends FXGLGame {
     if (checkWin("X")) {
         gameOver = true;
         statusLabel.setText("🎉 ВЫ ПОБЕДИЛИ! 🎉");
+        controller.sendVictoryMessage();
     } else if (isBoardFull()) {
         gameOver = true;
         statusLabel.setText("🤝 НИЧЬЯ! 🤝");
+        controller.sendDrawMessage();
     }
 }
 
@@ -145,9 +147,11 @@ public void onOpponentMove(String moveData) {
     if (checkWin("O")) {
         gameOver = true;
         statusLabel.setText("😢 ВЫ ПРОИГРАЛИ! 😢");
+        controller.sendDefeatMessage();
     } else if (isBoardFull()) {
         gameOver = true;
         statusLabel.setText("🤝 НИЧЬЯ! 🤝");
+        controller.sendDrawMessage();
     } else {
         isMyTurn = true;
         statusLabel.setText("✅ Ваш ход!");
