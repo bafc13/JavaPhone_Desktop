@@ -244,37 +244,35 @@ public void sendDrawMessage() {
         } // КОНФЛИКТ: оба отправили handshake одновременно
         else if (handshakeSent && !conflictResolved) {
             System.out.println("⚠️ Conflict detected – both sent handshake!");
+            sendInvitationAccepted();
             resolveConflictAndStart();
         }
     }
-
-    // Разрешаем конфликт на основе времени первого handshake
-    private void resolveConflictAndStart() {
-        if (conflictResolved) {
-            System.out.println("Conflict already resolved, skipping");
-            return;
-        }
-
-        conflictResolved = true;
-
-        // Сравниваем временные метки: у кого timestamp меньше (раньше отправил), тот и хост
-        if (myHandshakeTimestamp < opponentHandshakeTimestamp) {
-            System.out.println("→ I sent handshake FIRST (my timestamp=" + myHandshakeTimestamp
-                    + " < opponent=" + opponentHandshakeTimestamp + ") → I am HOST");
-            amIHost = true;
-        } else if (opponentHandshakeTimestamp < myHandshakeTimestamp) {
-            System.out.println("→ Opponent sent handshake FIRST (their timestamp=" + opponentHandshakeTimestamp
-                    + " < my=" + myHandshakeTimestamp + ") → I am GUEST");
-            amIHost = false;
-        } else {
-            // Теоретически маловероятно, но на случай одинаковых timestamp
-            System.out.println("⚠️ Equal timestamps! Using default: I am HOST");
-            amIHost = true;
-        }
-
-        System.out.println("→ Starting game with amIHost=" + amIHost);
-        startGame();
+private void resolveConflictAndStart() {
+    if (conflictResolved) {
+        System.out.println("Conflict already resolved, skipping");
+        return;
     }
+    
+    conflictResolved = true;
+    
+    // ПРОВЕРЬТЕ ЭТУ ЛОГИКУ:
+    if (myHandshakeTimestamp < opponentHandshakeTimestamp) {
+        // Я отправил РАНЬШЕ → я должен быть HOST
+        System.out.println("→ I sent handshake FIRST → I am HOST");
+        amIHost = true;
+    } else if (opponentHandshakeTimestamp < myHandshakeTimestamp) {
+        // Соперник отправил РАНЬШЕ → я GUEST
+        System.out.println("→ Opponent sent handshake FIRST → I am GUEST");
+        amIHost = false;
+    } else {
+        System.out.println("⚠️ Equal timestamps! Using default: I am HOST");
+        amIHost = true;
+    }
+    
+    System.out.println("→ Starting game with amIHost=" + amIHost);
+    startGame();
+}
 
     private void showGameProposal(String gameType) {
         String displayName = getGameDisplayName(gameType);
@@ -295,6 +293,7 @@ public void sendDrawMessage() {
         Button acceptButton = new Button("Принять и играть");
         themeHelper.styleButton(acceptButton);
         acceptButton.setOnAction(e -> {
+            amIHost = false;
             sendHandshake();
             proposalStage.close();
         });

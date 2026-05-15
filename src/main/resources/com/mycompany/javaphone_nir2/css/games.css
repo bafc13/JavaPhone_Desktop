@@ -107,3 +107,74 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Other/CascadeStyleSheet.css to ed
     -fx-border-color: #f1c40f;
     -fx-border-width: 3;
 }
+/* ===== МОРСКОЙ БОЙ ===== */
+
+/* Статусы игры */
+.game-status {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-padding: 10;
+}
+
+.game-status-success {
+    -fx-text-fill: #27ae60;
+}
+
+.game-status-error {
+    -fx-text-fill: #e74c3c;
+}
+
+.game-status-warning {
+    -fx-text-fill: #f39c12;
+}
+
+/* Общий стиль клеток */
+.sea-battle-cell {
+    -fx-min-width: 38px;
+    -fx-min-height: 38px;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-font-weight: bold;
+}
+
+/* Своё поле */
+.sea-battle-cell-my {
+    -fx-border-color: #1a5276;
+    -fx-border-width: 1px;
+    -fx-cursor: default;
+}
+
+/* Поле противника */
+.sea-battle-cell-enemy {
+    -fx-border-color: #1a5276;
+    -fx-border-width: 1px;
+    -fx-cursor: hand;
+}
+
+.sea-battle-cell-enemy-hover {
+    -fx-background-color: #3498db !important;
+    -fx-border-width: 2px;
+}
+
+/* Типы клеток */
+.sea-battle-water {
+    -fx-background-color: #2980b9;
+}
+
+.sea-battle-ship {
+    -fx-background-color: #34495e;
+    -fx-text-fill: #ecf0f1;
+    -fx-font-size: 18px;
+}
+
+.sea-battle-hit {
+    -fx-background-color: #e74c3c;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+}
+
+.sea-battle-miss {
+    -fx-background-color: #95a5a6;
+    -fx-text-fill: white;
+    -fx-font-size: 20px;
+}

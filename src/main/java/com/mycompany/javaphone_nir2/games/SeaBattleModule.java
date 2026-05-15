@@ -10,6 +10,7 @@ import java.util.Queue;
 import javafx.animation.FadeTransition;
 import javafx.animation.ParallelTransition;
 import javafx.animation.ScaleTransition;
+import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -409,6 +410,7 @@ public void onOpponentMove(String moveData) {
 
     // Получаем клетку и её координаты для анимации
     Button cell = enemyBoardButtons[row][col];
+    
     javafx.geometry.Point2D cellCoords = getCellCenterScreenCoords(cell);
 
     if ("hit".equals(result) || "kill".equals(result)) {
@@ -498,19 +500,25 @@ public void onOpponentMove(String moveData) {
 
 // Вспомогательные методы для анимаций:
 
+// Исправленный метод получения координат
 private javafx.geometry.Point2D getCellCenterScreenCoords(Button cell) {
     if (cell == null) return new javafx.geometry.Point2D(0, 0);
-    double x = cell.getLayoutX() + cell.getWidth() / 2;
-    double y = cell.getLayoutY() + cell.getHeight() / 2;
-    return cell.localToScene(x, y);
+    
+    // Получаем координаты кнопки на сцене
+    javafx.geometry.Bounds bounds = cell.localToScene(cell.getBoundsInLocal());
+    double x = bounds.getMinX() + bounds.getWidth() / 2;
+    double y = bounds.getMinY() + bounds.getHeight() / 2;
+    
+    return new javafx.geometry.Point2D(x, y);
 }
 
+
+// Исправленные анимации с правильными координатами
 private void showWaterSplash(double x, double y) {
     javafx.scene.layout.Pane root = (javafx.scene.layout.Pane) gameStage.getScene().getRoot();
     
-    // Всего 3-4 капли
     for (int i = 0; i < 4; i++) {
-        javafx.scene.shape.Circle droplet = new javafx.scene.shape.Circle(2, javafx.scene.paint.Color.LIGHTBLUE);
+        Circle droplet = new Circle(2, Color.LIGHTBLUE);
         droplet.setCenterX(x);
         droplet.setCenterY(y);
         root.getChildren().add(droplet);
@@ -518,28 +526,47 @@ private void showWaterSplash(double x, double y) {
         double angle = Math.random() * 2 * Math.PI;
         double distance = 10 + Math.random() * 20;
         
-        javafx.animation.TranslateTransition fly = new javafx.animation.TranslateTransition(
-            javafx.util.Duration.millis(250), droplet);
+        TranslateTransition fly = new TranslateTransition(Duration.millis(250), droplet);
         fly.setByX(Math.cos(angle) * distance);
         fly.setByY(Math.sin(angle) * distance);
         
-        javafx.animation.FadeTransition fade = new javafx.animation.FadeTransition(
-            javafx.util.Duration.millis(250), droplet);
+        FadeTransition fade = new FadeTransition(Duration.millis(250), droplet);
         fade.setFromValue(1);
         fade.setToValue(0);
         
-        javafx.animation.ParallelTransition parallel = new javafx.animation.ParallelTransition(fly, fade);
+        ParallelTransition parallel = new ParallelTransition(fly, fade);
         parallel.setOnFinished(e -> root.getChildren().remove(droplet));
         parallel.play();
     }
 }
 
+
 private void showExplosion(double x, double y) {
     javafx.scene.layout.Pane root = (javafx.scene.layout.Pane) gameStage.getScene().getRoot();
     
-    // Всего 3-4 искры
+    // Центральная вспышка
+    Circle flash = new Circle(8, Color.YELLOW);
+    flash.setCenterX(x);
+    flash.setCenterY(y);
+    root.getChildren().add(flash);
+    
+    ScaleTransition scaleFlash = new ScaleTransition(Duration.millis(200), flash);
+    scaleFlash.setFromX(0.3);
+    scaleFlash.setFromY(0.3);
+    scaleFlash.setToX(1.5);
+    scaleFlash.setToY(1.5);
+    
+    FadeTransition fadeFlash = new FadeTransition(Duration.millis(200), flash);
+    fadeFlash.setFromValue(1);
+    fadeFlash.setToValue(0);
+    
+    ParallelTransition parallelFlash = new ParallelTransition(scaleFlash, fadeFlash);
+    parallelFlash.setOnFinished(e -> root.getChildren().remove(flash));
+    parallelFlash.play();
+    
+    // Искры
     for (int i = 0; i < 4; i++) {
-        javafx.scene.shape.Circle spark = new javafx.scene.shape.Circle(2, javafx.scene.paint.Color.ORANGERED);
+        Circle spark = new Circle(2, Color.ORANGERED);
         spark.setCenterX(x);
         spark.setCenterY(y);
         root.getChildren().add(spark);
@@ -547,17 +574,15 @@ private void showExplosion(double x, double y) {
         double angle = Math.random() * 2 * Math.PI;
         double distance = 15 + Math.random() * 20;
         
-        javafx.animation.TranslateTransition fly = new javafx.animation.TranslateTransition(
-            javafx.util.Duration.millis(250), spark);
+        TranslateTransition fly = new TranslateTransition(Duration.millis(250), spark);
         fly.setByX(Math.cos(angle) * distance);
         fly.setByY(Math.sin(angle) * distance);
         
-        javafx.animation.FadeTransition fade = new javafx.animation.FadeTransition(
-            javafx.util.Duration.millis(250), spark);
+        FadeTransition fade = new FadeTransition(Duration.millis(250), spark);
         fade.setFromValue(1);
         fade.setToValue(0);
         
-        javafx.animation.ParallelTransition parallel = new javafx.animation.ParallelTransition(fly, fade);
+        ParallelTransition parallel = new ParallelTransition(fly, fade);
         parallel.setOnFinished(e -> root.getChildren().remove(spark));
         parallel.play();
     }

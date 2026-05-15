@@ -14,6 +14,8 @@ import javafx.stage.Stage;
 import com.almasb.fxgl.animation.Animation;
 import com.almasb.fxgl.animation.AnimationBuilder;
 import javafx.animation.FadeTransition;
+import javafx.animation.ParallelTransition;
+import javafx.animation.ScaleTransition;
 import javafx.geometry.Point2D;
 import javafx.util.Duration;
 
@@ -113,17 +115,15 @@ public class TicTacToeModule extends FXGLGame {
     // ОТПРАВЛЯЕМ ход
     sendMove(row + "," + col);
     
-    // ПОТОМ анимация
-    javafx.application.Platform.runLater(() -> animateSymbol(cell, "X"));
+    // ПОТОМ анимация (через Platform.runLater)
+    Platform.runLater(() -> animateSymbol(cell, "X"));
     
     if (checkWin("X")) {
         gameOver = true;
         statusLabel.setText("🎉 ВЫ ПОБЕДИЛИ! 🎉");
-        controller.sendVictoryMessage();
     } else if (isBoardFull()) {
         gameOver = true;
         statusLabel.setText("🤝 НИЧЬЯ! 🤝");
-        controller.sendDrawMessage();
     }
 }
 
@@ -142,35 +142,42 @@ public void onOpponentMove(String moveData) {
     cell.setDisable(true);
     
     // ПОТОМ анимация
-    javafx.application.Platform.runLater(() -> animateSymbol(cell, "O"));
+    Platform.runLater(() -> animateSymbol(cell, "O"));
     
     if (checkWin("O")) {
         gameOver = true;
         statusLabel.setText("😢 ВЫ ПРОИГРАЛИ! 😢");
-        controller.sendDefeatMessage();
     } else if (isBoardFull()) {
         gameOver = true;
         statusLabel.setText("🤝 НИЧЬЯ! 🤝");
-        controller.sendDrawMessage();
     } else {
         isMyTurn = true;
         statusLabel.setText("✅ Ваш ход!");
     }
 }
+
     
 private void animateSymbol(Button button, String symbol) {
     button.setText(symbol);
     
-    // Начинаем с прозрачного
+    // Начальное состояние (маленький и прозрачный)
     button.setOpacity(0);
+    button.setScaleX(0.5);
+    button.setScaleY(0.5);
     
-    // Простое появление без масштабирования
-    javafx.animation.FadeTransition fade = new javafx.animation.FadeTransition(
-        javafx.util.Duration.millis(150), button
-    );
+    // Анимация появления с увеличением
+    FadeTransition fade = new FadeTransition(Duration.millis(150), button);
     fade.setFromValue(0);
     fade.setToValue(1);
-    fade.play();
+    
+    ScaleTransition scale = new ScaleTransition(Duration.millis(150), button);
+    scale.setFromX(0.5);
+    scale.setFromY(0.5);
+    scale.setToX(1);
+    scale.setToY(1);
+    
+    ParallelTransition parallel = new ParallelTransition(fade, scale);
+    parallel.play();
 }
 
 

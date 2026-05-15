@@ -97,3 +97,69 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Other/CascadeStyleSheet.css to ed
     -fx-border-color: #f1c40f;
     -fx-border-width: 3;
 }
+/* ===== МОРСКОЙ БОЙ ===== */
+
+.game-status {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-padding: 10;
+}
+
+.game-status-success {
+    -fx-text-fill: #2ecc71;
+}
+
+.game-status-error {
+    -fx-text-fill: #e74c3c;
+}
+
+.game-status-warning {
+    -fx-text-fill: #f1c40f;
+}
+
+.sea-battle-cell {
+    -fx-min-width: 38px;
+    -fx-min-height: 38px;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-font-weight: bold;
+}
+
+.sea-battle-cell-my {
+    -fx-border-color: #1a1a2e;
+    -fx-border-width: 1px;
+    -fx-cursor: default;
+}
+
+.sea-battle-cell-enemy {
+    -fx-border-color: #1a1a2e;
+    -fx-border-width: 1px;
+    -fx-cursor: hand;
+}
+
+.sea-battle-cell-enemy-hover {
+    -fx-background-color: #2980b9 !important;
+    -fx-border-width: 2px;
+}
+
+.sea-battle-water {
+    -fx-background-color: #1a5276;
+}
+
+.sea-battle-ship {
+    -fx-background-color: #2c3e50;
+    -fx-text-fill: #ecf0f1;
+    -fx-font-size: 18px;
+}
+
+.sea-battle-hit {
+    -fx-background-color: #c0392b;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+}
+
+.sea-battle-miss {
+    -fx-background-color: #7f8c8d;
+    -fx-text-fill: white;
+    -fx-font-size: 20px;
+}
