@@ -111,7 +111,10 @@ public class GameMenuApp {
         System.out.println("📤 [Menu] Sending message: " + message);
         WebRTCManager.getInstance().sendGameMessage(message);
     }
-
+    public void sendChatMessage(String message) {
+        System.out.println("📤 [Menu] Sending chat message: " + message);
+        WebRTCManager.getInstance().sendChatMessage(message);
+    }
     public void closeGame() {
         GameController.getInstance().closeGame();
     }

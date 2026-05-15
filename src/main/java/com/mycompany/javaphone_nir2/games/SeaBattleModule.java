@@ -305,6 +305,7 @@ public void onOpponentMove(String moveData) {
     if (myBoard.allShipsDestroyed()) {
         gameOver = true;
         statusLabel.setText("😢 ВЫ ПРОИГРАЛИ! Все ваши корабли уничтожены!");
+        controller.sendDefeatMessage();
         statusLabel.getStyleClass().add("game-status-error");
         disableBoards();
         return;
@@ -457,6 +458,7 @@ public void onOpponentMove(String moveData) {
 
             if (destroyedShipsCount >= 10) {
                 gameOver = true;
+                controller.sendVictoryMessage();
                 statusLabel.setText("🏆 ПОБЕДА! Все корабли противника уничтожены!");
                 statusLabel.getStyleClass().add("game-status-success");
                 disableBoards();

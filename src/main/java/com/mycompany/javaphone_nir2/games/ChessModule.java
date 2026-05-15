@@ -392,21 +392,25 @@ public class ChessModule extends FXGLGame {
             Side winner = (loser == Side.WHITE) ? Side.BLACK : Side.WHITE;
             
             if (winner == getMySide()) {
-                FXGL.play("com/mycompany/javaphone_nir2/games/sounds/win.wav");
+                javafx.application.Platform.runLater(() -> {FXGL.play("com/mycompany/javaphone_nir2/games/sounds/win.wav");});
                 statusLabel.setText("🎉 ВЫ ПОБЕДИЛИ! 🎉");
+                controller.sendVictoryMessage();
                 statusLabel.setTextFill(Color.GREEN);
             } else {
-                FXGL.play("com/mycompany/javaphone_nir2/games/sounds/lose.wav");
+                javafx.application.Platform.runLater(() -> {FXGL.play("com/mycompany/javaphone_nir2/games/sounds/lose.wav");});
                 statusLabel.setText("😢 ВЫ ПРОИГРАЛИ! 😢");
+                controller.sendDefeatMessage();
                 statusLabel.setTextFill(Color.RED);
             }
         } else if (chessBoard.isStaleMate()) {
             gameOver = true;
             statusLabel.setText("🤝 ПАТ! НИЧЬЯ! 🤝");
+            controller.sendDrawMessage();
             statusLabel.setTextFill(Color.ORANGE);
         } else if (chessBoard.isDraw()) {
             gameOver = true;
             statusLabel.setText("🤝 НИЧЬЯ! 🤝");
+            controller.sendDrawMessage();
             statusLabel.setTextFill(Color.ORANGE);
         }
     }
