@@ -48,6 +48,7 @@ public class GameController {
         this.handshakeReceived = false;
         this.conflictResolved = false;
         sendHandshake();
+        sendInvitationToChat();
     }
 
     // Sends handshake to opponent (with timestamp)
@@ -295,6 +296,7 @@ private void resolveConflictAndStart() {
         acceptButton.setOnAction(e -> {
             amIHost = false;
             sendHandshake();
+            sendInvitationAccepted(); 
             proposalStage.close();
         });
 
