@@ -767,17 +767,11 @@ public class WebRTCManager implements PeerConnectionObserver {
 
     public void cleanup() {
         hangup();
-
-//        if (localRenderer != null) {
-//            localRenderer.release();
-//        }
-        if (videoSource != null) {
-            videoSource.dispose();
-        }
-
-        if (factory != null) {
-            factory.dispose();
-        }
+        if (videoSource != null) { videoSource.stop(); videoSource.dispose(); videoSource = null; }
+        if (localVideoTrack != null) { localVideoTrack.dispose(); localVideoTrack = null; }
+        if (localAudioTrack != null) { localAudioTrack.dispose(); localAudioTrack = null; }
+        if (audioModule != null) { audioModule.dispose(); audioModule = null; }
+        if (factory != null) { factory.dispose(); factory = null; }
     }
 
     @Override
