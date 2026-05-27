@@ -31,9 +31,9 @@ public class DatabaseManager {
 
     public void createTables() {
         String sql;
-        try (InputStream is = getClass().getResourceAsStream("/0000_javaphone_create_db.sql")) {
+        try (InputStream is = getClass().getResourceAsStream("/db/migration/0000_javaphone_create_db.sql")) {
             if (is == null) {
-                throw new DatabaseException("Resource not found: /0000_javaphone_create_db.sql");
+                throw new DatabaseException("Resource not found: /db/migration/0000_javaphone_create_db.sql");
             }
             try (Scanner scanner = new Scanner(is, "UTF-8").useDelimiter("\\A")) {
                 sql = scanner.hasNext() ? scanner.next() : "";
@@ -47,7 +47,7 @@ public class DatabaseManager {
         }
 
         try (Connection conn = connect(); Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate(sql);
+            stmt.execute(sql);
         } catch (SQLException e) {
             throw new DatabaseException("Failed to create tables", e);
         }
