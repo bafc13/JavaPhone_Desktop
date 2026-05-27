@@ -2,12 +2,15 @@ package com.mycompany.javaphone_nir2.controllers;
 
 import com.mycompany.javaphone_nir2.ChatHistoryCell;
 import com.mycompany.javaphone_nir2.ContactListCell;
+import com.mycompany.javaphone_nir2.cryptography.MessageCryptographer;
+import com.mycompany.javaphone_nir2.db.DatabaseManager;
 import com.mycompany.javaphone_nir2.logging.SessionLogger;
 import com.mycompany.javaphone_nir2.models.Contact;
 import com.mycompany.javaphone_nir2.models.Media;
 import com.mycompany.javaphone_nir2.models.Message;
 import com.mycompany.javaphone_nir2.models.Offer;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
+import com.mycompany.javaphone_nir2.models.User;
 import com.mycompany.javaphone_nir2.signaling.SignalingClient;
 import com.mycompany.javaphone_nir2.webrtc.JavaPhoneCallManager;
 import com.mycompany.javaphone_nir2.webrtc.JavaPhoneChatHandler;
@@ -101,6 +104,9 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
     /** WebRTCManager let users communicate, used when call is starting */
     private final WebRTCManager webRtcManager = WebRTCManager.getInstance();
 
+    /** DatabaseManager persists contacts, messages and media attachments */
+    private final DatabaseManager db = DatabaseManager.getInstance();
+
     private SignalingClient signalingClient = null;
 
     /** Logger saves session information into log */
@@ -145,6 +151,7 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
                 selectedContact = newVal;
                 messageInput.requestFocus();
                 updateChatPanel();
+                loadChatHistoryFromDb(selectedContact);
             }
         });
 
@@ -270,6 +277,21 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
         signalingClient.addChatHandler(this);
 
         webRtcManager.setCallManager(this);
+
+        ensureOwnUserInDb();
+    }
+
+    private void ensureOwnUserInDb() {
+        Thread t = new Thread(() -> {
+            try {
+                String myKey = MessageCryptographer.getInstance().getPublicKeyString();
+                upsertUserInDb(myKey, settings.getNickname());
+            } catch (Exception e) {
+                System.err.println("DB: failed to persist own user: " + e.getMessage());
+            }
+        });
+        t.setDaemon(true);
+        t.start();
     }
 
     /** This method connect to signaling client */
@@ -461,16 +483,23 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
         for (File f : files) {
             try {
                 sc.sendFile(selectedContact.getKey(), f);
+                persistOutgoingFile(f, selectedContact);
                 handleFileMessage(f, "Вы");
             } catch (IOException ex) {
-                System.getLogger(ChatController.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex); /////////
+                System.getLogger(ChatController.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
             }
-
         }
     }
 
     @Override
     public void handleFileMessage(File file, String sender) {
+        if (!"Вы".equals(sender) && signalingClient != null) {
+            Contact senderContact = signalingClient.getContact(sender);
+            if (senderContact != null) {
+                persistIncomingFile(file, sender, senderContact);
+            }
+        }
+
         Media media = new Media();
         media.setPath(file.getAbsolutePath());
         media.setChecksum(computeChecksum(file));
@@ -896,11 +925,12 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
 
         SignalingClient sc = SignalingClient.getInstance();
         try {
+            sc.sendDM(selectedContact.getKey(), message);
+            persistOutgoingText(message, selectedContact);
             if (isCurrentlyTyping) {
                 isCurrentlyTyping = false;
                 typingResetTimer.stop();
             }
-            sc.sendDM(selectedContact.getKey(), message);
             sc.sendTyping(selectedContact.getKey(), false);
             handleStringMessage("Вы", message);
             messageInput.clear();
@@ -1042,12 +1072,19 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
 
     @Override
     public void handleStringMessage(String sender, String content) {
+        if (!"System".equals(sender) && !"Вы".equals(sender) && signalingClient != null) {
+            Contact senderContact = signalingClient.getContact(sender);
+            if (senderContact != null) {
+                persistIncomingText(sender, content, senderContact);
+            }
+        }
+
         Message msg = new Message();
-        msg.setId(generateMessageId()); // Простая генерация ID
-        msg.setChatId(1); // Или динамически
+        msg.setId(generateMessageId());
+        msg.setChatId(1);
         msg.setSenderPublicKey(sender);
         msg.setContent(content);
-        msg.setTime(System.currentTimeMillis() / 1000); // Unix timestamp в секундах
+        msg.setTime(System.currentTimeMillis() / 1000);
 
         handleMessage(msg);
     }
@@ -1075,6 +1112,16 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
         contacts.put(contact.getKey(), contact);
         contactsList.setItems(FXCollections.observableArrayList(contacts.values()));
         contactsList.refresh();
+
+        Thread t = new Thread(() -> {
+            try {
+                upsertUserInDb(contact.getKey(), contact.getName());
+            } catch (Exception e) {
+                System.err.println("DB: failed to persist contact: " + e.getMessage());
+            }
+        });
+        t.setDaemon(true);
+        t.start();
     }
 
     @Override
@@ -1113,6 +1160,120 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
     public void setTyping(String sender, boolean status) {
         Contact typer = signalingClient.getContact(sender);
         this.setTypingContactIndicator(typer, status);
+    }
+
+    // -------------------------------------------------------------------------
+    // Database helpers
+    // -------------------------------------------------------------------------
+
+    /** Upsert a user record (insert or update name) on a background thread. */
+    private void upsertUserInDb(String publicKey, String name) {
+        User user = new User(publicKey, name, null, null, null);
+        db.upsertUser(user);
+    }
+
+    /**
+     * Load the persisted chat history for {@code contact} from the DB and
+     * replace the currently displayed messages. Runs on a daemon thread;
+     * UI update is posted via {@link Platform#runLater}.
+     */
+    /** Persist an outgoing file and attach it to a new message row. */
+    private void persistOutgoingFile(File file, Contact recipient) {
+        String checksum = computeChecksum(file);
+        Thread t = new Thread(() -> {
+            try {
+                String myKey = MessageCryptographer.getInstance().getPublicKeyString();
+                upsertUserInDb(myKey, settings.getNickname());
+                upsertUserInDb(recipient.getKey(), recipient.getName());
+                int chatId  = db.getOrCreateDmChat(myKey, recipient.getKey());
+                int msgId   = db.addMessage(chatId, myKey, "", System.currentTimeMillis() / 1000);
+                int mediaId = db.addMedia(file.getAbsolutePath(), checksum);
+                db.attachMediaToMessage(msgId, mediaId);
+            } catch (Exception e) {
+                System.err.println("DB: failed to persist outgoing file: " + e.getMessage());
+            }
+        });
+        t.setDaemon(true);
+        t.start();
+    }
+
+    /** Persist an incoming file and attach it to a new message row. */
+    private void persistIncomingFile(File file, String senderKey, Contact senderContact) {
+        String checksum = computeChecksum(file);
+        Thread t = new Thread(() -> {
+            try {
+                String myKey = MessageCryptographer.getInstance().getPublicKeyString();
+                upsertUserInDb(myKey, settings.getNickname());
+                upsertUserInDb(senderKey, senderContact.getName());
+                int chatId  = db.getOrCreateDmChat(myKey, senderKey);
+                int msgId   = db.addMessage(chatId, senderKey, "", System.currentTimeMillis() / 1000);
+                int mediaId = db.addMedia(file.getAbsolutePath(), checksum);
+                db.attachMediaToMessage(msgId, mediaId);
+            } catch (Exception e) {
+                System.err.println("DB: failed to persist incoming file: " + e.getMessage());
+            }
+        });
+        t.setDaemon(true);
+        t.start();
+    }
+
+    /** Persist an outgoing text message sent to {@code recipient}. */
+    private void persistOutgoingText(String content, Contact recipient) {
+        Thread t = new Thread(() -> {
+            try {
+                String myKey = MessageCryptographer.getInstance().getPublicKeyString();
+                upsertUserInDb(myKey, settings.getNickname());
+                upsertUserInDb(recipient.getKey(), recipient.getName());
+                int chatId = db.getOrCreateDmChat(myKey, recipient.getKey());
+                db.addMessage(chatId, myKey, content, System.currentTimeMillis() / 1000);
+            } catch (Exception e) {
+                System.err.println("DB: failed to persist outgoing message: " + e.getMessage());
+            }
+        });
+        t.setDaemon(true);
+        t.start();
+    }
+
+    /** Persist an incoming text message sent by {@code senderKey}. */
+    private void persistIncomingText(String senderKey, String content, Contact senderContact) {
+        Thread t = new Thread(() -> {
+            try {
+                String myKey = MessageCryptographer.getInstance().getPublicKeyString();
+                upsertUserInDb(myKey, settings.getNickname());
+                upsertUserInDb(senderKey, senderContact.getName());
+                int chatId = db.getOrCreateDmChat(myKey, senderKey);
+                db.addMessage(chatId, senderKey, content, System.currentTimeMillis() / 1000);
+            } catch (Exception e) {
+                System.err.println("DB: failed to persist incoming message: " + e.getMessage());
+            }
+        });
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private void loadChatHistoryFromDb(Contact contact) {
+        Thread t = new Thread(() -> {
+            try {
+                String myKey = MessageCryptographer.getInstance().getPublicKeyString();
+                upsertUserInDb(myKey, settings.getNickname());
+                upsertUserInDb(contact.getKey(), contact.getName());
+
+                int chatId = db.getOrCreateDmChat(myKey, contact.getKey());
+                List<Message> messages = db.getChatHistoryWithAttachments(chatId);
+
+                for (Message msg : messages) {
+                    if (myKey.equals(msg.getSenderPublicKey())) {
+                        msg.setSenderPublicKey("Вы");
+                    }
+                }
+
+                Platform.runLater(() -> loadChatHistory(messages));
+            } catch (Exception e) {
+                System.err.println("DB: failed to load chat history: " + e.getMessage());
+            }
+        });
+        t.setDaemon(true);
+        t.start();
     }
 }
 
