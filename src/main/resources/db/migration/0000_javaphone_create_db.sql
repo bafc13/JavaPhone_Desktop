@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS "chats_users" (
 	PRIMARY KEY("id"),
 	CONSTRAINT "fKey_chat_id" FOREIGN KEY("chat_id") REFERENCES "chats"("id"),
 	CONSTRAINT "fKey_user_public_key" FOREIGN KEY("user_public_key") REFERENCES "users"("public_key")
-)
+);
 CREATE TABLE IF NOT EXISTS "media" (
 	"id"	INTEGER,
 	"path"	TEXT,
