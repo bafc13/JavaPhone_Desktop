@@ -92,6 +92,9 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
     private Popup incomingCallPopup;
     private VBox notificationBox;
 
+    private boolean isCurrentlyTyping = false;
+    private PauseTransition typingResetTimer;
+
     /** SettingsManager stores and save necessary information for ui (splitPane ratio, theme) */
     private final SettingsManager settings = SettingsManager.getInstance();
 
@@ -315,7 +318,20 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
         });
 
         messageInput.setOnAction(e -> sendMessage());
-        messageInput.setOnKeyTyped(e -> sendTyping(true));
+
+        typingResetTimer = new PauseTransition(Duration.seconds(10));
+        typingResetTimer.setOnFinished(e -> {
+            isCurrentlyTyping = false;
+            sendTyping(false);
+        });
+        messageInput.setOnKeyTyped(e -> {
+            if (!isCurrentlyTyping) {
+                isCurrentlyTyping = true;
+                sendTyping(true);
+            }
+            typingResetTimer.playFromStart();
+        });
+
         messageInput.getStyleClass().add("message-input");
 
         sendButton.setOnAction(e -> sendMessage());
@@ -880,6 +896,10 @@ public class ChatController implements JavaPhoneChatHandler, JavaPhoneCallManage
 
         SignalingClient sc = SignalingClient.getInstance();
         try {
+            if (isCurrentlyTyping) {
+                isCurrentlyTyping = false;
+                typingResetTimer.stop();
+            }
             sc.sendDM(selectedContact.getKey(), message);
             sc.sendTyping(selectedContact.getKey(), false);
             handleStringMessage("Вы", message);
