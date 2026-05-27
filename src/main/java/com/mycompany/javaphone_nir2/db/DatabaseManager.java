@@ -3,6 +3,8 @@ package com.mycompany.javaphone_nir2.db;
 import com.mycompany.javaphone_nir2.models.*;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,14 +12,30 @@ import java.util.Scanner;
 
 public class DatabaseManager {
 
+    private static final String DB_PATH =
+            Paths.get(System.getProperty("user.home"), ".javaphone", "javaphone.db").toString();
+
+    private static DatabaseManager instance;
+
     private final String url;
+
+    public static synchronized DatabaseManager getInstance() {
+        if (instance == null) {
+            instance = new DatabaseManager(DB_PATH);
+            instance.createTables();
+        }
+        return instance;
+    }
 
     public DatabaseManager(String dbFilePath) {
         this.url = "jdbc:sqlite:" + dbFilePath;
         try {
+            Files.createDirectories(Paths.get(dbFilePath).getParent());
             Class.forName("org.sqlite.JDBC");
         } catch (ClassNotFoundException e) {
             throw new DatabaseException("SQLite JDBC driver not found", e);
+        } catch (IOException e) {
+            throw new DatabaseException("Failed to create database directory", e);
         }
     }
 
