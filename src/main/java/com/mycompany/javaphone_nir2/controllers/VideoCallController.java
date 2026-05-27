@@ -740,9 +740,9 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
         logger.log("Video call window: override the window closing method");
 
         stage.setOnCloseRequest(event -> {
+            stopCallTimer();
             WebRTCManager.getInstance().cleanup();
             closeWindow();
-            WebRTCManager.getInstance().cleanup();
             event.consume();
         });
     }
