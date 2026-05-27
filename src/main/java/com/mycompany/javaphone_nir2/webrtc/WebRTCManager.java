@@ -86,7 +86,7 @@ public class WebRTCManager implements PeerConnectionObserver {
     private boolean isGameChannelReady = false;
     private Runnable onGameChannelReadyCallback;
 
-    private final ScheduledExecutorService statsExecutor = Executors.newSingleThreadScheduledExecutor();
+    private ScheduledExecutorService statsExecutor = Executors.newSingleThreadScheduledExecutor();
 
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -287,6 +287,9 @@ public class WebRTCManager implements PeerConnectionObserver {
         });
 
         // Start statistics collection
+        if (statsExecutor == null || statsExecutor.isShutdown()) {
+            statsExecutor = Executors.newSingleThreadScheduledExecutor();
+        }
         startStatisticsCollection();
     }
 
@@ -359,6 +362,9 @@ public class WebRTCManager implements PeerConnectionObserver {
         });
 
         // Start statistics collection
+        if (statsExecutor == null || statsExecutor.isShutdown()) {
+            statsExecutor = Executors.newSingleThreadScheduledExecutor();
+        }
         startStatisticsCollection();
     }
 
@@ -742,30 +748,17 @@ public class WebRTCManager implements PeerConnectionObserver {
     }
 
     public void hangup() {
+        if (statsExecutor != null && !statsExecutor.isShutdown()) {
+            statsExecutor.shutdownNow();
+        }
         candidates.clear();
-        if (peerConnection != null) {
-            peerConnection.close();
-            peerConnection = null;
-        }
-
-        if (chatDataChannel != null) {
-            chatDataChannel.close();
-            chatDataChannel = null;
-        }
-
-        if (remoteClientKey != null) {
-            // TODO: send bye through signaling client
-            remoteClientKey = null;
-        }
-
-        statsExecutor.shutdown();
-
-//        // Clear remote video
-//        SwingUtilities.invokeLater(() -> {
-//            if (remoteVideoPanel != null) {
-//                remoteVideoPanel.release();
-//            }
-//        });
+        if (chatDataChannel != null) { chatDataChannel.close(); chatDataChannel = null; }
+        if (gameDataChannel != null) { gameDataChannel.close(); gameDataChannel = null; }
+        if (peerConnection != null) { peerConnection.close(); peerConnection = null; }
+        remoteClientKey = null;
+        isGameChannelReady = false;
+        videoSender = null;
+        audioSender = null;
     }
 
     public void handleRemoteDisconnect() {
