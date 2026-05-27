@@ -18,4 +18,6 @@ public interface JavaPhoneChatHandler {
     public void handleMessage(Message message);
 
     public void handleFileMessage(File file, String sender);
+    
+    public void setTyping(String sender, boolean status);
 }

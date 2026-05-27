@@ -21,8 +21,12 @@ import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.PublicKey;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -419,21 +423,62 @@ public class WebRTCManager implements PeerConnectionObserver {
                             System.out.println(text);
 
                             JsonNode message = mapper.readTree(text);
-                            String signature = message.get("signature").asText();
-                            String sender = message.get("sender").asText();
-                            String content = message.get("content").asText();
+                            String type = message.get("type").asText();
+                            String sender, signature, content, name;
+                            PublicKey publicKey;
+                            boolean isVerified;
+                            switch (type) {
+                                case "message":
+                                    signature = message.get("signature").asText();
+                                    sender = message.get("sender").asText();
+                                    content = message.get("content").asText();
 
-                            PublicKey publicKey = MessageCryptographer.stringToPublicKey(remoteClientKey);
-                            boolean isVerified = MC.confirmSign(content, signature, publicKey);
-                            if (!isVerified) {
-                                System.out.println("Signature in chatMessage is false, skipping");
-                                return;
-                            }
+                                    publicKey = MessageCryptographer.stringToPublicKey(remoteClientKey);
+                                    isVerified = MC.confirmSign(content, signature, publicKey);
+                                    if (!isVerified) {
+                                        System.out.println("Signature in chatMessage is false, skipping");
+                                        return;
+                                    }
 
-                            for (JavaPhoneChatHandler chatHandler : chatHandlers) {
-                                if (chatHandler != null) {
-                                    chatHandler.handleStringMessage(sender, content);
-                                }
+                                    for (JavaPhoneChatHandler chatHandler : chatHandlers) {
+                                        if (chatHandler != null) {
+                                            chatHandler.handleStringMessage(sender, content);
+                                        }
+                                    }
+                                    break;
+                                case "typing":
+                                    sender = message.get("sender").asText();
+                                    boolean status = message.get("status").asBoolean();
+                                    for (JavaPhoneChatHandler chatHandler : chatHandlers) {
+                                        if (chatHandler != null) {
+                                            chatHandler.setTyping(sender, status);
+                                        }
+                                    }
+                                    break;
+                                case "file":
+                                    signature = message.get("signature").asText();
+                                    sender = message.get("sender").asText();
+                                    content = message.get("content").asText();
+                                    name = message.get("name").asText();
+
+                                    publicKey = MessageCryptographer.stringToPublicKey(remoteClientKey);
+                                    isVerified = MC.confirmSign(content, signature, publicKey);
+                                    if (!isVerified) {
+                                        System.out.println("Signature in chatMessage is false, skipping");
+                                        return;
+                                    }
+
+                                    try {
+                                        String filePath = SettingsManager.getInstance().getFilesFolder().toString() + name;
+                                        writeBase64toFile(content, filePath);
+                                        for (JavaPhoneChatHandler chatHandler : chatHandlers) {
+                                            if (chatHandler != null) {
+                                                chatHandler.handleFileMessage(Path.of(filePath).toFile(), sender);
+                                            }
+                                        }
+                                    } catch (IOException ex) {
+                                        System.getLogger(SignalingClient.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+                                    }
                             }
 
                         } catch (Exception ex) {
@@ -475,7 +520,7 @@ public class WebRTCManager implements PeerConnectionObserver {
 
                         String textEncrypted = new String(textBytes, StandardCharsets.UTF_8);
                         String text = MC.decryptMessage(textEncrypted);
-                        
+
                         try {
                             System.out.println("🎮 [GAME] Получено сообщение:");
                             System.out.println(text);
@@ -483,7 +528,7 @@ public class WebRTCManager implements PeerConnectionObserver {
                             String sender = message.get("sender").asText();
                             String content = message.get("content").asText();
                             String signature = message.get("signature").asText();
-                            
+
                             PublicKey publicKey = MessageCryptographer.stringToPublicKey(remoteClientKey);
                             boolean isVerified = MC.confirmSign(content, signature, publicKey);
                             if (!isVerified) {
@@ -532,8 +577,9 @@ public class WebRTCManager implements PeerConnectionObserver {
         if (chatDataChannel != null && chatDataChannel.getState() == RTCDataChannelState.OPEN) {
             try {
                 ObjectNode message = mapper.createObjectNode();
-                String sender = SettingsManager.getInstance().getNickname();
+                String sender = MC.getPublicKeyString();
                 String signature = MC.signMessage(content);
+                message.put("type", "message");
                 message.put("sender", sender);
                 message.put("content", content);
                 message.put("signature", signature);
@@ -563,6 +609,66 @@ public class WebRTCManager implements PeerConnectionObserver {
         }
     }
 
+    public void sendFile(File file) {
+        if (chatDataChannel != null && chatDataChannel.getState() == RTCDataChannelState.OPEN) {
+            try {
+                String content = encodeFileToBase64Binary(file);
+
+                ObjectNode message = mapper.createObjectNode();
+                String sender = MC.getPublicKeyString();
+                String signature = MC.signMessage(content);
+                String name = file.getName();
+                message.put("type", "file");
+                message.put("sender", sender);
+                message.put("content", content);
+                message.put("name", name);
+                message.put("signature", signature);
+
+                String textMessage = mapper.writeValueAsString(message);
+
+                PublicKey publicKey = MessageCryptographer.stringToPublicKey(remoteClientKey);
+                String textEncrypted = MC.encryptMessage(textMessage, publicKey);
+
+                ByteBuffer textBuffer = ByteBuffer.wrap(textEncrypted.getBytes(StandardCharsets.UTF_8));
+                RTCDataChannelBuffer textChannelBuffer = new RTCDataChannelBuffer(textBuffer, false);
+
+                chatDataChannel.send(textChannelBuffer);
+            } catch (Exception ex) {
+                Logger.getLogger(WebRTCManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        } else {
+            System.out.println("CHAT CHANNEL DOES NOT EXIST");
+        }
+    }
+
+    public void sendTyping(boolean status) {
+        if (chatDataChannel != null && chatDataChannel.getState() == RTCDataChannelState.OPEN) {
+            try {
+                ObjectNode message = mapper.createObjectNode();
+                String sender = SettingsManager.getInstance().getNickname();
+                message.put("type", "typing");
+                message.put("sender", sender);
+                message.put("status", status);
+
+                String textMessage = mapper.writeValueAsString(message);
+                System.out.println("SENDING MESSAGE");
+                System.out.println(textMessage);
+
+                PublicKey publicKey = MessageCryptographer.stringToPublicKey(remoteClientKey);
+                String textEncrypted = MC.encryptMessage(textMessage, publicKey);
+
+                ByteBuffer textBuffer = ByteBuffer.wrap(textEncrypted.getBytes(StandardCharsets.UTF_8));
+                RTCDataChannelBuffer textChannelBuffer = new RTCDataChannelBuffer(textBuffer, false);
+
+                chatDataChannel.send(textChannelBuffer);
+            } catch (Exception ex) {
+                Logger.getLogger(WebRTCManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        } else {
+            System.out.println("CHAT CHANNEL DOES NOT EXIST");
+        }
+    }
+
     public void sendGameMessage(String content) {
         if (gameDataChannel != null && gameDataChannel.getState() == RTCDataChannelState.OPEN) {
             try {
@@ -576,7 +682,7 @@ public class WebRTCManager implements PeerConnectionObserver {
                 String textMessage = mapper.writeValueAsString(message);
                 PublicKey publicKey = MessageCryptographer.stringToPublicKey(remoteClientKey);
                 String textEncrypted = MC.encryptMessage(textMessage, publicKey);
-                
+
                 ByteBuffer textBuffer = ByteBuffer.wrap(textEncrypted.getBytes(StandardCharsets.UTF_8));
                 RTCDataChannelBuffer textChannelBuffer = new RTCDataChannelBuffer(textBuffer, false);
 
@@ -767,5 +873,16 @@ public class WebRTCManager implements PeerConnectionObserver {
 
     public boolean removeChatHandler(JavaPhoneChatHandler chatHandler) {
         return this.chatHandlers.remove(chatHandler);
+    }
+    
+    private static String encodeFileToBase64Binary(File file) throws IOException {
+        byte[] content = Files.readAllBytes(file.toPath());
+        String encoded = Base64.getEncoder().encodeToString(content);
+        return encoded;
+    }
+    
+    private static void writeBase64toFile(String content, String filePath) throws IOException {
+        byte[] contentBytes = Base64.getDecoder().decode(content.getBytes());
+        Files.write(Paths.get(filePath), contentBytes);
     }
 }

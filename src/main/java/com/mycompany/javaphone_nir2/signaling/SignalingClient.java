@@ -16,11 +16,16 @@ import com.mycompany.javaphone_nir2.webrtc.JavaPhoneChatHandler;
 import com.mycompany.javaphone_nir2.webrtc.WebRTCManager;
 
 import jakarta.websocket.*;
+import java.io.File;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.PublicKey;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -118,6 +123,12 @@ public class SignalingClient {
                 break;
             case "message":
                 handleDM(json);
+                break;
+            case "file":
+                handleFile(json);
+                break;
+            case "typing":
+                handleTyping(json);
                 break;
             case "error":
                 handleError(json);
@@ -254,7 +265,52 @@ public class SignalingClient {
             }
         }
     }
+    
+    private void handleFile(JsonNode json) {
+        System.out.println("GOT FILE MESSAGE");
+        
+        String sender = json.get("sender").asText();
+        PublicKey senderPublicKey = MessageCryptographer.stringToPublicKey(sender);
 
+        String signature = json.get("signature").asText();
+
+        String contentEncrypted = json.get("content").asText();
+        String content = MC.decryptMessage(contentEncrypted);
+        String nameEncrypted = json.get("name").asText();
+        String name = MC.decryptMessage(nameEncrypted);
+        
+        boolean isVerified = MC.confirmSign(content, signature, senderPublicKey);
+        if (!isVerified) {
+            System.out.println("Signature is false, skipping");
+            return;
+        }
+        
+        try {
+            String filePath = settings.getFilesFolder().toString() + "\\" + name;
+            writeBase64toFile(content, filePath);
+            for (JavaPhoneChatHandler chatHandler : chatHandlers) {
+                if (chatHandler != null) {
+                    chatHandler.handleFileMessage(Path.of(filePath).toFile(), sender);
+                }
+            }
+        } catch (IOException ex) {
+            System.getLogger(SignalingClient.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+        }
+        
+        
+    }
+    
+    private void handleTyping(JsonNode json) {
+        String sender = json.get("sender").asText();
+        boolean status = json.get("status").asBoolean();
+        
+        for (JavaPhoneChatHandler chatHandler : chatHandlers) {
+            if (chatHandler != null) {
+                chatHandler.setTyping(sender, status);
+            }
+        }
+    }
+ 
     private void handleError(JsonNode json) {
         String error = json.get("message").asText();
     }
@@ -307,6 +363,37 @@ public class SignalingClient {
 
         sendJson(message);
     }
+    
+    public void sendFile(String targetClientId, File file) throws IOException {
+        PublicKey targetKey = MessageCryptographer.stringToPublicKey(targetClientId);
+        
+        String content = encodeFileToBase64Binary(file);
+        String contentEncrypted = MC.encryptMessage(content, targetKey);
+        String signature = MC.signMessage(content);
+        
+        String name = file.getName();
+        String nameEncrypted = MC.encryptMessage(name, targetKey);
+
+        ObjectNode message = mapper.createObjectNode();
+        message.put("type", "file");
+        message.put("sender", clientId);
+        message.put("target", targetClientId);
+        message.put("content", contentEncrypted);
+        message.put("name", nameEncrypted);
+        message.put("signature", signature);
+
+            sendJson(message);
+    }
+    
+    public void sendTyping(String targetClientId, boolean status) throws IOException {
+        ObjectNode message = mapper.createObjectNode();
+        message.put("type", "typing");
+        message.put("sender", clientId);
+        message.put("target", targetClientId);
+        message.put("status", status);
+
+        sendJson(message);
+    }
 
     private void sendMessage(String type, String sdp, String targetClientId) throws IOException {
         ObjectNode message = mapper.createObjectNode();
@@ -352,5 +439,16 @@ public class SignalingClient {
 
     public Contact getContact(String key) {
         return contacts.get(key);
+    }
+    
+    private static String encodeFileToBase64Binary(File file) throws IOException {
+        byte[] content = Files.readAllBytes(file.toPath());
+        String encoded = Base64.getEncoder().encodeToString(content);
+        return encoded;
+    }
+    
+    private static void writeBase64toFile(String content, String filePath) throws IOException {
+        byte[] contentBytes = Base64.getDecoder().decode(content.getBytes());
+        Files.write(Paths.get(filePath), contentBytes);
     }
 }

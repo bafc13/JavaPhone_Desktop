@@ -2,6 +2,7 @@ package com.mycompany.javaphone_nir2.controllers;
 
 import com.mycompany.javaphone_nir2.ChatHistoryCell;
 import com.mycompany.javaphone_nir2.WebRtcVideoPanel;
+import com.mycompany.javaphone_nir2.cryptography.MessageCryptographer;
 import com.mycompany.javaphone_nir2.games.GameMenuApp;
 import com.mycompany.javaphone_nir2.logging.SessionLogger;
 import com.mycompany.javaphone_nir2.models.Media;
@@ -524,9 +525,9 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
 
     private void handleSelectedFiles(List<File> files) {
         for (File f : files) {
+            WebRTCManager rtcm = WebRTCManager.getInstance();
+            rtcm.sendFile(f);
             handleFileMessage(f, "Вы");
-
-            // webRTCManager.sendFile(msg, media);
         }
     }
 
@@ -607,6 +608,7 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
         sendCallMessageButton.getStyleClass().add("send-button");
 
         callMessageInput.setOnAction(e -> sendCallMessage());
+        callMessageInput.setOnKeyTyped(e -> sendTyping(true));
         callMessageInput.getStyleClass().add("message-input");
 
         messageContainer.getStyleClass().add("mesage-container");
@@ -628,7 +630,16 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
         WebRTCManager rtcm = WebRTCManager.getInstance();
 
         rtcm.sendChatMessage(message);
+        rtcm.sendTyping(false);
         callMessageInput.clear();
+    }
+    
+    private void sendTyping(boolean status) {
+        logger.log("Video call window: sending typing status");
+
+        WebRTCManager rtcm = WebRTCManager.getInstance();
+
+        rtcm.sendTyping(status);
     }
 
     /** This method responsible for simulate chat response */
@@ -649,15 +660,17 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
     }
 
     public void setTypingIndicator(boolean isTyping) {
-        if (isTyping) {
-            typingIndicator.setText("печатает...");
-            typingIndicator.setVisible(true);
-            typingIndicator.setManaged(true);
-            typingIndicator.setOpacity(1.0);
-        } else {
-            typingIndicator.setVisible(false);
-            typingIndicator.setManaged(true);
-        }
+        Platform.runLater(() -> {
+            if (isTyping) {
+                typingIndicator.setText("печатает...");
+                typingIndicator.setVisible(true);
+                typingIndicator.setManaged(true);
+                typingIndicator.setOpacity(1.0);
+            } else {
+                typingIndicator.setVisible(false);
+                typingIndicator.setManaged(true);
+            }
+        });
     }
 
     /** This method responsible for ending call and closing window */
@@ -754,7 +767,12 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
 
         Message msg = new Message();
         msg.setChatId(1);
-        msg.setSenderPublicKey(sender);
+        MessageCryptographer MC = MessageCryptographer.getInstance();
+        if (sender.equals(MC.getPublicKeyString())) {
+            msg.setSenderPublicKey("Вы");
+        } else {
+            msg.setSenderPublicKey(sender);
+        }
         msg.setContent("");
         msg.setTime(System.currentTimeMillis() / 1000);
         msg.setAttachments(List.of(media));
@@ -767,7 +785,8 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
         Message msg = new Message();
         msg.setId(generateMessageId());
         msg.setChatId(1);
-        if (sender.equals(settings.getUserKey())) {
+        MessageCryptographer MC = MessageCryptographer.getInstance();
+        if (sender.equals(MC.getPublicKeyString())) {
             msg.setSenderPublicKey("Вы");
         } else {
             msg.setSenderPublicKey(sender);
@@ -791,6 +810,11 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
                 callChatHistory.scrollTo(lastIndex);
             }
         });
+    }
+
+    @Override
+    public void setTyping(String sender, boolean status) {
+        setTypingIndicator(status);
     }
 }
 
