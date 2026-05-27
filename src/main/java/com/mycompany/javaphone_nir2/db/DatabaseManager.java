@@ -103,6 +103,29 @@ public class DatabaseManager {
         }
     }
 
+    /** Insert a user or update their name/email/ip if they already exist. */
+    public void upsertUser(User user) {
+        String sql = "INSERT INTO users (public_key, name, email, ip, avatar_id) VALUES (?, ?, ?, ?, ?) "
+                + "ON CONFLICT(public_key) DO UPDATE SET "
+                + "name = excluded.name, "
+                + "email = COALESCE(excluded.email, email), "
+                + "ip   = COALESCE(excluded.ip,    ip)";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, user.getPublicKey());
+            pstmt.setString(2, user.getName());
+            pstmt.setString(3, user.getEmail());
+            pstmt.setString(4, user.getIp());
+            if (user.getAvatarId() != null) {
+                pstmt.setInt(5, user.getAvatarId());
+            } else {
+                pstmt.setNull(5, Types.INTEGER);
+            }
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new DatabaseException("Error upserting user", e);
+        }
+    }
+
     public void updateUserName(String publicKey, String newName) {
         String sql = "UPDATE users SET name = ? WHERE public_key = ?";
         try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
