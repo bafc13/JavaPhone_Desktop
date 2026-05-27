@@ -698,14 +698,11 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
     private void endCall() {
         logger.log("Video call window: ending call");
 
+        stopCallTimer();
         handleStringMessage("System", "📞 Звонок завершен");
         setChatStatus("Звонок завершён");
-        stopCallTimer();
-
-        javafx.application.Platform.runLater(() -> {
-            closeWindow();
-            WebRTCManager.getInstance().hangup();
-        });
+        WebRTCManager.getInstance().cleanup();
+        Platform.runLater(() -> closeWindow());
     }
 
     /** This method responsible for open game chooser window */
