@@ -24,6 +24,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
+import javafx.animation.PauseTransition;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -100,6 +101,9 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
     private final SessionLogger logger = SessionLogger.getInstance();
 
     private VideoLayoutMode currentMode = VideoLayoutMode.PIP_PRIMARY_FIRST;
+
+    private boolean isCurrentlyTyping = false;
+    private PauseTransition typingResetTimer;
 
     /**
      * This method is automatically called by the FXMLLoader after the FXML file is loaded
@@ -608,7 +612,20 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
         sendCallMessageButton.getStyleClass().add("send-button");
 
         callMessageInput.setOnAction(e -> sendCallMessage());
-        callMessageInput.setOnKeyTyped(e -> sendTyping(true));
+
+        typingResetTimer = new PauseTransition(Duration.seconds(10));
+        typingResetTimer.setOnFinished(e -> {
+            isCurrentlyTyping = false;
+            sendTyping(false);
+        });
+        callMessageInput.setOnKeyTyped(e -> {
+            if (!isCurrentlyTyping) {
+                isCurrentlyTyping = true;
+                sendTyping(true);
+            }
+            typingResetTimer.playFromStart();
+        });
+
         callMessageInput.getStyleClass().add("message-input");
 
         messageContainer.getStyleClass().add("mesage-container");
@@ -629,6 +646,10 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
 
         WebRTCManager rtcm = WebRTCManager.getInstance();
 
+        if (isCurrentlyTyping) {
+            isCurrentlyTyping = false;
+            typingResetTimer.stop();
+        }
         rtcm.sendChatMessage(message);
         rtcm.sendTyping(false);
         callMessageInput.clear();
