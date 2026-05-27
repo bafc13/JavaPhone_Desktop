@@ -7,7 +7,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 public class DatabaseManager {
@@ -385,6 +387,69 @@ public class DatabaseManager {
         } catch (SQLException e) {
             throw new DatabaseException("Error getting chat history", e);
         }
+    }
+
+    /**
+     * Load full chat history with attachments resolved.
+     * Messages are ordered by time; each message carries its {@link Media} list.
+     */
+    public List<Message> getChatHistoryWithAttachments(int chatId) {
+        String sql = "SELECT m.id, m.chat_id, m.sender_public_key, m.content, m.time, "
+                + "med.id AS media_id, med.path, med.checksum "
+                + "FROM messages m "
+                + "LEFT JOIN attachments a  ON m.id      = a.message_id "
+                + "LEFT JOIN media     med ON a.media_id = med.id "
+                + "WHERE m.chat_id = ? ORDER BY m.time ASC, m.id ASC";
+
+        Map<Integer, Message> ordered = new LinkedHashMap<>();
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, chatId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    int msgId = rs.getInt("id");
+                    Message msg = ordered.get(msgId);
+                    if (msg == null) {
+                        msg = mapMessage(rs);
+                        msg.setAttachments(new ArrayList<>());
+                        ordered.put(msgId, msg);
+                    }
+                    int mediaId = rs.getInt("media_id");
+                    if (!rs.wasNull()) {
+                        Media media = new Media();
+                        media.setId(mediaId);
+                        media.setPath(rs.getString("path"));
+                        media.setChecksum(rs.getString("checksum"));
+                        msg.getAttachments().add(media);
+                    }
+                }
+            }
+            return new ArrayList<>(ordered.values());
+        } catch (SQLException e) {
+            throw new DatabaseException("Error getting chat history with attachments", e);
+        }
+    }
+
+    private User mapUser(ResultSet rs) throws SQLException {
+        User user = new User();
+        user.setPublicKey(rs.getString("public_key"));
+        user.setName(rs.getString("name"));
+        user.setEmail(rs.getString("email"));
+        user.setIp(rs.getString("ip"));
+        int avatarId = rs.getInt("avatar_id");
+        if (!rs.wasNull()) {
+            user.setAvatarId(avatarId);
+        }
+        return user;
+    }
+
+    private Message mapMessage(ResultSet rs) throws SQLException {
+        Message msg = new Message();
+        msg.setId(rs.getInt("id"));
+        msg.setChatId(rs.getInt("chat_id"));
+        msg.setSenderPublicKey(rs.getString("sender_public_key"));
+        msg.setContent(rs.getString("content"));
+        msg.setTime(rs.getLong("time"));
+        return msg;
     }
 
     public int addMedia(String path, String checksum) {
