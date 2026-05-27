@@ -230,20 +230,21 @@ public class DatabaseManager {
     }
 
     /**
-     * Get or create a direct message (dm) chat between two users.
+     * Find or create the DM chat that contains exactly the two given participants.
      *
-     * @param userPublicKey1 first participant
-     * @param userPublicKey2 second participant
-     * @return chat id
+     * @param myPublicKey      the local user's public key
+     * @param contactPublicKey the remote contact's public key
+     * @return the chat id
      */
-    public int getOrCreateDmChat(String userPublicKey) {
-        // Check if a dm chat already exists with exactly these two participants
+    public int getOrCreateDmChat(String myPublicKey, String contactPublicKey) {
         String findSql = "SELECT c.id FROM chats c "
-                + "INNER JOIN chats_users cu ON c.id = cu.chat_id "
-                + "WHERE c.type = 'dm' ";
+                + "INNER JOIN chats_users cu1 ON c.id = cu1.chat_id AND cu1.user_public_key = ? "
+                + "INNER JOIN chats_users cu2 ON c.id = cu2.chat_id AND cu2.user_public_key = ? "
+                + "WHERE c.type = 'dm' LIMIT 1";
 
         try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(findSql)) {
-            pstmt.setString(1, userPublicKey);
+            pstmt.setString(1, myPublicKey);
+            pstmt.setString(2, contactPublicKey);
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     return rs.getInt("id");
@@ -256,29 +257,27 @@ public class DatabaseManager {
         try (Connection conn = connect()) {
             conn.setAutoCommit(false);
             try {
-                // Insert chat
-                String insertChatSql = "INSERT INTO chats (type, host_public_key) VALUES ('dm', ?)";
                 int chatId;
+                String insertChatSql = "INSERT INTO chats (type, host_public_key) VALUES ('dm', ?)";
                 try (PreparedStatement pstmt = conn.prepareStatement(insertChatSql, Statement.RETURN_GENERATED_KEYS)) {
-                    pstmt.setString(1, userPublicKey); // host can be first user
+                    pstmt.setString(1, myPublicKey);
                     pstmt.executeUpdate();
-                    try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
-                        if (!generatedKeys.next()) {
+                    try (ResultSet keys = pstmt.getGeneratedKeys()) {
+                        if (!keys.next()) {
                             throw new SQLException("Creating chat failed, no ID obtained.");
                         }
-                        chatId = generatedKeys.getInt(1);
+                        chatId = keys.getInt(1);
                     }
                 }
 
-                // Insert both participants
                 String insertCuSql = "INSERT INTO chats_users (chat_id, user_public_key) VALUES (?, ?)";
                 try (PreparedStatement pstmt = conn.prepareStatement(insertCuSql)) {
-//                    Add function to get own public key in key manager
-//                    String myPublicKey = getOwnPublicKey()
-//                    pstmt.setInt(1, chatId);
-//                    pstmt.setString(2, myPublicKey);
+                    pstmt.setInt(1, chatId);
+                    pstmt.setString(2, myPublicKey);
                     pstmt.executeUpdate();
-                    pstmt.setString(2, userPublicKey);
+
+                    pstmt.setInt(1, chatId);
+                    pstmt.setString(2, contactPublicKey);
                     pstmt.executeUpdate();
                 }
 
