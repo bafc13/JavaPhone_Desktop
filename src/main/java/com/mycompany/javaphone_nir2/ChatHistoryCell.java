@@ -235,11 +235,6 @@ public class ChatHistoryCell extends ListCell<Message> {
      * with the current user's public key.
      */
     private boolean isOwnMessage(Message message) {
-        if (message.getSenderPublicKey() == "Вы") {
-            return true;
-        }
-        // TODO: replace with a real check
-        // return message.getSenderPublicKey().equals(SettingsManager.getInstance().getUserKey());
-        return false; // For now, we consider all messages "foreign" for demonstration purposes
+        return "Вы".equals(message.getSenderPublicKey());
     }
 }
