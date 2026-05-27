@@ -747,6 +747,10 @@ public class WebRTCManager implements PeerConnectionObserver {
         return microphoneEnabled;
     }
 
+    public String getRemoteClientKey() {
+        return remoteClientKey;
+    }
+
     public void hangup() {
         if (statsExecutor != null && !statsExecutor.isShutdown()) {
             statsExecutor.shutdownNow();

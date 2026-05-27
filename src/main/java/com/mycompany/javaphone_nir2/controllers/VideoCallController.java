@@ -3,11 +3,13 @@ package com.mycompany.javaphone_nir2.controllers;
 import com.mycompany.javaphone_nir2.ChatHistoryCell;
 import com.mycompany.javaphone_nir2.WebRtcVideoPanel;
 import com.mycompany.javaphone_nir2.cryptography.MessageCryptographer;
+import com.mycompany.javaphone_nir2.db.DatabaseManager;
 import com.mycompany.javaphone_nir2.games.GameMenuApp;
 import com.mycompany.javaphone_nir2.logging.SessionLogger;
 import com.mycompany.javaphone_nir2.models.Media;
 import com.mycompany.javaphone_nir2.models.Message;
 import com.mycompany.javaphone_nir2.models.SettingsManager;
+import com.mycompany.javaphone_nir2.models.User;
 import com.mycompany.javaphone_nir2.models.VideoLayoutMode;
 import com.mycompany.javaphone_nir2.webrtc.JavaPhoneChatHandler;
 import com.mycompany.javaphone_nir2.webrtc.JavaPhoneVideoHandler;
@@ -99,6 +101,9 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
 
     /** Logger saves session information into log */
     private final SessionLogger logger = SessionLogger.getInstance();
+
+    /** DatabaseManager persists messages and media attachments */
+    private final DatabaseManager db = DatabaseManager.getInstance();
 
     private VideoLayoutMode currentMode = VideoLayoutMode.PIP_PRIMARY_FIRST;
 
@@ -531,6 +536,7 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
         for (File f : files) {
             WebRTCManager rtcm = WebRTCManager.getInstance();
             rtcm.sendFile(f);
+            persistOutgoingFile(f, rtcm.getRemoteClientKey());
             handleFileMessage(f, "Вы");
         }
     }
@@ -651,6 +657,7 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
             typingResetTimer.stop();
         }
         rtcm.sendChatMessage(message);
+        persistOutgoingText(message, rtcm.getRemoteClientKey());
         rtcm.sendTyping(false);
         callMessageInput.clear();
     }
@@ -779,13 +786,17 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
 
     @Override
     public void handleFileMessage(File file, String sender) {
+        MessageCryptographer MC = MessageCryptographer.getInstance();
+        if (!sender.equals(MC.getPublicKeyString())) {
+            persistIncomingFile(file, sender);
+        }
+
         Media media = new Media();
         media.setPath(file.getAbsolutePath());
         media.setChecksum(computeChecksum(file));
 
         Message msg = new Message();
         msg.setChatId(1);
-        MessageCryptographer MC = MessageCryptographer.getInstance();
         if (sender.equals(MC.getPublicKeyString())) {
             msg.setSenderPublicKey("Вы");
         } else {
@@ -800,17 +811,21 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
 
     @Override
     public void handleStringMessage(String sender, String content) {
+        MessageCryptographer MC = MessageCryptographer.getInstance();
+        if (!"System".equals(sender) && !sender.equals(MC.getPublicKeyString())) {
+            persistIncomingText(sender, content);
+        }
+
         Message msg = new Message();
         msg.setId(generateMessageId());
         msg.setChatId(1);
-        MessageCryptographer MC = MessageCryptographer.getInstance();
         if (sender.equals(MC.getPublicKeyString())) {
             msg.setSenderPublicKey("Вы");
         } else {
             msg.setSenderPublicKey(sender);
         }
         msg.setContent(content);
-        msg.setTime(System.currentTimeMillis() / 1000); // Unix timestamp in sec
+        msg.setTime(System.currentTimeMillis() / 1000);
 
         Platform.runLater(() -> {
             this.handleMessage(msg);
@@ -833,6 +848,86 @@ public class VideoCallController implements JavaPhoneChatHandler, JavaPhoneVideo
     @Override
     public void setTyping(String sender, boolean status) {
         setTypingIndicator(status);
+    }
+
+    // -------------------------------------------------------------------------
+    // Database helpers
+    // -------------------------------------------------------------------------
+
+    private void upsertUserInDb(String publicKey, String name) {
+        db.upsertUser(new User(publicKey, name, null, null, null));
+    }
+
+    private void persistIncomingText(String senderKey, String content) {
+        Thread t = new Thread(() -> {
+            try {
+                String myKey = MessageCryptographer.getInstance().getPublicKeyString();
+                upsertUserInDb(myKey, settings.getNickname());
+                upsertUserInDb(senderKey, contactName);
+                int chatId = db.getOrCreateDmChat(myKey, senderKey);
+                db.addMessage(chatId, senderKey, content, System.currentTimeMillis() / 1000);
+            } catch (Exception e) {
+                System.err.println("DB: failed to persist incoming message: " + e.getMessage());
+            }
+        });
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private void persistOutgoingText(String content, String recipientKey) {
+        if (recipientKey == null) return;
+        Thread t = new Thread(() -> {
+            try {
+                String myKey = MessageCryptographer.getInstance().getPublicKeyString();
+                upsertUserInDb(myKey, settings.getNickname());
+                upsertUserInDb(recipientKey, contactName);
+                int chatId = db.getOrCreateDmChat(myKey, recipientKey);
+                db.addMessage(chatId, myKey, content, System.currentTimeMillis() / 1000);
+            } catch (Exception e) {
+                System.err.println("DB: failed to persist outgoing message: " + e.getMessage());
+            }
+        });
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private void persistIncomingFile(File file, String senderKey) {
+        String checksum = computeChecksum(file);
+        Thread t = new Thread(() -> {
+            try {
+                String myKey = MessageCryptographer.getInstance().getPublicKeyString();
+                upsertUserInDb(myKey, settings.getNickname());
+                upsertUserInDb(senderKey, contactName);
+                int chatId  = db.getOrCreateDmChat(myKey, senderKey);
+                int msgId   = db.addMessage(chatId, senderKey, "", System.currentTimeMillis() / 1000);
+                int mediaId = db.addMedia(file.getAbsolutePath(), checksum);
+                db.attachMediaToMessage(msgId, mediaId);
+            } catch (Exception e) {
+                System.err.println("DB: failed to persist incoming file: " + e.getMessage());
+            }
+        });
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private void persistOutgoingFile(File file, String recipientKey) {
+        if (recipientKey == null) return;
+        String checksum = computeChecksum(file);
+        Thread t = new Thread(() -> {
+            try {
+                String myKey = MessageCryptographer.getInstance().getPublicKeyString();
+                upsertUserInDb(myKey, settings.getNickname());
+                upsertUserInDb(recipientKey, contactName);
+                int chatId  = db.getOrCreateDmChat(myKey, recipientKey);
+                int msgId   = db.addMessage(chatId, myKey, "", System.currentTimeMillis() / 1000);
+                int mediaId = db.addMedia(file.getAbsolutePath(), checksum);
+                db.attachMediaToMessage(msgId, mediaId);
+            } catch (Exception e) {
+                System.err.println("DB: failed to persist outgoing file: " + e.getMessage());
+            }
+        });
+        t.setDaemon(true);
+        t.start();
     }
 }
 
